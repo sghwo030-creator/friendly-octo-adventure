@@ -3,594 +3,332 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WENDIGO: Optimized Mega Cavern</title>
+    <title>REKAMAN EVALUASI MEDIS: KASUS #1998</title>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; background-color: #050508; font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; user-select: none; }
-        #canvas-container { width: 100vw; height: 100vh; filter: contrast(1.1) brightness(0.95); }
-        
-        #bodycam-overlay {
+        /* Estetika Retro CRT & Monitor Analog */
+        body, html {
+            margin: 0; padding: 0; background-color: #050805; color: #33ff33;
+            font-family: 'Courier New', Courier, monospace; overflow: hidden;
+            user-select: none;
+        }
+
+        /* Filter Tabung Kaca CRT Monitor */
+        #monitor {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: radial-gradient(circle, rgba(0,0,0,0) 40%, rgba(0,0,0,0.6) 90%, rgba(0,0,0,0.9) 100%);
-            pointer-events: none; z-index: 4;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 3px, 3px 100%; z-index: 10; pointer-events: none;
         }
 
-        #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 2px; height: 2px;
-            background: rgba(255,255,255,0.2); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none;
+        #vhs-glitch {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none; z-index: 9; opacity: 0.8;
         }
 
-        #menu-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #020204; color: #fff; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; text-align: center; z-index: 10;
+        /* Tata Letak Antarmuka Dokter */
+        #app-container {
+            display: flex; flex-direction: column; width: 100vw; height: 100vh;
+            box-sizing: border-box; padding: 30px; justify-content: space-between;
+        }
+
+        header {
+            border-bottom: 2px dashed #33ff33; padding-bottom: 10px; letter-spacing: 2px;
+        }
+
+        #main-desk {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 65vh; margin: 20px 0;
+        }
+
+        /* Panel Berkas Dokumen Pasien */
+        .panel {
+            border: 1px solid #33ff33; background: rgba(5, 15, 5, 0.8);
+            padding: 20px; box-sizing: border-box; overflow-y: auto;
+            position: relative; box-shadow: inset 0 0 15px rgba(0,255,0,0.1);
+        }
+
+        h2 { font-size: 1.1rem; margin-top: 0; background: #33ff33; color: #000; padding: 3px 8px; display: inline-block; }
+
+        .patient-info { line-height: 1.8; font-size: 0.85rem; margin-bottom: 20px; color: #88ff88; }
+
+        /* Log Percakapan Wawancara */
+        #dialogue-box {
+            display: flex; flex-direction: column; gap: 15px; font-size: 0.9rem;
+        }
+        .line { line-height: 1.4; }
+        .doc { color: #ffffff; font-weight: bold; }
+        .patient { color: #33ff33; }
+        .anomalous-glitch { color: #ff3333; animation: blink 0.1s infinite alternate; }
+
+        /* Tombol Eksekusi Keputusan */
+        #action-bar {
+            display: flex; justify-content: center; gap: 40px; border-top: 2px dashed #33ff33; padding-top: 20px;
         }
 
         .btn {
-            background: #222; color: #fff; border: 1px solid #444; padding: 12px 30px;
-            font-size: 0.8rem; letter-spacing: 3px; cursor: pointer; margin: 10px;
-            transition: all 0.2s ease; font-weight: bold;
+            background: transparent; color: #33ff33; border: 2px solid #33ff33;
+            padding: 15px 40px; font-family: 'Courier New', monospace; font-size: 1rem;
+            font-weight: bold; cursor: pointer; letter-spacing: 3px; transition: all 0.2s;
         }
-        .btn:hover { background: #fff; color: #000; border-color: #fff; }
-        #btn-continue { background: #1a3322; border-color: #2a5235; display: none; }
-        #btn-continue:hover { background: #2ea654; color: #fff; }
+        .btn:hover { background: #33ff33; color: #000; box-shadow: 0 0 15px #33ff33; }
+        .btn-danger:hover { background: #ff3333; color: #000; border-color: #ff3333; box-shadow: 0 0 15px #ff3333; }
 
-        #ui-game {
-            position: absolute; top: 40px; left: 40px; color: #e0e0e0;
-            font-size: 0.7rem; font-weight: 600; pointer-events: none;
-            letter-spacing: 3px; z-index: 6; line-height: 2; text-shadow: 1px 1px 2px #000;
-        }
-        .bar-container { width: 130px; height: 3px; background: rgba(255,255,255,0.1); margin-top: 5px; }
-        #stamina-bar { width: 100%; height: 100%; background: #fff; }
+        #score-board { font-size: 0.8rem; color: #88ff88; text-align: right; }
 
-        #checkpoint-toast {
-            position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%);
-            color: #00ffaa; font-size: 0.9rem; letter-spacing: 5px; font-weight: bold;
-            z-index: 7; opacity: 0; transition: opacity 0.5s ease; text-shadow: 0 0 10px rgba(0,255,170,0.5);
-        }
-
-        .end-screen {
+        #start-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 20; display: none; text-align: center; opacity: 0; transition: opacity 1.5s ease;
+            background: #020502; z-index: 20; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
         }
-        #lose-screen { background: #0a0101; color: #c00; letter-spacing: 6px; font-weight: bold; }
-        #win-screen { background: #fff; color: #000; letter-spacing: 10px; }
+
+        @keyframes blink { 0% { opacity: 0.2; } 100% { opacity: 1; } }
+        .scanline {
+            width: 100%; height: 4px; background: rgba(51, 255, 51, 0.06);
+            position: absolute; animation: moveScan 6s linear infinite;
+        }
+        @keyframes moveScan { from { top: 0px; } to { top: 100%; } }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <div id="bodycam-overlay"></div>
-    <div id="crosshair"></div>
+    <div id="monitor"></div>
+    <div id="vhs-glitch"></div>
+    <div class="scanline"></div>
 
-    <div id="menu-screen">
-        <h1 style="color: #fff; font-size: 2.2rem; font-weight: 300; margin-bottom: 5px; letter-spacing: 15px;">WENDIGO</h1>
-        <p style="color: #555; margin-top: 0; letter-spacing: 4px; font-size: 0.6rem; margin-bottom: 40px;">[ ENGINE OPTIMIZED V5 — 60FPS TARGET ]</p>
-        
-        <button id="btn-new" class="btn">MULAI GAME BARU</button>
-        <button id="btn-continue" class="btn">LANJUTKAN DARI SAVEPOINT</button>
-
-        <p style="font-size: 0.6rem; color: #444; line-height: 2; letter-spacing: 1px; margin-top: 40px;">
-            W A S D — Bergerak | SHIFT — Lari | C — Merangkak Merunduk <br>
-            Game otomatis menyimpan data (Auto-Save) setiap berhasil melewati 200 Meter.
+    <div id="start-screen">
+        <h1 style="letter-spacing: 6px; font-size: 1.8rem;">KEMENTERIAN KESEHATAN MENTAL MASYARAKAT</h1>
+        <p style="color: #66af66; font-size: 0.8rem; margin-top: 0; letter-spacing: 3px;">SISTEM KLASIFIKASI SUBJEK JALUR DEPARTEMEN IV</p>
+        <p style="width: 500px; font-size: 0.75rem; line-height: 1.8; color: #558855; margin: 40px 0; border: 1px dashed #558855; padding: 15px;">
+            PERINGATAN: Beberapa entitas organik non-manusia ("Alternatif") mencoba menyusup ke fasilitas medis dengan meniru gejala gangguan jiwa biasa.<br>
+            Analisis dokumen latar belakang mereka dan dengarkan transkrip wawancara dengan teliti sebelum mengambil tindakan.
         </p>
+        <button class="btn" onclick="startGame()">MASUKKAN KREDENSIAL DOKTER</button>
     </div>
 
-    <div id="ui-game">
-        SISTEM.AKTIF // RECO_FEED<br>
-        JARAK KE LUAR GOA: <span id="dist-text">800</span>M<br>
-        ENERGI_STAMINA:
-        <div class="bar-container"><div id="stamina-bar"></div></div>
-        <div id="crouch-indicator" style="color: #00ffaa; margin-top: 5px; opacity: 0;">MODE: MERANGKAK</div>
-        <div id="warning-text" style="margin-top: 25px; font-size: 0.6rem; color: #666; width: 260px;"></div>
-    </div>
+    <div id="app-container">
+        <header style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <strong>DEPKES_OS V.1.9.9.2</strong><br>
+                <span style="font-size: 0.75rem; color: #66af66;">LOGGED IN: DR. ARYA WICAKSONO (KAPASITAS EVALUASI)</span>
+            </div>
+            <div id="score-board">
+                MANUSIA TERSALURKAN: <span id="txt-saved">0</span>/3<br>
+                ANOMALI DIISOLASI: <span id="txt-caught">0</span>/3
+            </div>
+        </header>
 
-    <div id="checkpoint-toast">▲ SAVEPOINT DATA DISIMPAN ▲</div>
+        <div id="main-desk">
+            <div class="panel">
+                <h2>BERKAS_MEDIS_PASIEN</h2>
+                <div class="patient-info" id="file-content">
+                    </div>
+            </div>
 
-    <div id="win-screen" class="end-screen">
-        <div style="font-size: 2rem; font-weight: 300;">PELARIAN BERHASIL</div>
-    </div>
+            <div class="panel">
+                <h2>REKAMAN_TRANSKRIP_SUARA</h2>
+                <div id="dialogue-box">
+                    </div>
+            </div>
+        </div>
 
-    <div id="lose-screen" class="end-screen">
-        <div style="font-size: 2rem; font-weight: bold;">KONEKSI UNIT TERPUTUS</div>
+        <div id="action-bar">
+            <button class="btn" style="border-color: #55ff55;" onclick="makeDecision('HUMAN')">✔ BEBASKAN KE MASYARAKAT</button>
+            <button class="btn btn-danger" style="border-color: #ff3333; color: #ff3333;" onclick="makeDecision('ANOMALY')">✘ ISOLASI KE LANTAI BAWAH TANAH</button>
+        </div>
     </div>
-    
-    <div id="canvas-container"></div>
 
     <script>
-        let scene, camera, renderer, flashlight, volumetricBeam, dustParticles;
-        let wendigo, wendigoHead, leftArm, rightArm;
-        let doorPivot;
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isSprinting = false, isCrouching = false;
-        let yaw = 0, pitch = 0, targetRoll = 0, currentRoll = 0;
-        let gameActive = false, distanceToExit = 800;
-        let caveLength = 800; // Lorong diperpanjang menjadi 800 meter
+        let audioCtx;
+        let currentPatientIndex = 0;
+        let savedCount = 0;
+        let caughtCount = 0;
 
-        // Sistem Atap Rendah & Cek Poin
-        let lowCeilings = [];
-        let checkpointMilestones = [200, 400, 600];
-        let lastTriggeredCheckpoint = 0;
-        let stunTimer = 0;
-
-        // Audio Audio Spasial
-        let audioCtx, ambientOsc, pannerNode;
-        let heartbeatTimer = 0, heartbeatInterval = 60, footstepTimer = 0;
-        
-        // Fisika & Lerping
-        let playerVelocity = new THREE.Vector3();
-        let flashlightPos = new THREE.Vector3();
-        let flashlightTargetPos = new THREE.Vector3();
-        let bobTimer = 0;
-
-        const player = { height: 1.5, crouchHeight: 0.9, normalSpeed: 0.08, sprintSpeed: 0.14, crouchSpeed: 0.04, stamina: 100 };
-
-        function init() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x020204);
-            scene.fog = new THREE.FogExp2(0x020204, 0.14); // Mengurangi ketebalan kabut global agar area lebih terlihat cerah
-
-            camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, player.height, 0);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            
-            // OPTIMASI: Menggunakan PCFShadowMap standar yang jauh lebih ringan daripada SoftShadowMap
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFShadowMap;
-            document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-            // OPTIMASI PENCAHAYAAN: Senter diperterang (Intensitas naik ke 10, jarak sorot naik ke 35 meter)
-            flashlight = new THREE.SpotLight(0xfff8eb, 10, 35, Math.PI / 4, 0.5, 1.0);
-            flashlight.castShadow = true;
-            flashlight.shadow.mapSize.set(512, 512); // OPTIMASI: Resolusi shadow dipotong ke 512 agar 60 FPS enteng
-            flashlight.shadow.camera.near = 0.2;
-            flashlight.shadow.camera.far = 35;
-            scene.add(flashlight);
-            scene.add(flashlight.target);
-
-            // Volumetric Cone Light (Batang Senter)
-            let beamGeo = new THREE.ConeGeometry(3.5, 25, 16, 1, true);
-            beamGeo.translate(0, -12.5, 0).rotateX(Math.PI / 2);
-            let beamMat = new THREE.MeshBasicMaterial({
-                color: 0xfff8eb, transparent: true, opacity: 0.07,
-                blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false
-            });
-            volumetricBeam = new THREE.Mesh(beamGeo, beamMat);
-            scene.add(volumetricBeam);
-
-            // OPTIMASI PENCAHAYAAN: Menaikkan Ambient Light secara global agar lorong tidak gelap gulita gulita
-            scene.add(new THREE.AmbientLight(0x1a1a24, 0.35));
-
-            generateOptimizedCave();
-            createDustParticles();
-            createAdvancedWendigo();
-
-            document.addEventListener('keydown', onKeyDown);
-            document.addEventListener('keyup', onKeyUp);
-            document.addEventListener('mousemove', onMouseMove);
-            
-            // Cek data savepoint lama di browser
-            const savedZ = localStorage.getItem('wendigo_save_z');
-            if (savedZ && parseFloat(savedZ) < 0) {
-                document.getElementById('btn-continue').style.display = 'inline-block';
+        // DATABASE PASIEN (Adanya Kombinasi Manusia Normal vs Anomali Menyeramkan)
+        const patientDatabase = [
+            {
+                name: "Bambang Sutrisno",
+                age: "42 Tahun",
+                intakeDate: "12 Mei 1996",
+                symptoms: "Pasien dibawa oleh keluarga karena mengunci diri di kamar selama 4 hari berturut-turut. Mengaku ketakutan melihat bayangan tinggi di jendela kamarnya.",
+                notes: "Pekerjaan akuntan publik, riwayat kelelahan kerja ekstrem dan kurang tidur kronis.",
+                type: "HUMAN", // Manusia Normal (Hanya Paranoid)
+                dialogue: [
+                    { speaker: "DOKTER", text: "Bisa Anda ceritakan mengapa Anda menolak keluar kamar, Pak Bambang?" },
+                    { speaker: "PASIEN", text: "Saya lelah sekali, Dok... Di luar jendela kantor, di luar rumah, saya seperti melihat orang yang sama terus berdiri menatap saya tanpa berkedip." },
+                    { speaker: "DOKTER", text: "Apakah orang tersebut mencoba berbicara atau menyakiti Anda?" },
+                    { speaker: "PASIEN", text: "Tidak, dia hanya berdiri... Tapi kemarin malam saya sadar, kamar saya ada di lantai empat. Bagaimana mungkin ada orang berdiri di luar jendela lantai empat?!" }
+                ]
+            },
+            {
+                name: "SUBJEK #042 (Tanpa Nama)",
+                age: "Diperkirakan 25 Tahun",
+                intakeDate: "03 Juni 1996",
+                symptoms: "Ditemukan berjalan di jalan tol tanpa busana pada jam 3 pagi. Tidak memiliki kartu identitas. Pupil mata tidak bereaksi terhadap cahaya senter medis.",
+                notes: "Suhu tubuh terukur 24 derajat Celcius (Sangat mustahil untuk manusia hidup namun subjek tetap bernapas secara teratur).",
+                type: "ANOMALY", // ANOMALI (Monster Penyamar)
+                dialogue: [
+                    { speaker: "DOKTER", text: "Bisa Anda sebutkan nama lengkap atau alamat rumah Anda?" },
+                    { speaker: "PASIEN", text: "Rumah... di mana ada fondasi daging, di sana saya tinggal. Saya punya banyak nama di dalam laci kepala saya." },
+                    { speaker: "DOKTER", text: "Jawaban Anda tidak logis. Apakah Anda tahu ini tahun berapa?" },
+                    { speaker: "PASIEN", text: "Tahun di mana kulit yang saya pinjam ini mulai terasa kekecilan, Dokter. Apakah Anda mau bertukar kulit dengan saya? Kulit Anda pas sekali.", glitch: true }
+                ]
+            },
+            {
+                name: "Siti Rahma",
+                age: "29 Tahun",
+                intakeDate: "18 Juni 1996",
+                symptoms: "Mengalami histeria massal di pasar. Mengklaim bahwa bayinya digantikan oleh boneka kayu oleh tetangganya.",
+                notes: "Mengalami trauma pasca-melahirkan (Postpartum Depression) yang sangat berat menurut rekam medis puskesmas setempat.",
+                type: "HUMAN", // Manusia Normal (Sakit Jiwa Trauma Nyata)
+                dialogue: [
+                    { speaker: "DOKTER", text: "Ibu Siti, silakan minum airnya dulu. Di mana bayi Ibu sekarang?" },
+                    { speaker: "PASIEN", text: "(Menangis) Mereka tidak percaya saya, Dok! Waktu saya bangun menyusui jam 2 malam, anak saya tidak menangis, badannya kaku seperti kayu pinus! Itu bukan anak saya!" },
+                    { speaker: "DOKTER", text: "Apakah Ibu mendapat bantuan pengasuhan dari suami?" },
+                    { speaker: "PASIEN", text: "Suami saya berlayar berbulan-bulan... Saya sendirian di rumah, saya tidak kuat mendengar suara tangisan bayi itu tiap malam, kepala saya mau pecah." }
+                ]
+            },
+            {
+                name: "Eko Prasetyo",
+                age: "35 Tahun",
+                intakeDate: "29 Juni 1996",
+                symptoms: "Dibawa oleh petugas polisi militer setelah ditemukan di dalam gudang amunisi terlarang. Rahang bawah terlihat bergeser berulang kali secara tidak wajar saat diam.",
+                notes: "Hasil rontgen X-Ray menunjukkan susunan tulang rusuk subjek terbalik ke arah dalam menusuk organ jantung, namun tidak ada pendarahan internal.",
+                type: "ANOMALY", // ANOMALI
+                dialogue: [
+                    { speaker: "DOKTER", text: "Saudara Eko, apa tujuan Anda menyusup ke area gudang militer?" },
+                    { speaker: "PASIEN", text: "Mencari... sumber frekuensi getaran rendah. Logam panas rasanya enak di tenggorokan kami." },
+                    { speaker: "DOKTER", text: "Buka mulut Anda lebar-lebar, saya perlu memeriksa amandel Anda." },
+                    { speaker: "PASIEN", text: "Jangan diintip, Dokter. Di dalam mulut ini tidak ada lidah, hanya ada lorong kosong yang terus berteriak memanggil nama Anda.", glitch: true }
+                ]
+            },
+            {
+                name: "Rudi Hartono",
+                age: "50 Tahun",
+                intakeDate: "05 Juli 1996",
+                symptoms: "Pasien mengklaim bisa mendengar siaran radio lokal langsung di dalam kepalanya tanpa alat bantu.",
+                notes: "Ditemukan serpihan logam bekas implan kecelakaan kerja pabrik tertanam di dekat tulang rahang belakangnya yang bertindak sebagai konduktor gelombang radio AM.",
+                type: "HUMAN", // MANUSIA (Kasus Medis Unik)
+                dialogue: [
+                    { speaker: "DOKTER", text: "Rudi, suara apa yang paling jelas Anda dengar saat ini?" },
+                    { speaker: "PASIEN", text: "Suara berita Radio RRI jam 12 siang, Dok. Sumpah demi Tuhan saya tidak gila! Kalau volume pemancar di kota dinaikkan, telinga saya langsung berdengung berdarah." },
+                    { speaker: "DOKTER", text: "Kami sudah melihat hasil rontgen Anda, ada sisa kawat tembaga kecelakaan kerja tahun lalu di rahang Anda." },
+                    { speaker: "PASIEN", text: "Ya Allah... Jadi saya tidak gila, Dok? Tolong cabut besi ini, saya mau tidur dengan tenang tanpa mendengar suara lagu lawas tiap malam." }
+                ]
+            },
+            {
+                name: "PASIEN ISOLASI #000",
+                age: "Tidak Diketahui",
+                intakeDate: "?? ?? ????",
+                symptoms: "Ditemukan di ruang bawah tanah bungker tua peninggalan kolonial. Wajahnya tidak memiliki fitur mata, hidung, atau mulut (rata sempurna) namun mampu meniru suara dokter dengan presisi 100%.",
+                notes: "Jangan menatap wajah subjek secara langsung lebih dari 10 detik.",
+                type: "ANOMALY", // ANOMALI UTAMA
+                dialogue: [
+                    { speaker: "DOKTER", text: "Siapa Anda sebenarnya? Mengapa Anda meniru penampilan fisik staf perawat kami?" },
+                    { speaker: "PASIEN", text: "Siapa Anda sebenarnya? Mengapa Anda meniru penampilan fisik staf perawat kami?" },
+                    { speaker: "DOKTER", text: "Jangan mengulangi pertanyaan saya!" },
+                    { speaker: "PASIEN", text: "Arya... Aku adalah wajah yang kamu lihat di cermin kamar mandimu ketika lampu rumahmu mati petang kemarin.", glitch: true }
+                ]
             }
+        ];
 
-            document.getElementById('btn-new').addEventListener('click', () => {
-                localStorage.removeItem('wendigo_save_z'); // Hapus save lama jika mulai baru
-                startTheGame(0);
-            });
-
-            document.getElementById('btn-continue').addEventListener('click', () => {
-                let loadZ = parseFloat(localStorage.getItem('wendigo_save_z'));
-                startTheGame(loadZ);
-            });
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
 
-        function startTheGame(startZPosition) {
-            document.getElementById('menu-screen').style.display = 'none';
-            document.body.requestPointerLock();
-            initSpatialAudio();
-            
-            // Set posisi pemain berdasarkan data savepoint
-            camera.position.z = startZPosition;
-            flashlightPos.copy(camera.position);
-            
-            // Posisikan monster 20 meter di belakang tempat pemain memuat game
-            wendigo.position.z = startZPosition + 20; 
-            
-            gameActive = true;
-            animate();
-        }
-
-        function initSpatialAudio() {
-            try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                pannerNode = audioCtx.createPanner();
-                pannerNode.panningModel = 'HRTF';
-                pannerNode.distanceModel = 'inverse';
-                pannerNode.refDistance = 1; pannerNode.maxDistance = 40; pannerNode.rolloffFactor = 1.3;
-                pannerNode.connect(audioCtx.destination);
-
-                ambientOsc = audioCtx.createOscillator();
-                let filter = audioCtx.createBiquadFilter();
-                let gain = audioCtx.createGain();
-                ambientOsc.type = 'sine'; ambientOsc.frequency.setValueAtTime(35, audioCtx.currentTime);
-                filter.type = 'lowpass'; filter.frequency.setValueAtTime(60, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                ambientOsc.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
-                ambientOsc.start();
-            } catch(e) { console.warn(e); }
-        }
-
-        function playSpatialSound(freq, vol, duration, type='sine', isMonster = false) {
+        function playBeep(freq, duration, type="sine") {
             if(!audioCtx) return;
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
             osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-            if(isMonster && pannerNode) { osc.connect(gain); gain.connect(pannerNode); }
-            else { osc.connect(gain); gain.connect(audioCtx.destination); }
+            osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
 
-        function generateOptimizedCave() {
-            // Material batu standard tanpa bump map kompleks untuk menghemat memori GPU
-            const rockMat = new THREE.MeshStandardMaterial({ color: 0x222228, roughness: 0.5, metalness: 0.05 });
-            const obstacleMat = new THREE.MeshStandardMaterial({ color: 0x33221c, roughness: 0.7 });
-
-            // Lantai Goa
-            const ground = new THREE.Mesh(new THREE.BoxGeometry(16, 0.2, caveLength + 30), rockMat);
-            ground.position.set(0, 0, -caveLength/2); ground.receiveShadow = true; scene.add(ground);
-
-            // OPTIMASI: Mengubah step iterasi dari 1.5m menjadi 5.0m (Memangkas jumlah mesh batu agar anti-lag)
-            for (let z = 15; z > -caveLength - 15; z -= 5.0) {
-                let curveX = Math.sin(z * 0.03) * 1.2;
-
-                // Membuat formasi batu yang lebih besar namun berjumlah sedikit
-                for (let i = 0; i < 3; i++) {
-                    let size = 2.5 + Math.random() * 2.0;
-                    let geo = new THREE.DodecahedronGeometry(size, 0); // Low-poly dodecahedron
-
-                    let left = new THREE.Mesh(geo, rockMat);
-                    left.position.set(-5.0 + curveX - Math.random(), Math.random() * 5, z);
-                    left.receiveShadow = true; scene.add(left);
-
-                    let right = new THREE.Mesh(geo, rockMat);
-                    right.position.set(5.0 + curveX + Math.random(), Math.random() * 5, z);
-                    right.receiveShadow = true; scene.add(right);
-
-                    let roof = new THREE.Mesh(geo, rockMat);
-                    roof.position.set(curveX + (Math.random() - 0.5) * 6, 5.5, z);
-                    roof.receiveShadow = true; scene.add(roof);
-                }
-
-                // PENCAHAYAAN ORGANIK: Menanam Kristal Bercahaya Hijau / Biru Alami di sepanjang dinding goa
-                if (Math.random() < 0.35) {
-                    let crystalGeo = new THREE.OctahedronGeometry(0.25, 0);
-                    let crystalColor = Math.random() > 0.5 ? 0x00ffaa : 0x00aaff;
-                    let crystalMat = new THREE.MeshBasicMaterial({ color: crystalColor });
-                    let crystal = new THREE.Mesh(crystalGeo, crystalMat);
-                    
-                    let sideX = Math.random() > 0.5 ? -3.2 + curveX : 3.2 + curveX;
-                    crystal.position.set(sideX, 1.2 + Math.random()*2, z);
-                    scene.add(crystal);
-
-                    // Tambahkan cahaya pendar kecil di sekitar kristal
-                    let crystalLight = new THREE.PointLight(crystalColor, 0.8, 7);
-                    crystalLight.position.copy(crystal.position);
-                    scene.add(crystalLight);
-                }
-
-                // MENANAM PENANDA VISUAL SAVEPOINT (Setiap 200m ditempatkan kristal putih terang masif)
-                let absZ = Math.abs(z);
-                checkpointMilestones.forEach(milestone => {
-                    if (Math.abs(absZ - milestone) < 2.5) {
-                        let cpLight = new THREE.PointLight(0xffffff, 2.5, 15);
-                        cpLight.position.set(curveX, 2.5, z);
-                        scene.add(cpLight);
-
-                        // Pilar kristal penanda gerbang aman
-                        let pilarGeo = new THREE.CylinderGeometry(0.1, 0.2, 4, 5);
-                        let pilarMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-                        let p1 = new THREE.Mesh(pilarGeo, pilarMat); p1.position.set(curveX - 2.8, 2, z); scene.add(p1);
-                        let p2 = new THREE.Mesh(pilarGeo, pilarMat); p2.position.set(curveX + 2.8, 2, z); scene.add(p2);
-                    }
-                });
-
-                // Hambatan Merangkak Gantung (Dibuat mencolok warnanya agar kelihatan terang)
-                if (z < -30 && Math.abs(z) % 55 < 4.0 && z > -caveLength + 30) {
-                    let obstacleBeam = new THREE.Mesh(new THREE.BoxGeometry(8, 2.0, 2), obstacleMat);
-                    obstacleBeam.position.set(curveX, 2.5, z);
-                    obstacleBeam.castShadow = true; obstacleBeam.receiveShadow = true;
-                    scene.add(obstacleBeam);
-                    lowCeilings.push({ zX: curveX, zZ: z });
-                }
-            }
-
-            // Gerbang Keluar Akhir
-            doorPivot = new THREE.Group(); doorPivot.position.set(-2.5, 0, -caveLength); scene.add(doorPivot);
-            const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 0.3), new THREE.MeshStandardMaterial({ color: 0x221105 }));
-            doorMesh.position.set(2.5, 2.5, 0); doorMesh.castShadow = true; doorPivot.add(doorMesh);
-
-            const exitLight = new THREE.PointLight(0xffffff, 8, 30); exitLight.position.set(0, 2, -caveLength - 3); scene.add(exitLight);
+        function startGame() {
+            try { initAudio(); } catch(e){}
+            document.getElementById('start-screen').style.display = 'none';
+            loadPatient(0);
         }
 
-        function createAdvancedWendigo() {
-            wendigo = new THREE.Group();
-            const blackMat = new THREE.MeshBasicMaterial({ color: 0x010101 });
-
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.02, 3.4), blackMat);
-            body.position.y = 1.7; wendigo.add(body);
-
-            wendigoHead = new THREE.Group(); wendigoHead.position.set(0, 3.4, -0.1);
-            const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 0.5), new THREE.MeshBasicMaterial({ color: 0x777777 }));
-            wendigoHead.add(headMesh);
-
-            const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), new THREE.MeshBasicMaterial({ color: 0xff0000 })); leftEye.position.set(-0.07, 0.04, -0.25);
-            const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), new THREE.MeshBasicMaterial({ color: 0xff0000 })); rightEye.position.set(0.07, 0.04, -0.25);
-            wendigoHead.add(leftEye, rightEye);
-            wendigo.add(wendigoHead);
-
-            leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.03, 2.2, 0.03), blackMat); leftArm.position.set(-0.2, 2.0, 0);
-            rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.03, 2.2, 0.03), blackMat); rightArm.position.set(0.2, 2.0, 0);
-            wendigo.add(leftArm, rightArm);
-
-            wendigo.position.set(0, 0, 20); scene.add(wendigo);
-        }
-
-        function createDustParticles() {
-            const geo = new THREE.BufferGeometry(); const arr = new Float32Array(300 * 3); // Dihemat ke 300 partikel saja
-            for (let i = 0; i < 300 * 3; i += 3) {
-                arr[i] = (Math.random() - 0.5) * 10; arr[i + 1] = Math.random() * 5; arr[i + 2] = -Math.random() * caveLength;
-            }
-            geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
-            dustParticles = new THREE.Points(geo, new THREE.PointsMaterial({color: 0xffffff, size: 0.02, transparent: true, opacity: 0.15}));
-            scene.add(dustParticles);
-        }
-
-        function onKeyDown(e) {
-            if(!gameActive || stunTimer > 0) return;
-            if (e.code === 'KeyW') moveForward = true; if (e.code === 'KeyS') moveBackward = true;
-            if (e.code === 'KeyA') { moveLeft = true; targetRoll = 0.02; }
-            if (e.code === 'KeyD') { moveRight = true; targetRoll = -0.02; }
-            if (e.code === 'ShiftLeft') isSprinting = true;
-            if (e.code === 'KeyC') { 
-                isCrouching = true; 
-                document.getElementById('crouch-indicator').style.opacity = "1";
-            }
-        }
-        function onKeyUp(e) {
-            if (e.code === 'KeyW') moveForward = false; if (e.code === 'KeyS') moveBackward = false;
-            if (e.code === 'KeyA') moveLeft = false; if (e.code === 'KeyD') moveRight = false;
-            if (!moveLeft && !moveRight) targetRoll = 0;
-            if (e.code === 'ShiftLeft') isSprinting = false;
-            if (e.code === 'KeyC') { 
-                isCrouching = false; 
-                document.getElementById('crouch-indicator').style.opacity = "0";
-            }
-        }
-        function onMouseMove(e) {
-            if (document.pointerLockElement !== document.body || stunTimer > 0) return;
-            yaw -= e.movementX * 0.0014; pitch -= e.movementY * 0.0014;
-            pitch = Math.max(-Math.PI / 2.6, Math.min(Math.PI / 2.6, pitch));
-            targetRoll += e.movementX * 0.0003;
-        }
-
-        function triggerEndScreen(screenId) {
-            gameActive = false; document.exitPointerLock();
-            if(ambientOsc) ambientOsc.stop();
-            const screen = document.getElementById(screenId); screen.style.display = 'flex';
-            setTimeout(() => { screen.style.opacity = '1'; }, 50);
-            setTimeout(() => { location.reload(); }, 4000);
-        }
-
-        function triggerCheckpointToast() {
-            const toast = document.getElementById('checkpoint-toast');
-            toast.style.opacity = '1';
-            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
-        }
-
-        function update() {
-            if (!gameActive) return;
-
-            // Kondisi Pusing jika menabrak atap rendah akibat tidak merangkak
-            if(stunTimer > 0) {
-                stunTimer -= 0.016;
-                playerVelocity.set(0,0,0);
-                document.getElementById('canvas-container').style.filter = "contrast(1.5) brightness(0.2) blur(3px)";
+        function loadPatient(index) {
+            if (index >= patientDatabase.length) {
+                // Skenario Tamat/Evaluasi Akhir
+                alert(`EVALUASI SELESAI.\nManusia yang selamat: ${savedCount}\nAnomali tertangkap: ${caughtCount}\nSistem Keamanan Aman.`);
+                location.reload();
                 return;
             }
 
-            let isMoving = moveForward || moveBackward || moveLeft || moveRight;
-            let currentMaxSpeed = player.normalSpeed;
-            if (isCrouching) currentMaxSpeed = player.crouchSpeed;
-            else if (isSprinting && player.stamina > 0 && isMoving) currentMaxSpeed = player.sprintSpeed;
+            const p = patientDatabase[index];
+            
+            // Masukkan data ke panel berkas kiri
+            document.getElementById('file-content').innerHTML = `
+                <strong>NAMA:</strong> ${p.name}<br>
+                <strong>USIA:</strong> ${p.age}<br>
+                <strong>TANGGAL MASUK:</strong> ${p.intakeDate}<br>
+                <hr style="border: 1px dashed #33ff33; margin: 15px 0;">
+                <strong>GEJALA KLINIS:</strong><br>${p.symptoms}<br><br>
+                <strong>CATATAN PETUGAS:</strong><br>${p.notes}
+            `;
 
-            // Kontrol Stamina
-            if (isSprinting && isMoving && !isCrouching && player.stamina > 0) {
-                player.stamina = Math.max(0, player.stamina - 0.5);
-            } else {
-                player.stamina = Math.min(100, player.stamina + 0.25);
-            }
-            document.getElementById('stamina-bar').style.width = player.stamina + "%";
-
-            // Efek Merunduk Mulus
-            let currentTargetHeight = isCrouching ? player.crouchHeight : player.height;
-            camera.position.y = THREE.MathUtils.lerp(camera.position.y, currentTargetHeight, 0.15);
-
-            currentRoll = THREE.MathUtils.lerp(currentRoll, targetRoll, 0.08);
-            targetRoll = THREE.MathUtils.lerp(targetRoll, 0, 0.1);
-
-            camera.rotation.order = "YXZ";
-            camera.rotation.set(pitch, yaw, currentRoll);
-
-            // Gerakan Fisika Momentum
-            let targetVelocity = new THREE.Vector3();
-            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion); forward.y = 0; forward.normalize();
-            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion); right.y = 0; right.normalize();
-
-            if (moveForward) targetVelocity.addScaledVector(forward, currentMaxSpeed);
-            if (moveBackward) targetVelocity.addScaledVector(forward, -currentMaxSpeed);
-            if (moveLeft) targetVelocity.addScaledVector(right, -currentMaxSpeed);
-            if (moveRight) targetVelocity.addScaledVector(right, currentMaxSpeed);
-
-            playerVelocity.lerp(targetVelocity, 0.1);
-            camera.position.add(playerVelocity);
-
-            // Batasan Gerak Samping Berdasarkan Jalur Berliku Goa
-            let zCurve = Math.sin(camera.position.z * 0.03) * 1.2;
-            camera.position.x = Math.max(zCurve - 2.6, Math.min(zCurve + 2.6, camera.position.x));
-
-            // --- VALIDASI COLLISION ATAP GANTUNG RENDAH ---
-            lowCeilings.forEach(ceil => {
-                if (Math.abs(camera.position.z - ceil.zZ) < 1.1) {
-                    if (!isCrouching) {
-                        stunTimer = 1.0;
-                        playSpatialSound(130, 0.7, 0.3, 'sawtooth');
-                        moveForward = moveBackward = moveLeft = moveRight = false;
-                    }
-                }
-            });
-
-            // --- LOGIKA SAVEPOINT (CHECKPOINT DETECTOR) ---
-            let currentAbsProgress = Math.abs(camera.position.z);
-            checkpointMilestones.forEach(milestone => {
-                if (currentAbsProgress >= milestone && lastTriggeredCheckpoint < milestone) {
-                    lastTriggeredCheckpoint = milestone;
+            // Cetak transkrip wawancara di panel kanan dengan efek mesin ketik jadul
+            const diagBox = document.getElementById('dialogue-box');
+            diagBox.innerHTML = '';
+            
+            p.dialogue.forEach((d, i) => {
+                setTimeout(() => {
+                    let className = d.speaker === "DOKTER" ? "doc" : "patient";
+                    if(d.glitch) className += " anomalous-glitch";
                     
-                    // Rekam Koordinat Z terbaru ke Penyimpanan Browser
-                    localStorage.setItem('wendigo_save_z', camera.position.z.toString());
-                    triggerCheckpointToast();
-                    playSpatialSound(300, 0.4, 0.5, 'sine'); // Bunyi ting penanda save berhasil
-                }
+                    diagBox.innerHTML += `
+                        <div class="line">
+                            <span class="${className}">[${d.speaker}]:</span> ${d.text}
+                        </div>
+                    `;
+                    diagBox.scrollTop = diagBox.scrollHeight;
+                    
+                    // Efek suara mesin tik analog saat teks muncul
+                    if(d.glitch) {
+                        playBeep(80, 0.3, 'sawtooth');
+                    } else {
+                        playBeep(600, 0.03, 'sine');
+                    }
+                }, i * 1500); // Teks muncul bergantian tiap 1.5 detik
             });
+        }
 
-            // Head Bobbing & Suara Kaki berjalan
-            if (isMoving && playerVelocity.length() > 0.01) {
-                let freq = isCrouching ? 0.08 : ((isSprinting && player.stamina > 0) ? 0.25 : 0.14);
-                let amp = isCrouching ? 0.01 : ((isSprinting && player.stamina > 0) ? 0.05 : 0.02);
-                bobTimer += freq;
-                camera.position.y += Math.sin(bobTimer) * amp;
-
-                if (Math.sin(bobTimer) < -0.9 && footstepTimer <= 0) {
-                    let sPitch = isCrouching ? 28 : ((isSprinting && player.stamina > 0) ? 44 : 32);
-                    let sVol = isCrouching ? 0.04 : ((isSprinting && player.stamina > 0) ? 0.3 : 0.14);
-                    playSpatialSound(sPitch, sVol, 0.12, 'triangle');
-                    footstepTimer = 8;
+        function makeDecision(choice) {
+            const currentPatient = patientDatabase[currentPatientIndex];
+            
+            if (choice === 'HUMAN') {
+                if (currentPatient.type === 'HUMAN') {
+                    savedCount++;
+                    playBeep(880, 0.2, 'sine'); // Suara benar teratur
+                    alert("KEPUTUSAN BENAR: Pasien dikembalikan ke keluarga setelah perawatan dasar.");
+                } else {
+                    alert("⚠️ KESALAHAN FATAL: Anda melepaskan ANOMALI ke pemukiman warga! Tingkat bahaya meningkat.");
+                    playBeep(150, 0.6, 'sawtooth');
                 }
-                footstepTimer--;
-            }
-
-            // Gerakan Senter Lag 3D Lembut
-            flashlightPos.lerp(camera.position, 0.08);
-            flashlight.position.copy(flashlightPos);
-            volumetricBeam.position.copy(flashlightPos);
-
-            let idealLookTarget = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position);
-            flashlightTargetPos.lerp(idealLookTarget, 0.07);
-            flashlight.target.position.copy(flashlightTargetPos);
-            volumetricBeam.lookAt(flashlightTargetPos);
-
-            // Pergerakan Inteligensi Monster Wendigo
-            let distanceToMonster = wendigo.position.z - camera.position.z;
-            let wendigoSpeed = 0.082 + (currentAbsProgress * 0.0001);
-
-            wendigo.position.z -= wendigoSpeed;
-            let wCurveX = Math.sin(wendigo.position.z * 0.03) * 1.2;
-            wendigo.position.x += (wCurveX - wendigo.position.x) * 0.05;
-
-            // Kedutan Gerak Kepala Monster
-            let swing = Date.now() * 0.016;
-            wendigo.position.y = Math.abs(Math.sin(swing)) * 0.12;
-            if(leftArm && rightArm) {
-                leftArm.rotation.x = Math.sin(swing) * 0.5; rightArm.rotation.x = -Math.sin(swing) * 0.5;
-            }
-            if (wendigoHead && Math.random() < 0.2) {
-                wendigoHead.position.x = (Math.random() - 0.5) * 0.08;
-            }
-
-            // Update Audio 3D Spasial
-            if(pannerNode) {
-                pannerNode.positionX.setValueAtTime(wendigo.position.x, audioCtx.currentTime);
-                pannerNode.positionY.setValueAtTime(wendigo.position.y, audioCtx.currentTime);
-                pannerNode.positionZ.setValueAtTime(wendigo.position.z, audioCtx.currentTime);
-                
-                let listener = audioCtx.listener;
-                let lookDir = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-                if (listener.forwardX) {
-                    listener.positionX.setValueAtTime(camera.position.x, audioCtx.currentTime);
-                    listener.positionY.setValueAtTime(camera.position.y, audioCtx.currentTime);
-                    listener.positionZ.setValueAtTime(camera.position.z, audioCtx.currentTime);
-                    listener.forwardX.setValueAtTime(lookDir.x, audioCtx.currentTime);
-                    listener.forwardY.setValueAtTime(lookDir.y, audioCtx.currentTime);
-                    listener.forwardZ.setValueAtTime(lookDir.z, audioCtx.currentTime);
+            } else if (choice === 'ANOMALY') {
+                if (currentPatient.type === 'ANOMALY') {
+                    caughtCount++;
+                    playBeep(440, 0.1, 'triangle');
+                    alert("KEPUTUSAN BENAR: Subjek berhasil dikarantina di kurungan sel magnetik bawah tanah.");
+                } else {
+                    alert("⚠️ KESALAHAN ADMINISTRASI: Anda mengurung manusia tak bersalah di ruang isolasi selamanya!");
+                    playBeep(150, 0.6, 'sawtooth');
                 }
             }
 
-            // Flicker Senter Alami
-            if (Math.random() < 0.005) { flashlight.intensity = 0; volumetricBeam.visible = false; }
-            else if (Math.random() < 0.02) { flashlight.intensity = 1.0 + Math.random()*3; volumetricBeam.visible = Math.random() > 0.4; }
-            else { flashlight.intensity = 8.5; volumetricBeam.visible = true; }
+            // Update UI Scoreboard
+            document.getElementById('txt-saved').innerText = savedCount;
+            document.getElementById('txt-caught').innerText = caughtCount;
 
-            distanceToExit = Math.ceil(caveLength + camera.position.z);
-            document.getElementById('dist-text').innerText = distanceToExit > 0 ? distanceToExit : 0;
-
-            if (distanceToExit <= 15 && doorPivot.rotation.y > -Math.PI / 1.5) {
-                doorPivot.rotation.y -= 0.02;
-            }
-
-            // Ritme Detak Jantung & Efek Degradasi Layar
-            let warnEl = document.getElementById('warning-text');
-            let containerEl = document.getElementById('canvas-container');
-
-            heartbeatTimer++;
-            if (distanceToMonster < 6) heartbeatInterval = 15;
-            else if (distanceToMonster < 12) heartbeatInterval = 32;
-            else heartbeatInterval = 60;
-
-            if (heartbeatTimer >= heartbeatInterval) {
-                heartbeatTimer = 0;
-                let hVol = distanceToMonster < 6 ? 0.9 : (distanceToMonster < 12 ? 0.45 : 0.08);
-                let hPitch = distanceToMonster < 6 ? 68 : 52;
-                playSpatialSound(hPitch, hVol, 0.15, 'sine', true);
-            }
-
-            if (distanceToMonster < 6) {
-                warnEl.innerText = "CRITICAL METERS // GLITCH INTERFERENCE DETECTED";
-                warnEl.style.color = "#ff3333";
-                containerEl.style.filter = `contrast(1.3) brightness(0.8) blur(${Math.random()*1.5}px)`;
-                
-                let shake = (6 - distanceToMonster) * 0.035;
-                camera.position.x += (Math.random() - 0.5) * shake;
-                camera.position.y += (Math.random() - 0.5) * shake;
-            } else {
-                warnEl.innerText = "ARCHIVAL CORE ACTIVE // STABLE SIGNAL FEED";
-                warnEl.style.color = "#555";
-                containerEl.style.filter = "contrast(1.1) brightness(0.95) blur(0px)";
-            }
-
-            if (distanceToMonster <= 0.72) triggerEndScreen('lose-screen');
-            if (camera.position.z <= -caveLength) {
-                localStorage.removeItem('wendigo_save_z'); // Hapus save karena tamat!
-                triggerEndScreen('win-screen');
-            }
+            // Lanjut ke pasien berikutnya
+            currentPatientIndex++;
+            loadPatient(currentPatientIndex);
         }
-
-        function animate() {
-            if (!gameActive) return;
-            requestAnimationFrame(animate);
-            update();
-            renderer.render(scene, camera);
-        }
-
-        window.onload = init;
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>
