@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dikejar Wendigo - Real 3D Cave</title>
+    <title>Dikejar Wendigo - The Escape Door</title>
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; user-select: none; }
         #canvas-container { width: 100vw; height: 100vh; }
@@ -24,13 +24,19 @@
             font-size: 1.2rem; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none;
             letter-spacing: 1px;
         }
-        #jumpscare {
+        
+        /* Overlay Layar Akhir (Win / Lose) */
+        .end-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; color: #ff0000; font-size: 3.5rem; font-weight: bold;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 20; display: none; text-shadow: 0 0 30px #ff0000;
+            z-index: 20; display: none; text-align: center; opacity: 0;
+            transition: opacity 1.5s ease-in-out;
         }
-        .subtitle { font-size: 1rem; color: #fff; margin-top: 20px; font-weight: normal; }
+        #lose-screen { background: #000; color: #ff0000; text-shadow: 0 0 20px #ff0000; }
+        #win-screen { background: #ffffff; color: #000000; }
+
+        .title { font-size: 3.5rem; font-weight: bold; margin-bottom: 10px; }
+        .subtitle { font-size: 1.2rem; letter-spacing: 2px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -39,24 +45,28 @@
     <div id="crosshair"></div>
 
     <div id="instructions">
-        <h1 style="color: #ff3333; font-size: 2.5rem; margin-bottom: 0;">GOA WENDIGO 3D</h1>
-        <p style="color: #888; margin-top: 5px;">[ Versi Batuan Goa Realistis ]</p>
-        <p style="font-size: 1.2rem; animation: blink 1.5s infinite; margin: 30px 0;">KLIK LAYAR UNTUK MASUK GOA</p>
+        <h1 style="color: #ff3333; font-size: 2.5rem; margin-bottom: 0;">GOA WENDIGO: THE DOOR</h1>
+        <p style="color: #888; margin-top: 5px;">[ Versi Pintu & Animasi Baru ]</p>
+        <p style="font-size: 1.2rem; margin: 30px 0;">KLIK LAYAR UNTUK MENCARI JALAN KELUAR</p>
         <p style="font-size: 0.85rem; color: #bbb; line-height: 1.6;">
-            Kontrol: <strong>W, A, S, D</strong> untuk Bergerak<br>
-            Arahkan <strong>Mouse</strong> untuk melihat sekeliling<br>
-            <span style="color: #ffaa00;">Tips: Senter tua milikmu agak rusak dan bisa berkedip!</span>
+            Kontrol: <strong>W, A, S, D</strong> (Jalan) | <strong>Mouse</strong> (Melihat)<br>
+            <span style="color: #ffaa00;">Mendekatlah ke pintu di ujung goa untuk membukanya!</span>
         </p>
     </div>
 
     <div id="ui-game">
-        SISA JARAK: <span id="dist-text">150</span>m<br>
+        JARAK KE PINTU: <span id="dist-text">150</span>m<br>
         <span id="warning-text" style="color: #ffffff; font-size: 1rem;"></span>
     </div>
 
-    <div id="jumpscare">
-        <div>WENDIGO MENEMUKANMU</div>
-        <div class="subtitle">Mati di dalam kegelapan... (Loading Restart)</div>
+    <div id="win-screen" class="end-screen">
+        <div class="title" style="letter-spacing: 5px;">KAMU SELAMAT</div>
+        <div class="subtitle" style="color: #555;">Cahaya fajar menyambutmu. Kutukan Wendigo telah berakhir.</div>
+    </div>
+
+    <div id="lose-screen" class="end-screen">
+        <div class="title">WENDIGO MERGUT NYAWAMU</div>
+        <div class="subtitle" style="color: #666;">Tubuhmu tertinggal abadi di kegelapan goa...</div>
     </div>
     
     <div id="canvas-container"></div>
@@ -64,17 +74,18 @@
     <script>
         let scene, camera, renderer, flashlight;
         let wendigo, obstacles = [];
+        let doorPivot, doorOpened = false; // Variabel Pintu Baru
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
         let yaw = 0, pitch = 0;
         let gameActive = false, distanceToExit = 150;
-        let caveLength = 180;
+        let caveLength = 170;
 
         const player = { speed: 0.11, x: 0, z: 0 };
 
         function init() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x000000);
-            scene.fog = new THREE.FogExp2(0x000000, 0.18); // Kabut super gelap
+            scene.fog = new THREE.FogExp2(0x000000, 0.18);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.set(0, 1.5, 0);
@@ -83,19 +94,18 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-            // Senter (SpotLight) Horror dengan sudut tajam
+            // Senter Player
             flashlight = new THREE.SpotLight(0xfff5dd, 3, 22, Math.PI / 6, 0.6, 1.2);
             scene.add(flashlight);
             scene.add(flashlight.target);
 
-            // Lampu ambient super redup biar bayangan batu kelihatan estetik
+            // Lampu goa redup
             const ambient = new THREE.AmbientLight(0x0a0a10, 0.3);
             scene.add(ambient);
 
             generateProceduralCave();
             createWendigo();
 
-            // Event Listeners
             document.addEventListener('keydown', onKeyDown);
             document.addEventListener('keyup', onKeyUp);
             document.addEventListener('mousemove', onMouseMove);
@@ -110,19 +120,9 @@
             animate();
         }
 
-        // --- MODIFIKASI UTAMA: MEMBUAT DINDING BATU ASLI (PROCEDURAL) ---
         function generateProceduralCave() {
-            // Material batu yang merespon cahaya dengan efek kasar (roughness)
-            const rockMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x222222, 
-                roughness: 0.95,
-                metalness: 0.1
-            });
-
-            const groundMaterial = new THREE.MeshStandardMaterial({
-                color: 0x151515,
-                roughness: 0.9
-            });
+            const rockMaterial = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.95 });
+            const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 });
 
             // Buat tanah mendatar
             const groundGeo = new THREE.BoxGeometry(10, 0.2, caveLength + 20);
@@ -130,74 +130,92 @@
             ground.position.set(0, 0, -caveLength/2);
             scene.add(ground);
 
-            // Bangun dinding kiri, kanan, dan atap menggunakan ratusan susunan batu acak
+            // Buat tumpukan batu goa alamiah
             for (let z = 10; z > -caveLength - 10; z -= 2.5) {
-                
-                // Jumlah batu per baris diperbanyak agar padat
                 for (let i = 0; i < 5; i++) {
-                    // Pakai Dodecahedron (Segi-12) agar bentuknya mirip bongkahan batu alami
                     let rockSize = 1.5 + Math.random() * 1.5;
                     let rockGeo = new THREE.DodecahedronGeometry(rockSize);
 
-                    // Dinding Kiri
                     let leftRock = new THREE.Mesh(rockGeo, rockMaterial);
                     leftRock.position.set(-4.5 - Math.random()*1, Math.random() * 5, z + (Math.random() - 0.5));
                     leftRock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
                     scene.add(leftRock);
 
-                    // Dinding Kanan
                     let rightRock = new THREE.Mesh(rockGeo, rockMaterial);
                     rightRock.position.set(4.5 + Math.random()*1, Math.random() * 5, z + (Math.random() - 0.5));
                     rightRock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
                     scene.add(rightRock);
 
-                    // Atap Goa (Langit-langit)
                     let roofRock = new THREE.Mesh(rockGeo, rockMaterial);
                     roofRock.position.set((Math.random() - 0.5) * 8, 5 + Math.random()*0.5, z);
                     roofRock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
                     scene.add(roofRock);
                 }
 
-                // Spawns batu rintangan di tengah jalan secara acak
-                if (z < -15 && z > -caveLength + 10 && Math.random() < 0.25) {
+                // Batu rintangan jalan
+                if (z < -15 && z > -caveLength + 15 && Math.random() < 0.25) {
                     let obsGeo = new THREE.DodecahedronGeometry(0.5 + Math.random()*0.3);
-                    let obsMat = new THREE.MeshStandardMaterial({ color: 0x2d2d2d, roughness: 0.9 });
-                    let obs = new THREE.Mesh(obsGeo, obsMat);
+                    let obs = new THREE.Mesh(obsGeo, new THREE.MeshStandardMaterial({ color: 0x2d2d2d, roughness: 0.9 }));
                     obs.position.set((Math.random() - 0.5) * 4.5, 0.4, z);
                     scene.add(obs);
                     obstacles.push(obs);
                 }
             }
 
-            // Gerbang Keluar Kabur (Cahaya Putih Terang Harapan)
-            const exitGeo = new THREE.BoxGeometry(10, 6, 0.5);
-            const exitMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            const exitGate = new THREE.Mesh(exitGeo, exitMat);
-            exitGate.position.set(0, 3, -caveLength);
-            scene.add(exitGate);
+            // --- SISTEM PINTU BARU ---
+            // Tembok pembatas di ujung goa (agar tidak bolong di samping pintu)
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 1 });
+            const leftWallFrame = new THREE.Mesh(new THREE.BoxGeometry(3, 6, 0.5), frameMat);
+            leftWallFrame.position.set(-3.5, 3, -caveLength);
+            const rightWallFrame = new THREE.Mesh(new THREE.BoxGeometry(3, 6, 0.5), frameMat);
+            rightWallFrame.position.set(3.5, 3, -caveLength);
+            const topWallFrame = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 0.5), frameMat);
+            topWallFrame.position.set(0, 5, -caveLength);
+            scene.add(leftWallFrame, rightWallFrame, topWallFrame);
+
+            // Membuat Pivot Engsel Pintu (Agar pintu berputar di sisi pinggir, bukan di tengah)
+            doorPivot = new THREE.Group();
+            doorPivot.position.set(-2, 0, -caveLength); // Engsel di koordinat X: -2
+            scene.add(doorPivot);
+
+            // Daun Pintu Kayu Besar
+            const doorGeo = new THREE.BoxGeometry(4, 4, 0.2);
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x4a2f13, roughness: 0.8, metalness: 0.3 }); // Cokelat kayu gelap
+            const doorMesh = new THREE.Mesh(doorGeo, doorMat);
+            doorMesh.position.set(2, 2, 0); // Digeser 2 meter agar pas nempel di engsel
+            doorPivot.add(doorMesh);
+
+            // Efek Cahaya Selamat dari Luar Pintu (Blinding Light)
+            const exitLight = new THREE.PointLight(0xffffff, 6, 35);
+            exitLight.position.set(0, 2, -caveLength - 3);
+            scene.add(exitLight);
+
+            // Background Putih di balik pintu
+            const whiteGlow = new THREE.Mesh(
+                new THREE.PlaneGeometry(12, 8),
+                new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+            );
+            whiteGlow.position.set(0, 3, -caveLength - 4);
+            scene.add(whiteGlow);
         }
 
-        // --- MEMBUAT WENDIGO LEBIH SERAM ---
         function createWendigo() {
             wendigo = new THREE.Group();
+            const blackMat = new THREE.MeshBasicMaterial({ color: 0x020202 });
 
-            // Badan kurus tinggi bayangan hitam
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.05, 2.8), new THREE.MeshBasicMaterial({ color: 0x020202 }));
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.05, 2.8), blackMat);
             body.position.y = 1.4;
             wendigo.add(body);
 
-            // Kepala Tengkorak Hewan
             const head = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.5), new THREE.MeshBasicMaterial({ color: 0xdddddd }));
             head.position.set(0, 2.8, -0.1);
             wendigo.add(head);
 
-            // Mata Merah Menyala Terang Terbakar kabut
             const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
             const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), eyeMat); leftEye.position.set(-0.12, 2.85, -0.36);
             const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), eyeMat); rightEye.position.set(0.12, 2.85, -0.36);
             wendigo.add(leftEye, rightEye);
 
-            // Tanduk Rusa Besar Bercabang (Antlers)
             const antlerMat = new THREE.MeshBasicMaterial({ color: 0x0a0a0a });
             for (let i = -1; i <= 1; i += 2) {
                 const mainHorn = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.8, 0.04), antlerMat);
@@ -205,16 +223,14 @@
                 mainHorn.rotation.z = -i * 0.5;
                 mainHorn.rotation.x = -0.2;
                 
-                // Cabang tanduk kecil
                 const branch = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.3, 0.03), antlerMat);
                 branch.position.set(0, 0.2, 0);
                 branch.rotation.z = i * 0.8;
                 mainHorn.add(branch);
-                
                 wendigo.add(mainHorn);
             }
 
-            wendigo.position.set(0, 0, 12); // Mulai di belakang player
+            wendigo.position.set(0, 0, 12);
             scene.add(wendigo);
         }
 
@@ -238,20 +254,26 @@
             pitch = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, pitch));
         }
 
+        function triggerEndScreen(screenId) {
+            gameActive = false;
+            document.exitPointerLock();
+            const screen = document.getElementById(screenId);
+            screen.style.display = 'flex';
+            setTimeout(() => { screen.style.opacity = '1'; }, 50); // Efek fade-in halus
+            setTimeout(() => { location.reload(); }, 5000); // Restart otomatis setelah 5 detik
+        }
+
         function update() {
             if (!gameActive) return;
 
-            // Kamera / Kepala rotasi
             camera.rotation.order = "YXZ";
             camera.rotation.set(pitch, yaw, 0);
 
-            // Kalkulasi arah jalan FPS
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             forward.y = 0; forward.normalize();
             const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
             right.y = 0; right.normalize();
 
-            // Gerak & tabrakan batas dinding batu kiri/kanan
             if (moveForward) camera.position.addScaledVector(forward, player.speed);
             if (moveBackward) camera.position.addScaledVector(forward, -player.speed);
             if (moveLeft) camera.position.addScaledVector(right, -player.speed);
@@ -259,63 +281,56 @@
             
             camera.position.x = Math.max(-3.2, Math.min(3.2, camera.position.x));
 
-            // Senter dipasang presisi di posisi mata player
             flashlight.position.copy(camera.position);
             const targetPos = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position);
             flashlight.target.position.copy(targetPos);
 
-            // --- EFEK HORROR: Senter Rusak Berkedip (Flicker) ---
-            if (Math.random() < 0.015) { 
-                flashlight.intensity = 0; // Senter mati total sesaat
-            } else if (Math.random() < 0.08) {
-                flashlight.intensity = 0.5 + Math.random() * 1.5; // Redup bergetar
-            } else {
-                flashlight.intensity = 3.5; // Terang normal
-            }
+            // Senter Flicker Horror
+            if (Math.random() < 0.015) { flashlight.intensity = 0; } 
+            else if (Math.random() < 0.08) { flashlight.intensity = 0.5 + Math.random() * 1.5; } 
+            else { flashlight.intensity = 3.5; }
 
-            // AI WENDIGO: Berlari konstan dan makin mendekat
+            // AI WENDIGO
             let chaseSpeed = 0.088 + (Math.abs(camera.position.z) * 0.00012);
             wendigo.position.z -= chaseSpeed;
             wendigo.position.x += (camera.position.x - wendigo.position.x) * 0.03;
-
-            // Efek bergidik bahu Wendigo saat mengejar
             wendigo.position.y = Math.abs(Math.sin(Date.now() * 0.012)) * 0.15;
 
-            // Update Sisa Jarak UI
+            // Hitung sisa jarak ke Pintu
             distanceToExit = Math.ceil(caveLength + camera.position.z);
             document.getElementById('dist-text').innerText = distanceToExit > 0 ? distanceToExit : 0;
 
-            // Logika Indikator Suara/Teror Wendigo
+            // --- ANIMASI BUKA PINTU ---
+            // Ketika player berjarak kurang dari 18 meter dari pintu, pintu mulai membuka otomatis
+            if (distanceToExit <= 18) {
+                // Rotasi pivot pintu ke arah luar (Y-axis negatif) hingga terbuka 90 derajat (sekitar -1.57 rad)
+                if (doorPivot.rotation.y > -Math.PI / 1.8) {
+                    doorPivot.rotation.y -= 0.03; // Kecepatan membuka pintu
+                }
+            }
+
+            // Indikator Suara Wendigo
             let distanceToMonster = wendigo.position.z - camera.position.z;
             let warnEl = document.getElementById('warning-text');
             if (distanceToMonster < 5) {
                 warnEl.innerText = "HEMBUSAN NAFASNYA ADA DI BELAKANGMU!!! 👹";
                 warnEl.style.color = "#ff0000";
             } else if (distanceToMonster < 11) {
-                warnEl.innerText = "*Suara tulang bergemeletuk makin keras..*";
+                warnEl.innerText = "*Suara tulang bergemeletuk makin dekat...*";
                 warnEl.style.color = "#ffaa00";
             } else {
-                warnEl.innerText = "*Lari!! Jangan menoleh ke belakang!*";
+                warnEl.innerText = "*Lari!! Pintu goa sudah terlihat di depan!*";
                 warnEl.style.color = "#888888";
             }
 
-            // Cek Kalah (Ketangkap)
+            // CEK KALAH: Ketangkap Wendigo
             if (distanceToMonster <= 0.7) {
-                gameActive = false;
-                document.exitPointerLock();
-                document.getElementById('jumpscare').style.display = 'flex';
-                setTimeout(() => { location.reload(); }, 3500);
+                triggerEndScreen('lose-screen');
             }
 
-            // Cek Menang (Keluar)
-            if (camera.position.z <= -caveLength + 0.5) {
-                gameActive = false;
-                document.exitPointerLock();
-                const js = document.getElementById('jumpscare');
-                js.innerHTML = "<div>KAMU BERHASIL SELAMAT! 🎉</div><div class='subtitle'>Kamu lolos dari cengkeraman kutukan Wendigo.</div>";
-                js.style.color = "#2ecc71";
-                js.style.textShadow = "0 0 20px #2ecc71";
-                js.style.display = 'flex';
+            // CEK MENANG: Melewati Pintu Keluar
+            if (camera.position.z <= -caveLength) {
+                triggerEndScreen('win-screen');
             }
         }
 
