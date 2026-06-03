@@ -3,210 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Cold Cave: Cinematic Abyss Edition</title>
+    <title>The Cold Cave: Nightmare Maze</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none;
-        }
-
-        body, html {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #020202;
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-        }
-
-        #game-canvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1;
-        }
-
-        #vignette {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            box-shadow: inset 0 0 180px rgba(0, 0, 0, 1);
-            pointer-events: none;
-            z-index: 5;
-            transition: box-shadow 0.2s ease;
-        }
-
-        .ui-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 25px;
-        }
-
-        .hud {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #fff;
-            font-size: 0.85rem;
-            letter-spacing: 2px;
-            background: linear-gradient(180deg, rgba(10,5,5,0.85) 0%, rgba(0,0,0,0) 100%);
-            padding: 20px;
-            pointer-events: auto;
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            border-bottom: 1px solid rgba(153, 0, 0, 0.2);
-        }
-
-        .bar-container { display: flex; flex-direction: column; gap: 5px; width: 130px; }
-        .bar-label { font-size: 0.65rem; color: #aaa; text-transform: uppercase; font-weight: bold; }
-
-        .bar-bg {
-            background: rgba(30, 10, 10, 0.6);
-            width: 100%; height: 6px;
-            border-radius: 3px;
-            overflow: hidden;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
-        }
-
-        .bar-fill { height: 100%; width: 100%; transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #010101; font-family: monospace; }
+        #game-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        #vignette { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; box-shadow: inset 0 0 180px rgba(0, 0, 0, 1); pointer-events: none; z-index: 5; transition: box-shadow 0.1s ease; }
+        
+        .ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
+        .hud { display: flex; justify-content: space-between; align-items: center; color: #fff; font-size: 0.85rem; letter-spacing: 2px; background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%); padding: 15px; width: 100%; max-width: 900px; margin: 0 auto; border-bottom: 1px solid rgba(255, 0, 0, 0.1); pointer-events: auto; }
+        
+        .bar-container { display: flex; flex-direction: column; gap: 4px; width: 120px; }
+        .bar-label { font-size: 0.6rem; color: #888; text-transform: uppercase; font-weight: bold; }
+        .bar-bg { background: rgba(40, 10, 10, 0.6); width: 100%; height: 6px; border-radius: 3px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 100%; transition: width 0.2s ease; }
         #sanity-fill { background: #0077ff; box-shadow: 0 0 8px #0055ff; }
         #battery-fill { background: #ffaa00; box-shadow: 0 0 8px #cc8800; }
-        #distance-txt { font-weight: bold; color: #e0e0e0; font-family: monospace; font-size: 1rem; }
+        #objective-txt { font-weight: bold; color: #ff3333; font-size: 0.9rem; text-shadow: 0 0 5px rgba(255,0,0,0.5); }
 
-        .screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, #120505 0%, #030101 100%);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #e0e0e0;
-            text-align: center;
-            padding: 30px;
-        }
-
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #0f0505 0%, #020101 100%); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #e0e0e0; text-align: center; padding: 20px; }
         .hidden { display: none !important; }
 
-        h1 {
-            font-size: 3.5rem;
-            color: #ba0000;
-            text-shadow: 0 0 25px rgba(186, 0, 0, 0.7);
-            margin-bottom: 20px;
-            letter-spacing: 12px;
-            font-weight: 900;
-            animation: pulseGlow 4s infinite alternate;
-        }
+        h1 { font-size: 2.8rem; color: #ba0000; text-shadow: 0 0 20px rgba(186, 0, 0, 0.6); margin-bottom: 20px; letter-spacing: 8px; font-weight: 900; }
+        p { max-width: 600px; line-height: 1.6; margin-bottom: 30px; color: #8c8c8c; font-size: 0.85rem; }
+        
+        .btn-group { display: flex; gap: 15px; }
+        button.menu-btn { background: transparent; color: #ff3333; border: 1px solid #ba0000; padding: 14px 40px; font-size: 0.9rem; font-weight: bold; letter-spacing: 3px; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; }
+        button.menu-btn:hover { background: #ba0000; color: #fff; box-shadow: 0 0 20px rgba(255,0,0,0.5); }
+        button.menu-btn:disabled { border-color: #333; color: #555; cursor: not-allowed; }
 
-        @keyframes pulseGlow {
-            0% { text-shadow: 0 0 15px rgba(186, 0, 0, 0.5); }
-            100% { text-shadow: 0 0 35px rgba(255, 0, 0, 0.9); }
-        }
+        #warning-indicator { color: #ff3333; font-weight: bold; font-size: 0.85rem; visibility: hidden; text-align: center; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 80px; }
 
-        p { max-width: 580px; line-height: 1.8; margin-bottom: 40px; color: #999; font-size: 0.95rem; letter-spacing: 0.5px; }
-
-        button.menu-btn {
-            background: transparent;
-            color: #ff3333;
-            border: 1px solid #ba0000;
-            padding: 16px 50px;
-            font-size: 1rem;
-            font-weight: bold;
-            letter-spacing: 4px;
-            cursor: pointer;
-            transition: all 0.4s ease;
-            text-transform: uppercase;
-        }
-        button.menu-btn:hover { background: #ba0000; color: #fff; box-shadow: 0 0 30px rgba(255,0,0,0.6); transform: scale(1.03); }
-
-        #warning-indicator {
-            color: #ff4444;
-            font-weight: bold;
-            font-size: 1rem;
-            visibility: hidden;
-            text-align: center;
-            letter-spacing: 3px;
-            text-shadow: 0 0 12px rgba(255,0,0,0.7);
-            margin-bottom: 100px;
-            font-family: monospace;
-            text-transform: uppercase;
-        }
-
-        /* MOBILE OVERLAY SYSTEMS */
-        #mobile-hud {
-            position: absolute;
-            bottom: 30px; left: 0; width: 100%;
-            display: none;
-            justify-content: space-between;
-            padding: 0 40px;
-            pointer-events: none;
-            z-index: 20;
-        }
-
-        .touch-pad-container {
-            display: grid;
-            grid-template-columns: repeat(3, 60px);
-            grid-template-rows: repeat(3, 60px);
-            gap: 8px;
-            pointer-events: auto;
-        }
-
-        .m-btn {
-            background: rgba(20, 5, 5, 0.5);
-            border: 1px solid rgba(150, 20, 20, 0.4);
-            color: #ff9999;
-            border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 1.2rem;
-            backdrop-filter: blur(4px);
-            transition: background 0.1s;
-        }
+        #mobile-hud { position: absolute; bottom: 20px; left: 0; width: 100%; display: none; justify-content: space-between; padding: 0 30px; pointer-events: none; z-index: 20; }
+        .touch-pad-container { display: grid; grid-template-columns: repeat(3, 55px); grid-template-rows: repeat(3, 55px); gap: 6px; pointer-events: auto; }
+        .m-btn { background: rgba(20, 5, 5, 0.6); border: 1px solid rgba(150, 20, 20, 0.3); color: #ff7777; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1rem; }
         .m-btn:active { background: rgba(186, 0, 0, 0.8); color: #fff; }
+        .action-container { display: flex; flex-direction: column; gap: 10px; pointer-events: auto; justify-content: center; }
+        .act-btn { width: 90px; height: 45px; background: rgba(15, 15, 15, 0.8); border: 1px solid rgba(255, 255, 255, 0.15); color: #ccc; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
+        .act-btn.active-sprint { background: rgba(186,0,0,0.8); border-color: #ff5555; color: #fff; }
 
-        .action-container { display: flex; flex-direction: column; gap: 14px; pointer-events: auto; justify-content: center; }
-
-        .act-btn {
-            width: 100px; height: 50px;
-            background: rgba(15, 15, 15, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #ccc;
-            border-radius: 25px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            letter-spacing: 1px;
-            backdrop-filter: blur(4px);
-            transition: all 0.2s;
-        }
-        .act-btn:active { transform: scale(0.95); }
-        .act-btn.active-sprint { background: rgba(186,0,0,0.8); border-color: #ff5555; color: #fff; box-shadow: 0 0 12px #ff0000; }
-
-        .pc-hint {
-            background: rgba(0, 0, 0, 0.9);
-            padding: 12px;
-            color: #666;
-            font-size: 0.75rem;
-            text-align: center;
-            letter-spacing: 1px;
-            border-top: 1px solid rgba(100, 10, 10, 0.3);
-        }
-
-        #jumpscare {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: #000; z-index: 999;
-            display: flex; justify-content: center; align-items: center;
-            visibility: hidden;
-        }
-        #jumpscare-text { color: #fff; font-size: 7rem; font-weight: 900; font-family: 'Impact', sans-serif; letter-spacing: 10px; color: #ff0000; }
+        #jumpscare { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; z-index: 999; display: flex; justify-content: center; align-items: center; visibility: hidden; }
+        #jumpscare-text { color: #ff0000; font-size: 5rem; font-weight: 900; letter-spacing: 15px; transform: scale(0.8); animation: shake 0.1s infinite; }
+        @keyframes shake { 0% { transform: translate(2px, 2px) scale(1); } 50% { transform: translate(-2px, -2px) scale(1.05); } 100% { transform: translate(1px, -1px) scale(1); } }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -214,30 +52,34 @@
 
     <div id="vignette"></div>
     <canvas id="game-canvas"></canvas>
-    <audio id="bgm" src="https://raw.githubusercontent.com/sghwo030-creator/friendly-octo-adventure/refs/heads/main/Cold_Linoleum_Floor.mp3" loop></audio>
 
+    <!-- MENU UTAMA -->
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>[CINEMATIC ULTRA UPDATE] Masuki simulasi gua purba berair dengan atmosfer kedalaman penuh tekanan. Temukan gerbang keluar di ujung lorong sebelum entitas jangkung melenyapkan eksistensimu.</p>
-        <button class="menu-btn" onclick="startGame()">MULAI EKSPEDISI</button>
+        <p>[NIGHTMARE MAZE UPDATE] Gua ini tidak lagi searah. Lorong-lorong bercabang menantimu. Temukan 3 Rune Energi Merah di ujung labirin untuk membuka Gerbang Batu Batu Purba. Hati-hati, bayangan itu bertangan banyak dan terus bergetar hebat.</p>
+        <div class="btn-group">
+            <button class="menu-btn" onclick="startGame(false)">EKSPEDISI BARU</button>
+            <button class="menu-btn" id="resume-btn" onclick="startGame(true)" disabled>LANJUTKAN (CHECKPOINT)</button>
+        </div>
     </div>
 
+    <!-- UI GAMEPLAY -->
     <div id="ui-layer" class="ui-overlay hidden">
         <div class="hud">
             <div class="bar-container">
                 <div class="bar-label">Sanity</div>
                 <div class="bar-bg"><div id="sanity-fill" class="bar-fill"></div></div>
             </div>
-            <div id="distance-txt">KEDALAMAN: --m</div>
+            <div id="objective-txt">RUNE TERKUMPUL: 0 / 3</div>
             <div class="bar-container">
                 <div class="bar-label">Senter</div>
                 <div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div>
             </div>
         </div>
-        <div id="warning-indicator">Mendengar aktivitas aneh di kegelapan...</div>
-        <div class="pc-hint" id="device-hint">MOUSE: Kamera | WASD: Gerak | SHIFT: Lari | SPACE: Senter ON/OFF | E: Cari Baterai di Lantai</div>
+        <div id="warning-indicator">MENERIMA SINYAL ANOMALI DI SEKITAR...</div>
     </div>
 
+    <!-- KONTROL MOBILE -->
     <div id="mobile-hud">
         <div class="touch-pad-container">
             <div></div><div class="m-btn" id="btn-up">▲</div><div></div>
@@ -245,360 +87,335 @@
             <div></div><div class="m-btn" id="btn-down">▼</div><div></div>
         </div>
         <div class="action-container">
-            <button class="act-btn" id="btn-sprint">LARI: OFF</button>
+            <button class="act-btn" id="btn-sprint">RUN: OFF</button>
             <button class="act-btn" id="btn-flash">SENTER</button>
-            <button class="act-btn" id="btn-search">CARI BAT</button>
         </div>
     </div>
 
+    <!-- GAME OVER SCREEN -->
     <div id="gameover-screen" class="screen hidden">
         <h1 id="end-title">DIELIMINASI</h1>
         <p id="end-reason"></p>
-        <button class="menu-btn" onclick="restartGame()">COBA LAGI</button>
+        <button class="menu-btn" onclick="goToMenu()">KEMBALI KE MENU</button>
     </div>
 
-    <div id="jumpscare">
-        <div id="jumpscare-text">MATI</div>
-    </div>
+    <!-- JUMPSCARE LAYER -->
+    <div id="jumpscare"><div id="jumpscare-text">TERKAPAR</div></div>
 
     <script>
-        const bgm = document.getElementById('bgm');
-        const canvas = document.getElementById('game-canvas');
-        let scene, camera, renderer, flashlight, flashBeam, ambientLight, dustParticles;
-        let gameActive = false;
-        let isMobile = false;
+        let scene, camera, renderer, flashlight, flashBeam;
+        let gameActive = false, isMobile = false;
         
-        // Audio Synth
-        let audioCtx, heartbeatOsc, heartbeatGain, lastHeartbeatTime = 0;
+        // 🎛️ SYNTH AUDIO PROSEDURAL (No Audio Assets Needed)
+        let audioCtx, lastHeartbeat = 0, lastFootstep = 0, monsterGrowlOsc = null, monsterGrowlGain = null;
 
+        // 🗺️ SYSTEM LABIRIN 2D GRID (0=Floor, 1=Wall, 2=Start, 3=Rune, 4=Exit Gate)
+        const GRID_SIZE = 4; // Ukuran lebar 1 blok di world coordinate Three.js
+        const MAP_GRID = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,2,0,0,1,0,0,0,1,0,0,0,0,3,1],
+            [1,1,1,0,1,0,1,0,1,0,1,1,1,1,1],
+            [1,0,0,0,0,0,1,0,0,0,1,0,0,0,1],
+            [1,0,1,1,1,1,1,1,1,0,1,0,1,0,1],
+            [1,0,1,3,0,0,0,0,1,0,0,0,1,0,1],
+            [1,0,1,1,1,1,1,0,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,1,0,1,3,0,0,1,0,1],
+            [1,1,1,1,1,0,1,0,1,1,1,0,1,0,1],
+            [1,4,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let wallsArray = [];
+        let runesArray = [];
+        let exitGateMesh = null;
+
+        // Monster State
         let monsterMesh;
-        let monsterArms = { left: null, right: null };
-        let monsterLegs = { left: null, right: null };
-        
-        let monsterState = { 
-            xPos: 0, zPos: 0, 
-            active: false, 
-            speed: 0.035, 
-            state: 'stalking', 
-            targetX: 0,
-            wobble: 0
-        };
+        let monsterArms = [];
+        let monsterState = { x: 0, z: 0, active: false, speed: 0.02, phase: 0 };
 
-        let doorGroup, doorHinge;
-        let doorOpening = false;
-        const doorZPosition = -200; 
-
-        let state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
+        // Player State
+        let state = { sanity: 100, battery: 100, runesCollected: 0 };
         const keys = { w: false, a: false, s: false, d: false, shift: false };
+        let targetCamRotationX = 0, targetCamRotationY = 0;
+        let lastTouchX = 0, lastTouchY = 0, bobTimer = 0;
 
-        const caveLength = 280;
-        const speedWalk = 0.055;
-        const speedSprint = 0.12; 
-        const mouseSensitivity = 0.002;
-
-        let bobTimer = 0;
-        let targetCamRotationX = 0; let targetCamRotationY = 0;
-        let lastTouchX = 0, lastTouchY = 0;
-
-        function checkDevice() {
-            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-                isMobile = true;
-                document.getElementById('mobile-hud').style.display = 'flex';
-                document.getElementById('device-hint').style.display = 'none';
+        function checkSaveData() {
+            const saved = localStorage.getItem('cold_cave_checkpoint');
+            if (saved) {
+                document.getElementById('resume-btn').disabled = false;
             }
         }
 
-        // 🎵 AUDIO PROSEDURAL: Membuat suara detak jantung via kode synthesizer murni
-        function initAudioSynth() {
-            if (audioCtx) return;
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (!monsterGrowlOsc) {
+                // Membuat synth growl monster berkelanjutan yang berjalan di background
+                monsterGrowlOsc = audioCtx.createOscillator();
+                monsterGrowlGain = audioCtx.createGain();
+                monsterGrowlOsc.type = 'sawtooth';
+                monsterGrowlOsc.frequency.setValueAtTime(30, audioCtx.currentTime);
+                
+                // Tambahkan lowpass filter agar suaranya teredam seperti di dalam gua
+                let filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(150, audioCtx.currentTime);
+
+                monsterGrowlOsc.connect(filter);
+                filter.connect(monsterGrowlGain);
+                monsterGrowlGain.connect(audioCtx.destination);
+                monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
+                monsterGrowlOsc.start();
+            }
         }
 
-        function playHeartbeatNode(tempo) {
-            if (!audioCtx || !gameActive) return;
+        // 👣 AUDIO PROSEDURAL: Efek suara langkah kaki berat di lantai gua basah
+        function playFootstepSynth(isSprinting) {
             let now = audioCtx.currentTime;
-            if (now - lastHeartbeatTime < tempo) return;
-            lastHeartbeatTime = now;
+            let rate = isSprinting ? 0.32 : 0.55;
+            if (now - lastFootstep < rate) return;
+            lastFootstep = now;
 
-            // Thud 1
-            triggerThud(now);
-            // Thud 2 (Double beat effect)
-            triggerThud(now + 0.16);
-        }
-
-        function triggerThud(time) {
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(55, time);
-            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.12);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(60, now);
+            osc.frequency.exponentialRampToValueAtTime(10, now + 0.1);
             
-            gain.gain.setValueAtTime(0.7, time);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.12);
+            gain.gain.setValueAtTime(0.4, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
             
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(time);
-            osc.stop(time + 0.13);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(now + 0.12);
+        }
+
+        // 💓 AUDIO PROSEDURAL: Suara Detak Jantung Dinamis
+        function playHeartbeatSynth(tempo) {
+            let now = audioCtx.currentTime;
+            if (now - lastHeartbeat < tempo) return;
+            lastHeartbeat = now;
+
+            const triggerThud = (t) => {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(50, t);
+                osc.frequency.exponentialRampToValueAtTime(1, t + 0.1);
+                gain.gain.setValueAtTime(0.8, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(t); osc.stop(t + 0.12);
+            };
+            triggerThud(now); triggerThud(now + 0.15);
         }
 
         function init3D() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x010000, 0.16); 
+            scene.fog = new THREE.FogExp2(0x020101, 0.22);
 
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.rotation.order = 'YXZ'; 
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.rotation.order = 'YXZ';
 
-            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.0;
 
-            // 🟩 PROSEDURAL ADVANCED TEKSTUR: Rock Texture + Roughness Wet Map (Efek Basah)
-            const texCanvas = document.createElement('canvas');
-            texCanvas.width = 512; texCanvas.height = 512;
-            const ctx = texCanvas.getContext('2d');
-            ctx.fillStyle = '#12100f'; ctx.fillRect(0, 0, 512, 512);
-            
-            // Lumut hijau gelap tua
-            for(let i=0; i<90; i++) {
-                ctx.fillStyle = `rgba(12, ${28 + Math.random()*20}, 14, 0.65)`;
-                ctx.beginPath(); ctx.arc(Math.random()*512, Math.random()*512, 25 + Math.random()*45, 0, Math.PI*2); ctx.fill();
-            }
-            // Retakan batuan kuno
-            ctx.strokeStyle = '#030202'; ctx.lineWidth = 3;
-            for(let i=0; i<18; i++) {
-                ctx.beginPath(); ctx.moveTo(Math.random()*512, 0); ctx.lineTo(Math.random()*512, 512); ctx.stroke();
-            }
-            // Kebisingan noise mikro
-            for(let i=0; i<30000; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#060505' : '#221d1b';
-                ctx.fillRect(Math.random()*512, Math.random()*512, 2, 2);
-            }
+            buildProceduralMaze();
+            buildEldritchMonster();
 
-            // 🌊 MEMBUAT MAP KEBASAHAN (Roughness Map) - Bagian hitam = Mengkilap basah berair
-            const roughCanvas = document.createElement('canvas');
-            roughCanvas.width = 512; roughCanvas.height = 512;
-            const rCtx = roughCanvas.getContext('2d');
-            rCtx.fillStyle = '#ffffff'; rCtx.fillRect(0, 0, 512, 512); // Default kasar banget
-            // Genangan air reflektif di lantai gua
-            for(let i=0; i<25; i++) {
-                rCtx.fillStyle = 'rgba(10, 10, 10, 0.9)'; // Sangat licin mengkilap basah
-                rCtx.beginPath(); rCtx.arc(Math.random()*512, Math.random()*512, 40 + Math.random()*60, 0, Math.PI*2); rCtx.fill();
-            }
-
-            const rockTex = new THREE.CanvasTexture(texCanvas);
-            rockTex.wrapS = rockTex.wrapT = THREE.RepeatWrapping; rockTex.repeat.set(4, 50);
-
-            const roughTex = new THREE.CanvasTexture(roughCanvas);
-            roughTex.wrapS = roughTex.wrapT = THREE.RepeatWrapping; roughTex.repeat.set(4, 50);
-
-            // Performa deformasi geometri gua agar bergelombang dramatis
-            const caveGeo = new THREE.BoxGeometry(6.0, 5.0, caveLength, 16, 16, 160);
-            const pos = caveGeo.attributes.position;
-            for (let i = 0; i < pos.count; i++) {
-                let x = pos.getX(i); let y = pos.getY(i); let z = pos.getZ(i);
-                let wave = Math.sin(z * 0.5) * 0.5 + Math.cos(x * 1.2) * 0.3;
-                if (!(y < -2.4 && Math.abs(x) < 1.5)) { 
-                    pos.setX(i, x + wave * (x > 0 ? 1 : -1) * 0.5);
-                    pos.setY(i, y + wave * (y > 0 ? 1 : -1) * 0.5);
-                }
-            }
-            caveGeo.computeVertexNormals();
-
-            const caveMat = new THREE.MeshStandardMaterial({ 
-                map: rockTex, 
-                roughnessMap: roughTex,
-                metalness: 0.15,
-                roughness: 0.85,
-                side: THREE.BackSide 
-            });
-
-            const caveMesh = new THREE.Mesh(caveGeo, caveMat);
-            caveMesh.position.set(0, 1.8, -caveLength / 2);
-            scene.add(caveMesh);
-
-            generateCaveDecorations(rockTex);
-            generateFloatingDust(); 
-
-            buildProceduralMonster();
-            buildEscapeDoor(); 
-
-            // 💡 EFEK DYNAMIC FLASHLIGHT + VOLUMETRIC CONE LIGHT
-            flashlight = new THREE.SpotLight(0xfff3db, 5.0, 32, Math.PI / 4.5, 0.5, 1.2);
+            // Senter Prosedural
+            flashlight = new THREE.SpotLight(0xfff5e0, 6.0, 22, Math.PI / 4.5, 0.6, 1.2);
             scene.add(flashlight);
-            const target = new THREE.Object3D(); scene.add(target); flashlight.target = target;
+            let target = new THREE.Object3D(); scene.add(target); flashlight.target = target;
 
-            // Senter Volumetrik (Visualisasi Batang Cahaya di Udara)
-            const beamGeo = new THREE.ConeGeometry(2.2, 28, 16, 1, true);
-            beamGeo.translate(0, -14, 0); 
-            beamGeo.rotateX(Math.PI / 2);
-            const beamMat = new THREE.MeshBasicMaterial({
-                color: 0xfff0d0, transparent: true, opacity: 0.025, side: THREE.DoubleSide, depthWrite: false
-            });
-            flashBeam = new THREE.Mesh(beamGeo, beamMat);
+            // Efek Batang Cahaya Senter Volumetrik
+            let beamGeo = new THREE.ConeGeometry(1.8, 18, 16, 1, true);
+            beamGeo.translate(0, -9, 0); beamGeo.rotateX(Math.PI / 2);
+            flashBeam = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color: 0xfff5e0, transparent: true, opacity: 0.025, side: THREE.DoubleSide, depthWrite: false }));
             scene.add(flashBeam);
 
-            ambientLight = new THREE.AmbientLight(0x0050202); 
-            scene.add(ambientLight);
-            scene.add(camera);
-
+            scene.add(new THREE.AmbientLight(0x020101));
             setupControls();
         }
 
-        function generateCaveDecorations(texture) {
-            const decorMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9 });
-            for (let z = -20; z > -caveLength + 20; z -= 8 + Math.random() * 8) {
-                let sideX = (Math.random() - 0.5) * 3;
-                let height = 2.0 + Math.random() * 2.0;
-                
-                // Stalaktit/Stalagmit runcing tajam
-                const coneGeo = new THREE.CylinderGeometry(0.01, 0.4, height, 6, 4);
-                const pillar = new THREE.Mesh(coneGeo, decorMat);
-                
-                if (Math.random() > 0.5) { 
-                    pillar.position.set(sideX > 0 ? 1.6 : -1.6, -0.6 + height/2, z);
-                } else { 
-                    pillar.position.set(sideX > 0 ? 1.6 : -1.6, 4.2 - height/2, z);
-                    pillar.rotation.z = Math.PI; 
-                }
-                scene.add(pillar);
+        // 🗺️ GENERATOR LABIRIN PROSEDURAL DENGAN MAP REFLEKTIF BASAH
+        function buildProceduralMaze() {
+            // Membuat tekstur batuan basah via kanvas internal
+            let canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
+            let ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#141211'; ctx.fillRect(0,0,256,256);
+            for(let i=0; i<8000; i++) { ctx.fillStyle = Math.random() > 0.5 ? '#0b0a0a' : '#221e1c'; ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2); }
+            
+            // Map Keasangan (Specular Roughness Wet Map)
+            let roughCanvas = document.createElement('canvas'); roughCanvas.width = 256; roughCanvas.height = 256;
+            let rCtx = roughCanvas.getContext('2d'); rCtx.fillStyle = '#ffffff'; rCtx.fillRect(0,0,256,256);
+            for(let i=0; i<15; i++) { rCtx.fillStyle = '#111111'; rCtx.beginPath(); rCtx.arc(Math.random()*256, Math.random()*256, 30+Math.random()*40, 0, Math.PI*2); rCtx.fill(); }
 
-                // Kerikil puing hiasan lantai
-                if (Math.random() > 0.3) {
-                    const bGeo = new THREE.DodecahedronGeometry(0.15 + Math.random()*0.3, 1);
-                    const boulder = new THREE.Mesh(bGeo, decorMat);
-                    boulder.position.set(Math.random() > 0.5 ? 1.7 : -1.7, -0.6, z + (Math.random()*4 - 2));
-                    scene.add(boulder);
+            let wallTex = new THREE.CanvasTexture(canvas); wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping; wallTex.repeat.set(1, 1);
+            let roughTex = new THREE.CanvasTexture(roughCanvas); roughTex.wrapS = roughTex.wrapT = THREE.RepeatWrapping; roughTex.repeat.set(1, 1);
+
+            let wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughnessMap: roughTex, roughness: 0.85, metalness: 0.2 });
+            let floorMat = new THREE.MeshStandardMaterial({ map: wallTex, roughnessMap: roughTex, roughness: 0.2, metalness: 0.1 }); // Lantai dibuat mengkilap pantulkan cahaya
+
+            let wallGeo = new THREE.BoxGeometry(GRID_SIZE, 4.0, GRID_SIZE);
+            let floorGeo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
+
+            for (let r = 0; r < MAP_GRID.length; r++) {
+                for (let c = 0; c < MAP_GRID[r].length; c++) {
+                    let x = c * GRID_SIZE;
+                    let z = r * GRID_SIZE;
+                    let type = MAP_GRID[r][c];
+
+                    // Selalu buat Lantai & Atap di area non-dinding
+                    if (type !== 1) {
+                        let floor = new THREE.Mesh(floorGeo, floorMat);
+                        floor.rotation.x = -Math.PI / 2; floor.position.set(x, -1.5, z); scene.add(floor);
+                        let ceiling = new THREE.Mesh(floorGeo, wallMat);
+                        ceiling.rotation.x = Math.PI / 2; ceiling.position.set(x, 2.5, z); scene.add(ceiling);
+                    }
+
+                    if (type === 1) {
+                        // Tembok Labirin
+                        let wall = new THREE.Mesh(wallGeo, wallMat);
+                        wall.position.set(x, 0.5, z); scene.add(wall);
+                        wallsArray.push(wall);
+                    } else if (type === 2) {
+                        // Spawn Point Player
+                        camera.position.set(x, 0.1, z);
+                    } else if (type === 3) {
+                        // Item Rune Koleksi Kuno
+                        let runeGeo = new THREE.OctahedronGeometry(0.25, 0);
+                        let runeMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x990000, roughness: 0.1 });
+                        let rune = new THREE.Mesh(runeGeo, runeMat);
+                        rune.position.set(x, -0.2, z);
+                        scene.add(rune);
+                        runesArray.push({ mesh: rune, gridR: r, gridC: c });
+                    } else if (type === 4) {
+                        // Pintu Keluar Utama
+                        let gateGeo = new THREE.BoxGeometry(GRID_SIZE, 4.0, 0.4);
+                        let gateMat = new THREE.MeshStandardMaterial({ color: 0x221111, roughness: 0.9 });
+                        exitGateMesh = new THREE.Mesh(gateGeo, gateMat);
+                        exitGateMesh.position.set(x, 0.5, z);
+                        scene.add(exitGateMesh);
+                    }
                 }
             }
         }
 
-        function generateFloatingDust() {
-            const count = 250;
-            const geo = new THREE.BufferGeometry();
-            const positions = new Float32Array(count * 3);
-            for (let i = 0; i < count * 3; i += 3) {
-                positions[i] = (Math.random() - 0.5) * 6;
-                positions[i + 1] = Math.random() * 5;
-                positions[i + 2] = -Math.random() * caveLength;
-            }
-            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            const mat = new THREE.PointsMaterial({ color: 0xffeecc, size: 0.045, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
-            dustParticles = new THREE.Points(geo, mat);
-            scene.add(dustParticles);
-        }
-
-        function buildProceduralMonster() {
+        // 👾 MONSTER MODEL: Makhluk Abstraksi Eldritch dengan Banyak Lengan
+        function buildEldritchMonster() {
             monsterMesh = new THREE.Group();
-            const skinMat = new THREE.MeshStandardMaterial({ color: 0x0f0e0e, roughness: 0.99 });
-            const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff1111 }); // Mata Merah Menyala Khas Horor Cinematic
+            let bodyMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.99 });
+            let eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
 
-            const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.09, 1.6, 6), skinMat); torso.position.y = 1.2; monsterMesh.add(torso);
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), skinMat); head.scale.set(1, 1.3, 1); head.position.set(0, 2.1, 0); monsterMesh.add(head);
+            let core = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), bodyMat); core.position.y = 0.5; monsterMesh.add(core);
+            let head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 6), bodyMat); head.position.y = 1.1; monsterMesh.add(head);
+            
+            let eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), eyeMat); eye.position.set(0, 1.15, -0.15); monsterMesh.add(eye);
 
-            const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.035, 4, 4), eyeMat); eyeL.position.set(-0.07, 2.15, -0.17);
-            const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.035, 4, 4), eyeMat); eyeR.position.set(0.07, 2.15, -0.17);
-            monsterMesh.add(eyeL, eyeR);
+            // Membuat 6 lengan kurus panjang merayap secara prosedural
+            for (let i = 0; i < 6; i++) {
+                let armGeo = new THREE.CylinderGeometry(0.015, 0.01, 1.5, 4);
+                armGeo.translate(0, -0.75, 0);
+                let arm = new THREE.Mesh(armGeo, bodyMat);
+                arm.position.set((i % 2 === 0 ? 0.3 : -0.3), 0.6, (i * 0.1 - 0.3));
+                monsterMesh.add(arm);
+                monsterArms.push(arm);
+            }
 
-            const armGeo = new THREE.CylinderGeometry(0.03, 0.02, 1.4, 4); armGeo.translate(0, -0.7, 0);
-            monsterArms.left = new THREE.Mesh(armGeo, skinMat); monsterArms.left.position.set(-0.22, 1.9, 0); monsterMesh.add(monsterArms.left);
-            monsterArms.right = new THREE.Mesh(armGeo, skinMat); monsterArms.right.position.set(0.22, 1.9, 0); monsterMesh.add(monsterArms.right);
-
-            const legGeo = new THREE.CylinderGeometry(0.04, 0.025, 1.2, 4); legGeo.translate(0, -0.6, 0);
-            monsterLegs.left = new THREE.Mesh(legGeo, skinMat); monsterLegs.left.position.set(-0.1, 1.0, 0); monsterMesh.add(monsterLegs.left);
-            monsterLegs.right = new THREE.Mesh(legGeo, skinMat); monsterLegs.right.position.set(0.1, 1.0, 0); monsterMesh.add(monsterLegs.right);
-
+            monsterMesh.position.set(0, -100, 0); // Sembunyikan dulu sampai game mulai
             scene.add(monsterMesh);
         }
 
-        function buildEscapeDoor() {
-            doorGroup = new THREE.Group(); doorGroup.position.set(0, -0.6, doorZPosition);
-            const frameMat = new THREE.MeshStandardMaterial({ color: 0x1c0f07, roughness: 0.9 });
-            const doorMat = new THREE.MeshStandardMaterial({ color: 0x26140a, roughness: 0.7, metalness: 0.2 });
-
-            const fL = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3.6, 0.25), frameMat); fL.position.set(-1.2, 1.8, 0);
-            const fR = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3.6, 0.25), frameMat); fR.position.set(1.2, 1.8, 0);
-            const fT = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.25, 0.25), frameMat); fT.position.set(0, 3.6, 0);
-            doorGroup.add(fL, fR, fT);
-
-            doorHinge = new THREE.Group(); doorHinge.position.set(-1.1, 1.8, 0); 
-            const panel = new THREE.Mesh(new THREE.BoxGeometry(2.1, 3.4, 0.15), doorMat); panel.position.set(1.05, 0, 0); doorHinge.add(panel);
-            doorGroup.add(doorHinge); scene.add(doorGroup);
+        // 🛑 WALL COLLISION ENGINE DETECTOR
+        function checkWallCollision(newX, newZ) {
+            let buffer = 0.45; // Jarak toleransi benturan dinding
+            for (let wall of wallsArray) {
+                if (Math.abs(newX - wall.position.x) < (GRID_SIZE / 2 + buffer) &&
+                    Math.abs(newZ - wall.position.z) < (GRID_SIZE / 2 + buffer)) {
+                    return true;
+                }
+            }
+            // Tabrakan dengan gerbang keluar (jika rune belum lengkap)
+            if (exitGateMesh && state.runesCollected < 3) {
+                if (Math.abs(newX - exitGateMesh.position.x) < (GRID_SIZE / 2 + buffer) &&
+                    Math.abs(newZ - exitGateMesh.position.z) < (0.2 + buffer)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         function setupControls() {
+            canvas = document.getElementById('game-canvas');
             canvas.addEventListener('click', () => { if (gameActive && !isMobile && document.pointerLockElement !== canvas) canvas.requestPointerLock(); });
+            
             document.addEventListener('mousemove', (e) => {
                 if (gameActive && document.pointerLockElement === canvas) {
-                    targetCamRotationY -= e.movementX * mouseSensitivity; targetCamRotationX -= e.movementY * mouseSensitivity;
-                    targetCamRotationX = Math.max(-1.3, Math.min(1.3, targetCamRotationX));
+                    targetCamRotationY -= e.movementX * 0.0025; targetCamRotationX -= e.movementY * 0.0025;
+                    targetCamRotationX = Math.max(-1.2, Math.min(1.2, targetCamRotationX));
                 }
             });
-            canvas.addEventListener('touchstart', (e) => { if (!gameActive) return; initAudioSynth(); lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY; }, {passive: true});
+
+            canvas.addEventListener('touchstart', (e) => { if (!gameActive) return; initAudio(); lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY; }, {passive:true});
             canvas.addEventListener('touchmove', (e) => {
                 if (!gameActive) return;
                 let dX = e.touches[0].clientX - lastTouchX; let dY = e.touches[0].clientY - lastTouchY;
-                targetCamRotationY -= dX * 0.0035; targetCamRotationX -= dY * 0.0035;
-                targetCamRotationX = Math.max(-1.2, Math.min(1.2, targetCamRotationX));
+                targetCamRotationY -= dX * 0.004; targetCamRotationX -= dY * 0.004;
+                targetCamRotationX = Math.max(-1.1, Math.min(1.1, targetCamRotationX));
                 lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY;
-            }, {passive: true});
+            }, {passive:true});
 
             window.addEventListener('keydown', (e) => {
-                initAudioSynth();
-                if (e.key === 'Shift') { keys.shift = true; return; }
-                const key = e.key.toLowerCase(); if (keys.hasOwnProperty(key)) keys[key] = true;
-                if (e.code === 'Space' && gameActive) { e.preventDefault(); toggleFlashlight(); }
-                if (key === 'e' && gameActive) searchFloor();
+                initAudio(); if (e.key === 'Shift') { keys.shift = true; return; }
+                let k = e.key.toLowerCase(); if (keys.hasOwnProperty(k)) keys[k] = true;
+                if (e.code === 'Space' && gameActive) { e.preventDefault(); state.flashlightOn = !state.flashlightOn; }
             });
             window.addEventListener('keyup', (e) => { if (e.key === 'Shift') { keys.shift = false; return; } keys[e.key.toLowerCase()] = false; });
-            setupMobileButtons();
-        }
 
-        function setupMobileButtons() {
+            // Kontrol HUD Mobile terintegrasi
             const setTouch = (id, keyName) => {
-                const el = document.getElementById(id);
-                el.addEventListener('touchstart', (e) => { e.preventDefault(); initAudioSynth(); keys[keyName] = true; });
-                el.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+                document.getElementById(id).addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); keys[keyName] = true; });
+                document.getElementById(id).addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
             };
             setTouch('btn-up', 'w'); setTouch('btn-down', 's'); setTouch('btn-left', 'a'); setTouch('btn-right', 'd');
-            document.getElementById('btn-sprint').addEventListener('touchstart', (e) => {
-                e.preventDefault(); keys.shift = !keys.shift;
-                e.target.innerText = keys.shift ? "LARI: ON" : "LARI: OFF";
-                if(keys.shift) e.target.classList.add('active-sprint'); else e.target.classList.remove('active-sprint');
-            });
-            document.getElementById('btn-flash').addEventListener('touchstart', (e) => { e.preventDefault(); toggleFlashlight(); });
-            document.getElementById('btn-search').addEventListener('touchstart', (e) => { e.preventDefault(); searchFloor(); });
+            document.getElementById('btn-sprint').addEventListener('touchstart', (e) => { e.preventDefault(); keys.shift = !keys.shift; e.target.innerText = keys.shift ? "RUN: ON" : "RUN: OFF"; if(keys.shift) e.target.classList.add('active-sprint'); else e.target.classList.remove('active-sprint'); });
+            document.getElementById('btn-flash').addEventListener('touchstart', (e) => { e.preventDefault(); state.flashlightOn = !state.flashlightOn; });
         }
 
-        function toggleFlashlight() { 
-            if (state.battery <= 0 && !state.flashlightOn) return; 
-            state.flashlightOn = !state.flashlightOn; 
-            flashlight.intensity = state.flashlightOn ? 5.0 : 0; 
-            flashBeam.visible = state.flashlightOn;
-        }
-        
-        function searchFloor() { 
-            if(Math.random() < 0.45) { state.battery = Math.min(100, state.battery + 35); state.sanity -= 3; } 
-            else { state.sanity -= 10; } 
-            updateHUD(); 
-        }
-
-        function startGame() {
-            initAudioSynth();
+        function startGame(loadFromCheckpoint) {
+            initAudio();
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('ui-layer').classList.remove('hidden');
-            bgm.play().catch(() => {});
-            if(!isMobile) canvas.requestPointerLock();
+            if (!isMobile) canvas.requestPointerLock();
 
-            state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
-            camera.position.set(0, 1.6, -15); targetCamRotationX = 0; targetCamRotationY = 0; camera.rotation.set(0, 0, 0);
-            doorOpening = false; doorHinge.rotation.y = 0;
-
-            monsterState.zPos = 8; monsterState.xPos = 0; monsterState.state = 'stalking'; monsterState.active = true;
-            monsterMesh.position.set(0, -0.5, monsterState.zPos);
-            flashlight.intensity = 5.0; flashBeam.visible = true; gameActive = true;
+            state.sanity = 100; state.battery = 100; state.flashlightOn = true;
             
+            if (loadFromCheckpoint) {
+                const data = JSON.parse(localStorage.getItem('cold_cave_checkpoint'));
+                state.runesCollected = data.runes;
+                camera.position.set(data.pX, 0.1, data.pZ);
+                // Bersihkan rune yang sudah diambil sebelumnya di save data
+                runesArray.forEach(r => {
+                    if (data.pickedIndexes.includes(runesArray.indexOf(r))) {
+                        scene.remove(r.mesh); r.picked = true;
+                    }
+                });
+            } else {
+                state.runesCollected = 0;
+                runesArray.forEach(r => { r.picked = false; scene.add(r.mesh); });
+                // Reset posisi player ke start grid (2)
+                for (let r=0; r<MAP_GRID.length; r++) {
+                    for (let c=0; c<MAP_GRID[r].length; c++) {
+                        if(MAP_GRID[r][c] === 2) camera.position.set(c*GRID_SIZE, 0.1, r*GRID_SIZE);
+                    }
+                }
+            }
+
+            // Spawn Monster di titik aman terjauh dari player
+            monsterState.x = 12 * GRID_SIZE; monsterState.z = 1 * GRID_SIZE;
+            monsterMesh.position.set(monsterState.x, -0.5, monsterState.z);
+            monsterState.active = true;
+
+            gameActive = true;
             updateHUD(); animate();
         }
 
@@ -606,188 +423,190 @@
             if (!gameActive) return;
             requestAnimationFrame(animate);
 
-            camera.rotation.y += (targetCamRotationY - camera.rotation.y) * 0.18;
-            camera.rotation.x += (targetCamRotationX - camera.rotation.x) * 0.18;
+            // Interpolasi Rotasi Kamera Halus
+            camera.rotation.y += (targetCamRotationY - camera.rotation.y) * 0.2;
+            camera.rotation.x += (targetCamRotationX - camera.rotation.x) * 0.2;
 
-            let isMoving = keys.w || keys.s || keys.a || keys.d;
-            let currentSpeed = keys.shift && isMoving ? speedSprint : speedWalk;
+            // Hitung kalkulasi vektor pergerakan lokal
+            let moveX = 0, moveZ = 0;
+            if (keys.w) moveZ -= 1; if (keys.s) moveZ += 1;
+            if (keys.a) moveX -= 1; if (keys.d) moveX += 1;
 
-            if (!doorOpening) {
-                if (keys.shift && isMoving) state.sanity -= 0.02; 
-                if (keys.w) camera.translateZ(-currentSpeed); if (keys.s) camera.translateZ(currentSpeed);
-                if (keys.a) camera.translateX(-currentSpeed); if (keys.d) camera.translateX(currentSpeed);
-            }
+            let isMoving = moveX !== 0 || moveZ !== 0;
+            if (isMoving) {
+                let currentSpeed = keys.shift ? 0.08 : 0.045;
+                let dir = new THREE.Vector3(moveX, 0, moveZ).normalize().applyQuaternion(camera.quaternion);
+                
+                let nextX = camera.position.x + dir.x * currentSpeed;
+                let nextZ = camera.position.z + dir.z * currentSpeed;
 
-            // 🫨 CINEMATIC CAMERA BOBBING & SENSE OF WEIGHT
-            if (isMoving && !doorOpening) {
-                bobTimer += keys.shift ? 0.28 : 0.15;
-                camera.position.y = 1.6 + Math.sin(bobTimer) * (keys.shift ? 0.08 : 0.035);
-                camera.rotation.z = Math.cos(bobTimer) * (keys.shift ? 0.03 : 0.01);
+                // Cek benturan sebelum koordinat diterapkan (Collision Fix)
+                if (!checkWallCollision(nextX, camera.position.z)) camera.position.x = nextX;
+                if (!checkWallCollision(camera.position.x, nextZ)) camera.position.z = nextZ;
+
+                // Mainkan synth suara langkah kaki
+                playFootstepSynth(keys.shift);
+
+                // Kamera Bergoyang Dinamis
+                bobTimer += keys.shift ? 0.28 : 0.16;
+                camera.position.y = 0.1 + Math.sin(bobTimer) * (keys.shift ? 0.07 : 0.035);
             } else {
-                bobTimer += 0.02; camera.position.y = 1.6 + Math.sin(bobTimer) * 0.01; camera.rotation.z *= 0.9;
+                camera.position.y += (0.1 - camera.position.y) * 0.1;
             }
 
-            camera.position.x = Math.max(-1.4, Math.min(1.4, camera.position.x));
-            camera.position.z = Math.max(doorZPosition + 1.2, Math.min(-5, camera.position.z));
-            state.distance = Math.floor(-15 - camera.position.z);
-
-            // Senter & Batang Cahaya Mengikuti Kamera Secara Halus
+            // Senter mengunci arah pandang kamera
             flashlight.position.copy(camera.position);
             flashBeam.position.copy(camera.position);
-            
-            let targetDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            flashlight.target.position.copy(camera.position).add(targetDir.multiplyScalar(5));
+            let camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            flashlight.target.position.copy(camera.position).add(camDir.clone().multiplyScalar(5));
             flashBeam.lookAt(flashlight.target.position);
 
-            // Animasi Partikel Debu Jatuh Lembap
-            if (dustParticles) {
-                const arr = dustParticles.geometry.attributes.position.array;
-                for (let i = 1; i < arr.length; i += 3) {
-                    arr[i] -= 0.003; if (arr[i] < -0.6) arr[i] = 4.5;
+            // Kontrol Cahaya Senter
+            if (state.flashlightOn && state.battery > 0) {
+                state.battery -= 0.025; flashlight.intensity = 6.0; flashBeam.visible = true;
+                // Kedipan senter sekarat
+                if(state.battery < 20 && Math.random() < 0.15) { flashlight.intensity = 0.2; flashBeam.visible = false; }
+            } else {
+                flashlight.intensity = 0; flashBeam.visible = false;
+            }
+            if (state.battery <= 0) state.flashlightOn = false;
+
+            // 👾 LOGIKA MONSTER INTELLIGENCE & EFECT JITTERY PROSEDURAL
+            let distToMonster = camera.position.distanceTo(monsterMesh.position);
+            if (monsterState.active) {
+                monsterState.phase += 0.05;
+                
+                // Pergerakan monster langsung menembus dinding memotong jalan kearah player (Ghost mechanics)
+                let mDir = new THREE.Vector3().subVectors(camera.position, monsterMesh.position).normalize();
+                let mSpeed = (distToMonster < 8) ? 0.038 : 0.02; // Makin dekat makin cepat mengejar!
+                monsterState.x += mDir.x * mSpeed; monsterState.z += mDir.z * mSpeed;
+                monsterMesh.position.set(monsterState.x, -0.5, monsterState.z);
+                monsterMesh.lookAt(camera.position.x, -0.5, camera.position.z);
+
+                // 🫨 UPGRADE: Efek Jittery Ekstrim (Kepala & 6 Lengan Bergetar Acak Khusus Horor)
+                monsterArms.forEach((arm, idx) => {
+                    arm.rotation.z = Math.sin(monsterState.phase * 5 + idx) * 0.3 + (Math.random() - 0.5) * 0.15;
+                    arm.rotation.x = Math.cos(monsterState.phase * 3 + idx) * 0.2 + (Math.random() - 0.5) * 0.15;
+                });
+                monsterMesh.children[1].position.x = (Math.random() - 0.5) * 0.05; // Efek kepala bergetar konstan
+
+                // 🔊 AUDIO UPDATE: Sinkronisasi Jantung & Geraman Monster Berdasarkan Jarak
+                let heartbeatTempo = (distToMonster < 6) ? 0.22 : (distToMonster < 14) ? 0.45 : 0.8;
+                playHeartbeatSynth(heartbeatTempo);
+
+                if (monsterGrowlGain) {
+                    let vol = Math.max(0, 1.0 - (distToMonster / 20)); // Volume membesar jika mendekat
+                    monsterGrowlGain.gain.setValueAtTime(vol * 0.6, audioCtx.currentTime);
+                    monsterGrowlOsc.frequency.setValueAtTime(25 + (vol * 35) + Math.sin(Date.now() * 0.1) * 5, audioCtx.currentTime);
                 }
-                dustParticles.geometry.attributes.position.needsUpdate = true;
-            }
 
-            // Interaksi Trigger Pintu Keluar Kuno
-            let distToDoor = camera.position.distanceTo(new THREE.Vector3(0, 1.6, doorZPosition));
-            if (distToDoor < 2.5 && !doorOpening) {
-                doorOpening = true; monsterState.active = false;
-                document.getElementById('warning-indicator').innerText = "MENORONG PINTU BATU KUNO...";
-                document.getElementById('warning-indicator').style.visibility = 'visible';
-            }
-
-            if (doorOpening) {
-                if (doorHinge.rotation.y > -Math.PI / 1.8) {
-                    doorHinge.rotation.y -= 0.012; camera.position.z -= 0.008;
+                // Efek Kamera Gemetar & Vignette Darah
+                if (distToMonster < 10) {
+                    let shake = (10 - distToMonster) * 0.006;
+                    camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake;
+                    document.getElementById('warning-indicator').style.visibility = 'visible';
+                    document.getElementById('warning-indicator').innerText = "ENTITAS MENDEKAT! LARI!";
                 } else {
+                    document.getElementById('warning-indicator').style.visibility = 'hidden';
+                }
+
+                let redPulse = Math.abs(Math.sin(Date.now() * 0.004)) * (distToMonster < 8 ? 0.9 : 0.3);
+                document.getElementById('vignette').style.boxShadow = `inset 0 0 180px rgba(${Math.floor(redPulse * 200)}, 0, 0, 0.95)`;
+
+                if (distToMonster < 1.3) { executeJumpscare(); return; }
+            }
+
+            // MEKANIK DETEKSI PENGAMBILAN RUNE (CHECKPOINT SYSTEM)
+            runesArray.forEach((rune, idx) => {
+                if (!rune.picked) {
+                    rune.mesh.rotation.y += 0.04;
+                    rune.mesh.position.y = -0.2 + Math.sin(Date.now() * 0.003 + idx) * 0.1;
+
+                    if (camera.position.distanceTo(rune.mesh.position) < 1.4) {
+                        rune.picked = true; scene.remove(rune.mesh);
+                        state.runesCollected++;
+                        updateHUD();
+
+                        // TRIGGER AUTO-SAVE CHECKPOINT SETIAP AMBIL RUNE VIA LOCALSTORAGE
+                        let pickedIndexes = [];
+                        runesArray.forEach((r, i) => { if(r.picked) pickedIndexes.push(i); });
+                        
+                        localStorage.setItem('cold_cave_checkpoint', JSON.stringify({
+                            runes: state.runesCollected,
+                            pX: camera.position.x,
+                            pZ: camera.position.z,
+                            pickedIndexes: pickedIndexes
+                        }));
+                        
+                        document.getElementById('warning-indicator').innerText = "PROGRESS TERSIMPAN (CHECKPOINT)";
+                        document.getElementById('warning-indicator').style.visibility = 'visible';
+                    }
+                }
+            });
+
+            // LOGIKA ESCAPE GATE LULUS GAME
+            if (exitGateMesh) {
+                let distToExit = camera.position.distanceTo(exitGateMesh.position);
+                if (state.runesCollected >= 3 && exitGateMesh.position.y < 4.0) {
+                    exitGateMesh.position.y += 0.02; // Gerbang terangkat membuka otomatis
+                    document.getElementById('objective-txt').innerText = "GERBANG TERBUKA! KELUAR!";
+                }
+                if (state.runesCollected >= 3 && distToExit < 1.5) {
                     gameActive = false;
-                    endGame("BERHASIL LOLOS", "Hebat Jae! Kamu berhasil melarikan diri dari labirin gua es yang membeku!");
+                    localStorage.removeItem('cold_cave_checkpoint'); // Hapus save data karena tamat
+                    endGame("BERHASIL ESCAPE", "Luar biasa Jae! Kamu berhasil memecahkan labirin maut dan lolos dari cengkeraman entitas!");
                     return;
                 }
             }
 
-            // AI INTELLIGENCE ENTITAS HUMANOID
-            let heartbeatTempo = 0.8; // Kecepatan normal deg-deg
-            if (monsterState.active) {
-                let distToPlayer = camera.position.distanceTo(monsterMesh.position);
-                let camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
-                let pToM = new THREE.Vector3().subVectors(monsterMesh.position, camera.position).normalize();
-                let isLooking = camDir.dot(pToM) > 0.72;
-
-                if (state.flashlightOn && isLooking && distToPlayer < 30) {
-                    monsterState.state = 'chasing'; monsterState.speed = 0.092;
-                    heartbeatTempo = 0.22; // Jantung berdegup super kencang!
-                } else if (!state.flashlightOn) {
-                    monsterState.state = 'searching'; monsterState.speed = 0.022;
-                    heartbeatTempo = 0.5;
-                } else {
-                    monsterState.state = 'stalking'; monsterState.speed = keys.shift ? 0.075 : 0.045;
-                    if(distToPlayer < 14) heartbeatTempo = 0.38;
-                }
-
-                // Mainkan detak jantung sintetis berdasarkan tempo kepanikan
-                playHeartbeatNode(heartbeatTempo);
-
-                monsterState.wobble += 0.07;
-                let swing = Math.sin(monsterState.wobble * (monsterState.state === 'chasing' ? 4.5 : 2.5));
-                
-                if (monsterState.state === 'chasing') {
-                    monsterArms.left.rotation.x = -Math.PI / 2.0 + swing * 0.2;
-                    monsterArms.right.rotation.x = -Math.PI / 2.0 - swing * 0.2;
-                    monsterLegs.left.rotation.x = swing * 0.65; monsterLegs.right.rotation.x = -swing * 0.65;
-                    
-                    document.getElementById('warning-indicator').innerText = "DIA MELIHAT CAHAYA! BERLARI CEPAT!";
-                    document.getElementById('warning-indicator').style.visibility = 'visible';
-
-                    // 🫨 SCREEN SHAKE INTENS: Efek guncangan kamera sinematik saat dikejar
-                    let shake = (20 - Math.min(20, distToPlayer)) * 0.0045;
-                    camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake;
-                } else {
-                    monsterArms.left.rotation.x = swing * 0.3; monsterArms.right.rotation.x = -swing * 0.3;
-                    monsterLegs.left.rotation.x = -swing * 0.3; monsterLegs.right.rotation.x = swing * 0.3;
-
-                    if (monsterState.state === 'searching') {
-                        document.getElementById('warning-indicator').innerText = "Cahaya hilang... Dia mencari membabi buta";
-                        document.getElementById('warning-indicator').style.visibility = 'visible';
-                    } else if (distToPlayer < 18) {
-                        document.getElementById('warning-indicator').innerText = "Hawa dingin mendekat dari belakang...";
-                        document.getElementById('warning-indicator').style.visibility = 'visible';
-                    } else {
-                        document.getElementById('warning-indicator').style.visibility = 'hidden';
-                    }
-                }
-
-                if (monsterState.state === 'chasing') monsterState.targetX = camera.position.x;
-                else if (monsterState.state === 'searching') monsterState.targetX = Math.sin(monsterState.wobble * 0.7) * 1.4;
-                else monsterState.targetX = Math.sin(monsterState.wobble * 0.3) * 0.7;
-
-                monsterState.xPos += (monsterState.targetX - monsterState.xPos) * 0.05; monsterState.zPos -= monsterState.speed;
-                monsterMesh.position.set(monsterState.xPos, -0.5, monsterState.zPos);
-
-                if (distToPlayer < 2.0) { executeMonsterJumpscare(); return; }
-
-                // Dinamika Vignette Merah Berdenyut
-                let panic = (monsterState.state === 'chasing') ? 0.98 : (1 - (state.sanity / 100)) * 0.85;
-                let redPulse = Math.abs(Math.sin(Date.now() * 0.005)) * panic;
-                document.getElementById('vignette').style.boxShadow = `inset 0 0 180px rgba(${Math.floor(redPulse * 185)}, 0, 0, ${0.97 + (redPulse*0.03)})`;
-            }
-
-            // Konsumsi Baterai & Efek Kedipan Senter Sekarat
-            if (state.flashlightOn) {
-                state.battery -= 0.035; state.sanity -= 0.004;
-                if (state.battery < 25 && Math.random() < 0.12) {
-                    let flicker = Math.random() > 0.4 ? 5.0 : 0.2;
-                    flashlight.intensity = flicker;
-                    flashBeam.visible = flicker > 1.0;
-                }
-            } else { state.sanity -= 0.09; }
-
-            if (state.battery <= 0 && state.flashlightOn) { state.battery = 0; toggleFlashlight(); }
-
-            updateHUD(); checkMentalCollapse(); renderer.render(scene, camera);
+            renderer.render(scene, camera);
         }
 
         function updateHUD() {
-            state.sanity = Math.max(0, state.sanity); state.battery = Math.max(0, state.battery);
             document.getElementById('sanity-fill').style.width = state.sanity + '%';
             document.getElementById('battery-fill').style.width = state.battery + '%';
-            document.getElementById('distance-txt').innerText = `PINTU KELUAR: ${Math.max(0, Math.floor(Math.abs(camera.position.z - doorZPosition)))}M`;
+            document.getElementById('objective-txt').innerText = `RUNE TERKUMPUL: ${state.runesCollected} / 3`;
         }
 
-        function checkMentalCollapse() { 
-            if (state.sanity <= 0) endGame("HILANG KESADARAN", "Kegelapan melumpuhkan pikiranmu sebelum kamu berhasil mencapai gerbang."); 
-        }
-
-        function executeMonsterJumpscare() {
-            gameActive = false; bgm.pause(); if(!isMobile) try{document.exitPointerLock();}catch(e){}
-            camera.lookAt(new THREE.Vector3(monsterMesh.position.x, 2.0, monsterMesh.position.z));
-            renderer.render(scene, camera);
-
-            const js = document.getElementById('jumpscare'); js.style.visibility = 'visible';
-            setTimeout(() => { js.style.visibility = 'hidden'; endGame("TERPERANGKAP", "Cengkeraman dingin dari kegelapan mengakhiri perjalananmu."); }, 1300);
+        function executeJumpscare() {
+            gameActive = false; if(monsterGrowlGain) monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            if(!isMobile) try{document.exitPointerLock();}catch(e){}
+            
+            document.getElementById('jumpscare').style.visibility = 'visible';
+            setTimeout(() => {
+                document.getElementById('jumpscare').style.visibility = 'hidden';
+                endGame("DIELIMINASI", "Kamu tersudut di jalan buntu. Sisa energi memorimu diserap oleh anomali gua.");
+            }, 1200);
         }
 
         function endGame(title, reason) {
             gameActive = false; monsterState.active = false;
-            document.getElementById('ui-layer').classList.add('hidden'); document.getElementById('mobile-hud').style.display = 'none';
-            document.getElementById('end-title').innerText = title; document.getElementById('end-reason').innerText = reason;
+            document.getElementById('ui-layer').classList.add('hidden');
+            document.getElementById('mobile-hud').style.display = 'none';
+            document.getElementById('end-title').innerText = title;
+            document.getElementById('end-reason').innerText = reason;
             document.getElementById('gameover-screen').classList.remove('hidden');
         }
 
-        function restartGame() { 
-            document.getElementById('gameover-screen').classList.add('hidden'); 
-            if (isMobile) document.getElementById('mobile-hud').style.display = 'flex'; 
-            startGame(); 
+        function goToMenu() {
+            document.getElementById('gameover-screen').classList.add('hidden');
+            document.getElementById('menu-screen').classList.remove('hidden');
+            checkSaveData();
         }
 
-        window.addEventListener('resize', () => { 
-            if(camera && renderer) { 
-                camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); 
-                renderer.setSize(window.innerWidth, window.innerHeight); 
-            } 
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
         });
 
-        checkDevice(); init3D();
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+            isMobile = true; document.getElementById('mobile-hud').style.display = 'flex';
+        }
+
+        checkSaveData();
+        init3D();
     </script>
 </body>
 </html>
