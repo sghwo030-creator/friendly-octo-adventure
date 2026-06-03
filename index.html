@@ -2,14 +2,16 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Cold Cave: Stalked From Behind</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Cold Cave: Smart AI & Mobile Support</title>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
         }
 
         body, html {
@@ -25,7 +27,6 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 1;
-            cursor: crosshair;
         }
 
         #vignette {
@@ -34,7 +35,7 @@
             box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.98);
             pointer-events: none;
             z-index: 5;
-            transition: box-shadow 0.2s ease;
+            transition: box-shadow 0.3s ease;
         }
 
         .ui-overlay {
@@ -45,36 +46,35 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 20px;
+            padding: 15px;
         }
 
         .hud {
             display: flex;
             justify-content: space-between;
             color: #fff;
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             background: rgba(5, 0, 0, 0.85);
-            padding: 15px;
+            padding: 12px;
             border: 1px solid #551a1a;
             pointer-events: auto;
             width: 100%;
             max-width: 600px;
             margin: 0 auto;
-            box-shadow: 0 0 20px rgba(139,0,0,0.3);
         }
 
         .bar-bg {
             background: #221111;
-            width: 100px; height: 8px;
+            width: 80px; height: 8px;
             display: inline-block;
-            margin-left: 10px;
+            margin-left: 5px;
             vertical-align: middle;
             border: 1px solid #443333;
         }
 
         .bar-fill { height: 100%; width: 100%; transition: width 0.2s; }
-        #sanity-fill { background-color: #0066cc; box-shadow: 0 0 8px #0066cc; }
-        #battery-fill { background-color: #cc9900; box-shadow: 0 0 8px #cc9900; }
+        #sanity-fill { background-color: #0066cc; }
+        #battery-fill { background-color: #cc9900; }
 
         .screen {
             position: absolute;
@@ -93,71 +93,106 @@
         .hidden { display: none !important; }
 
         h1 {
-            font-size: 3rem;
+            font-size: 2.5rem;
             color: #8b0000;
             text-shadow: 0 0 12px rgba(139, 0, 0, 0.9);
             margin-bottom: 20px;
-            letter-spacing: 6px;
-            font-weight: 900;
+            letter-spacing: 4px;
         }
 
-        p { max-width: 550px; line-height: 1.7; margin-bottom: 30px; color: #aaa; }
+        p { max-width: 500px; line-height: 1.6; margin-bottom: 30px; color: #aaa; font-size: 0.9rem; }
 
-        button {
+        button.menu-btn {
             background: rgba(20, 0, 0, 0.2);
             color: #8b0000;
             border: 2px solid #8b0000;
-            padding: 15px 45px;
-            font-size: 1.2rem;
+            padding: 12px 35px;
+            font-size: 1.1rem;
             font-family: inherit;
             cursor: pointer;
-            text-transform: uppercase;
             transition: 0.3s all;
         }
-
-        button:hover {
-            background: #8b0000;
-            color: #fff;
-            box-shadow: 0 0 20px #8b0000;
-        }
-
-        .controls-hint {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 12px;
-            color: #999;
-            font-size: 0.85rem;
-            text-align: center;
-            margin-top: auto;
-            border-top: 1px solid #551a1a;
-        }
+        button.menu-btn:hover { background: #8b0000; color: #fff; }
 
         #warning-indicator {
             color: #ff0000;
             font-weight: bold;
-            text-shadow: 0 0 8px #ff0000;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             visibility: hidden;
-            animation: pulse 0.4s infinite alternate;
             text-align: center;
+            margin-top: 10px;
         }
 
-        @keyframes pulse {
-            0% { opacity: 0.3; }
-            100% { opacity: 1; }
+        /* MOBILE CONTROLS UI */
+        #mobile-hud {
+            position: absolute;
+            bottom: 15px; left: 0;
+            width: 100%;
+            display: none; /* Muncul lewat deteksi JS */
+            justify-content: space-between;
+            padding: 0 20px;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .touch-pad-container {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(3, 50px);
+            gap: 5px;
+            pointer-events: auto;
+        }
+
+        .m-btn {
+            background: rgba(40, 0, 0, 0.5);
+            border: 1px solid #8b0000;
+            color: #fff;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .m-btn:active { background: #8b0000; }
+
+        .action-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .act-btn {
+            width: 75px; height: 50px;
+            background: rgba(20, 20, 20, 0.7);
+            border: 1px solid #666;
+            color: #ccc;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            font-family: inherit;
+        }
+        .act-btn:active { background: #444; color: #fff; }
+        .act-btn.active-sprint { background: #8b0000; border-color: #ff0000; color: #fff; }
+
+        .pc-hint {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px;
+            color: #777;
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: auto;
         }
 
         #jumpscare {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: #000;
-            z-index: 999;
+            background-color: #000; z-index: 999;
             display: flex; justify-content: center; align-items: center;
             visibility: hidden;
         }
-        #jumpscare-text {
-            color: #ff0000; font-size: 8rem; font-weight: bold;
-            font-family: 'Impact', sans-serif; letter-spacing: 10px;
-        }
+        #jumpscare-text { color: #ff0000; font-size: 5rem; font-weight: bold; font-family: 'Impact', sans-serif; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -170,8 +205,8 @@
     <!-- MENU UTAMA -->
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>Sesuatu merayap di belakangmu... Tahan SHIFT untuk lari, gerakkan MOUSE untuk menengok ke belakang. Jangan senter matanya kalau kamu tidak mau dia mengejarmu!</p>
-        <button onclick="startGame()">Masuk & Kunci Mouse</button>
+        <p>Gunakan MOUSE/USAP LAYAR untuk menengok. Matikan senter jika mendengar sesuatu mendekat, monster akan kebingungan mencari jejakmu!</p>
+        <button class="menu-btn" onclick="startGame()">MULAI EKSPERIMEN</button>
     </div>
 
     <!-- UI HUD GAMEPLAY -->
@@ -181,9 +216,21 @@
             <div>Senter <div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div></div>
             <div id="distance-txt">Jarak: 0m</div>
         </div>
-        <div id="warning-indicator">ADA SUARA LANGKAH DI BELAKANGMU!</div>
-        <div class="controls-hint">
-            [Mouse] Liat Sekeliling | [W/S/A/D] Gerak | [SHIFT] Lari Kencang | [SPACE] Senter | [E] Cari Baterai
+        <div id="warning-indicator">MENDENGAR SESUATU DI BELAKANG...</div>
+        <div class="pc-hint" id="device-hint">[Mouse] Kamera | [W/S/A/D] Jalan | [SHIFT] Lari | [SPACE] Senter</div>
+    </div>
+
+    <!-- MOBILE CONTROLS -->
+    <div id="mobile-hud">
+        <div class="touch-pad-container">
+            <div></div><div class="m-btn" id="btn-up">▲</div><div></div>
+            <div class="m-btn" id="btn-left">◀</div><div></div><div class="m-btn" id="btn-right">▶</div>
+            <div></div><div class="m-btn" id="btn-down">▼</div><div></div>
+        </div>
+        <div class="action-container">
+            <button class="act-btn" id="btn-sprint">LARI OFF</button>
+            <button class="act-btn" id="btn-flash">SENTER</button>
+            <button class="act-btn" id="btn-search">CARI BAT</button>
         </div>
     </div>
 
@@ -191,12 +238,11 @@
     <div id="gameover-screen" class="screen hidden">
         <h1 id="end-title">MATI DICERIK</h1>
         <p id="end-reason"></p>
-        <button onclick="restartGame()">Ulangi Takdir</button>
+        <button class="menu-btn" onclick="restartGame()">ULANGI</button>
     </div>
 
-    <!-- JUMPSCARE FLASH -->
     <div id="jumpscare">
-        <div id="jumpscare-text">DIBELAKANGMU!</div>
+        <div id="jumpscare-text">TERTANGKAP!</div>
     </div>
 
     <script>
@@ -204,22 +250,42 @@
         const canvas = document.getElementById('game-canvas');
         let scene, camera, renderer, flashlight, ambientLight;
         let gameActive = false;
+        let isMobile = false;
         
         let monsterMesh;
-        // Sistem AI Baru: Mengintai dari belakang (Z Posisi positif terhadap player)
-        let monsterState = { zPos: 0, active: false, speed: 0.04, bobbingTimer: 0 };
+        // Penyesuaian AI Realistis
+        let monsterState = { 
+            xPos: 0, zPos: 0, 
+            active: false, 
+            speed: 0.035, 
+            state: 'stalking', // 'stalking', 'chasing', 'searching'
+            targetX: 0,
+            searchTimer: 0,
+            wobble: 0
+        };
 
         let state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
         const keys = { w: false, a: false, s: false, d: false, shift: false };
 
-        const caveLength = 220;
-        const playerNormalSpeed = 0.06;
-        const playerSprintSpeed = 0.12; // Kecepatan lari pakai Shift
+        const caveLength = 250;
+        const speedWalk = 0.055;
+        const speedSprint = 0.11; // Lari kamu lebih cepat dari kejaran monster (0.085)
         const mouseSensitivity = 0.0022;
+
+        // Mobile touch camera state
+        let lastTouchX = 0, lastTouchY = 0;
+
+        function checkDevice() {
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                isMobile = true;
+                document.getElementById('mobile-hud').style.display = 'flex';
+                document.getElementById('device-hint').style.display = 'none';
+            }
+        }
 
         function init3D() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x020101, 0.18); 
+            scene.fog = new THREE.FogExp2(0x020101, 0.16); 
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.rotation.order = 'YXZ'; 
@@ -227,163 +293,187 @@
             renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
 
-            // Membuat lorong gua panjang
-            const caveGeo = new THREE.BoxGeometry(4.8, 4, caveLength, 8, 8, 120);
+            // Lorong Gua Purba
+            const caveGeo = new THREE.BoxGeometry(5.2, 4.2, caveLength, 8, 8, 120);
             const pos = caveGeo.attributes.position;
             for (let i = 0; i < pos.count; i++) {
                 let x = pos.getX(i); let y = pos.getY(i); let z = pos.getZ(i);
-                let noise = Math.sin(z * 0.8) * 0.25 + Math.cos(x * 2) * 0.15 + Math.sin(y * 1.2) * 0.15;
-                if (y < -1.8 && Math.abs(x) < 1.2) {
-                    pos.setY(i, y + Math.abs(noise) * 0.1); 
-                } else {
-                    pos.setX(i, x + noise * (x > 0 ? 1 : -1) * 0.4);
-                    pos.setY(i, y + noise * (y > 0 ? 1 : -1) * 0.4);
+                let noise = Math.sin(z * 0.7) * 0.3 + Math.cos(x * 1.8) * 0.15;
+                if (!(y < -1.9 && Math.abs(x) < 1.3)) {
+                    pos.setX(i, x + noise * (x > 0 ? 1 : -1) * 0.35);
+                    pos.setY(i, y + noise * (y > 0 ? 1 : -1) * 0.35);
                 }
             }
             caveGeo.computeVertexNormals();
 
             const canvasTex = document.createElement('canvas');
-            canvasTex.width = 256; canvasTex.height = 256;
+            canvasTex.width = 128; canvasTex.height = 128;
             const ctx = canvasTex.getContext('2d');
-            ctx.fillStyle = '#161311'; ctx.fillRect(0, 0, 256, 256);
-            for(let i=0; i<8000; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#0d0b0a' : '#221d1a';
-                ctx.fillRect(Math.random()*256, Math.random()*256, Math.random()*2, Math.random()*2);
+            ctx.fillStyle = '#181412'; ctx.fillRect(0, 0, 128, 128);
+            for(let i=0; i<3000; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#0b0908' : '#26201c';
+                ctx.fillRect(Math.random()*128, Math.random()*128, 2, 2);
             }
             const rockTex = new THREE.CanvasTexture(canvasTex);
             rockTex.wrapS = THREE.RepeatWrapping; rockTex.wrapT = THREE.RepeatWrapping;
-            rockTex.repeat.set(3, 35);
+            rockTex.repeat.set(4, 40);
 
-            const caveMat = new THREE.MeshStandardMaterial({ map: rockTex, roughness: 0.95, side: THREE.BackSide });
-            const caveMesh = new THREE.Mesh(caveGeo, caveMat);
+            const caveMesh = new THREE.Mesh(caveGeo, new THREE.MeshStandardMaterial({ map: rockTex, roughness: 0.9, side: THREE.BackSide }));
             caveMesh.position.set(0, 1.6, -caveLength / 2);
             scene.add(caveMesh);
 
-            // Membangun Monster Duri (Sesuai gambar Gemini_Generated_Image_sged93sged93sged.png)
             buildProceduralMonster();
 
-            // Senter
-            flashlight = new THREE.SpotLight(0xfff3d1, 3.5, 24, Math.PI / 4.5, 0.5, 1);
+            // Flashlight
+            flashlight = new THREE.SpotLight(0xfff3d1, 3.8, 25, Math.PI / 4.2, 0.6, 1);
             camera.add(flashlight);
             const target = new THREE.Object3D(); target.position.set(0, 0, -1);
             camera.add(target); flashlight.target = target;
 
-            ambientLight = new THREE.AmbientLight(0x040202);
+            ambientLight = new THREE.AmbientLight(0x030202);
             scene.add(ambientLight);
             scene.add(camera);
 
-            setupPointerLock();
+            setupControls();
         }
 
         function buildProceduralMonster() {
             monsterMesh = new THREE.Group();
-            const skinMat = new THREE.MeshStandardMaterial({ color: 0x4a4743, roughness: 0.9 });
-            const spikeMat = new THREE.MeshStandardMaterial({ color: 0x2d2b28, roughness: 0.95 });
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0x3d3a37, roughness: 0.95 });
+            const spikeMat = new THREE.MeshStandardMaterial({ color: 0x1f1d1b, roughness: 0.98 });
             const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
 
-            const bodyGeo = new THREE.SphereGeometry(0.45, 8, 8);
-            bodyGeo.scale(1, 0.7, 1.4); 
-            const body = new THREE.Mesh(bodyGeo, skinMat);
-            body.position.y = 0.3;
+            const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 8, 8), skinMat);
+            body.scale.set(1, 0.65, 1.3); body.position.y = 0.3;
             monsterMesh.add(body);
 
-            const headGeo = new THREE.SphereGeometry(0.3, 8, 8);
-            headGeo.scale(1, 0.8, 1.1);
-            const head = new THREE.Mesh(headGeo, skinMat);
-            head.position.set(0, 0.35, -0.7);
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 8), skinMat);
+            head.scale.set(1, 0.75, 1.1); head.position.set(0, 0.32, -0.65);
             monsterMesh.add(head);
 
-            // Mata Putih Pucat Menyala Tanpa Pupil
-            const eyeLeft = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), eyeMat);
-            eyeLeft.position.set(-0.13, 0.42, -0.92);
-            const eyeRight = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), eyeMat);
-            eyeRight.position.set(0.13, 0.42, -0.92);
-            monsterMesh.add(eyeLeft, eyeRight);
+            const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), eyeMat); eyeL.position.set(-0.12, 0.38, -0.85);
+            const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), eyeMat); eyeR.position.set(0.12, 0.38, -0.85);
+            monsterMesh.add(eyeL, eyeR);
 
-            // Banyak Duri Tajam di Punggung Belakang
-            for (let i = 0; i < 11; i++) {
-                const spikeGeo = new THREE.ConeGeometry(0.05, 0.25, 4);
-                const spike = new THREE.Mesh(spikeGeo, spikeMat);
-                spike.position.set((Math.random()*0.04 - 0.02), 0.65, -0.5 + (i * 0.12));
-                spike.rotation.x = Math.PI / 5; 
+            for (let i = 0; i < 10; i++) {
+                const spike = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.24, 4), spikeMat);
+                spike.position.set((Math.random()*0.04 - 0.02), 0.6, -0.4 + (i * 0.11));
+                spike.rotation.x = Math.PI / 5;
                 monsterMesh.add(spike);
             }
-
-            // Kaki Merangkak Kekar
-            const legGeo = new THREE.BoxGeometry(0.12, 0.5, 0.15);
-            const frontLeft = new THREE.Mesh(legGeo, skinMat); frontLeft.position.set(-0.45, 0.15, -0.4); frontLeft.rotation.z = 0.3;
-            const frontRight = new THREE.Mesh(legGeo, skinMat); frontRight.position.set(0.45, 0.15, -0.4); frontRight.rotation.z = -0.3;
-            const backLeft = new THREE.Mesh(legGeo, skinMat); backLeft.position.set(-0.4, 0.15, 0.4); backLeft.rotation.z = 0.2;
-            const backRight = new THREE.Mesh(legGeo, skinMat); backRight.position.set(0.4, 0.15, 0.4); backRight.rotation.z = -0.2;
-            monsterMesh.add(frontLeft, frontRight, backLeft, backRight);
-
             scene.add(monsterMesh);
         }
 
-        function setupPointerLock() {
+        function setupControls() {
+            // PC Pointer Lock
             canvas.addEventListener('click', () => {
-                if (gameActive && document.pointerLockElement !== canvas) {
+                if (gameActive && !isMobile && document.pointerLockElement !== canvas) {
                     canvas.requestPointerLock();
                 }
             });
 
+            // PC Mouse Look
             document.addEventListener('mousemove', (e) => {
                 if (gameActive && document.pointerLockElement === canvas) {
-                    camera.rotation.y -= e.movementX * mouseSensitivity; 
-                    camera.rotation.x -= e.movementY * mouseSensitivity; 
+                    camera.rotation.y -= e.movementX * mouseSensitivity;
+                    camera.rotation.x -= e.movementY * mouseSensitivity;
                     camera.rotation.x = Math.max(-1.3, Math.min(1.3, camera.rotation.x));
                 }
             });
+
+            // MOBILE TOUCH LOOK SYSTEM (Mengusap area layar manapun)
+            canvas.addEventListener('touchstart', (e) => {
+                if (!gameActive) return;
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+            }, {passive: true});
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (!gameActive) return;
+                let deltaX = e.touches[0].clientX - lastTouchX;
+                let deltaY = e.touches[0].clientY - lastTouchY;
+                
+                camera.rotation.y -= deltaX * 0.004;
+                camera.rotation.x -= deltaY * 0.004;
+                camera.rotation.x = Math.max(-1.2, Math.min(1.2, camera.rotation.x));
+
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+            }, {passive: true});
+
+            // PC Keyboard Listeners
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Shift') { keys.shift = true; return; }
+                const key = e.key.toLowerCase();
+                if (keys.hasOwnProperty(key)) keys[key] = true;
+                if (e.code === 'Space' && gameActive) { e.preventDefault(); toggleFlashlight(); }
+                if (key === 'e' && gameActive) searchFloor();
+            });
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'Shift') { keys.shift = false; return; }
+                keys[e.key.toLowerCase()] = false;
+            });
+
+            // MOBILE BOTTON LISTENERS
+            setupMobileButtons();
         }
 
-        // Input Keyboard Handler (Mendukung tombol Shift)
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Shift') { keys.shift = true; return; }
-            const key = e.key.toLowerCase();
-            if (keys.hasOwnProperty(key)) keys[key] = true;
-            if (e.code === 'Space' && gameActive) { e.preventDefault(); toggleFlashlight(); }
-            if (key === 'e' && gameActive) searchFloor();
-        });
-        
-        window.addEventListener('keyup', (e) => {
-            if (e.key === 'Shift') { keys.shift = false; return; }
-            keys[e.key.toLowerCase()] = false;
-        });
+        function setupMobileButtons() {
+            const setTouch = (id, keyName) => {
+                const el = document.getElementById(id);
+                el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
+                el.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+            };
+            setTouch('btn-up', 'w'); setTouch('btn-down', 's');
+            setTouch('btn-left', 'a'); setTouch('btn-right', 'd');
+
+            // Sprint Mobile Toggle
+            document.getElementById('btn-sprint').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys.shift = !keys.shift;
+                e.target.innerText = keys.shift ? "LARI ON" : "LARI OFF";
+                if(keys.shift) e.target.classList.add('active-sprint');
+                else e.target.classList.remove('active-sprint');
+            });
+
+            document.getElementById('btn-flash').addEventListener('touchstart', (e) => { e.preventDefault(); toggleFlashlight(); });
+            document.getElementById('btn-search').addEventListener('touchstart', (e) => { e.preventDefault(); searchFloor(); });
+        }
 
         function toggleFlashlight() {
             if (state.battery <= 0 && !state.flashlightOn) return;
             state.flashlightOn = !state.flashlightOn;
-            flashlight.intensity = state.flashlightOn ? 3.5 : 0;
+            flashlight.intensity = state.flashlightOn ? 3.8 : 0;
         }
 
         function searchFloor() {
-            if(Math.random() < 0.4) {
+            if(Math.random() < 0.45) {
                 state.battery = Math.min(100, state.battery + 25);
-                state.sanity -= 4;
-            } else { state.sanity -= 12; }
+                state.sanity -= 5;
+            } else { state.sanity -= 10; }
             updateHUD();
         }
 
         function startGame() {
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('ui-layer').classList.remove('hidden');
-            bgm.play().catch(e => console.log("Audio ready."));
-            canvas.requestPointerLock();
+            bgm.play().catch(() => {});
+            
+            if(!isMobile) canvas.requestPointerLock();
 
             state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
-            
-            // Player mulai agak maju di koordinat Z = -25
-            camera.position.set(0, 1.6, -25); 
+            camera.position.set(0, 1.6, -20);
             camera.rotation.set(0, 0, 0);
 
-            // MONSTER POSISI AWAL: Spawns tepat di belakang player (Z = -2, jarak selisih 23 meter di belakang)
-            monsterState.zPos = -2;
-            monsterMesh.position.set(0, -0.1, monsterState.zPos);
-            monsterMesh.rotation.set(0, 0, 0); // Menghadap ke arah jalan player (Z Negatif)
-            
+            // Set Awal Monster cerdas di belakang player
+            monsterState.zPos = 2; 
+            monsterState.xPos = 0;
+            monsterState.state = 'stalking';
             monsterState.active = true;
-            monsterState.speed = 0.045;
-            flashlight.intensity = 3.5;
+            monsterState.wobble = 0;
+
+            monsterMesh.position.set(0, -0.1, monsterState.zPos);
+            flashlight.intensity = 3.8;
             gameActive = true;
             
             updateHUD();
@@ -394,88 +484,98 @@
             if (!gameActive) return;
             requestAnimationFrame(animate);
 
-            // Logika Kecepatan Lari (Shift)
-            let currentSpeed = keys.shift && (keys.w || keys.s || keys.a || keys.d) ? playerSprintSpeed : playerNormalSpeed;
-            
-            // Efek lelah/stres mental jika lari terus-menerus
-            if (keys.shift && (keys.w || keys.s || keys.a || keys.d)) {
-                state.sanity -= 0.018; 
-            }
+            // Hitung Kecepatan Player Berjalan / Berlari
+            let currentSpeed = keys.shift && (keys.w || keys.s || keys.a || keys.d) ? speedSprint : speedWalk;
+            if (keys.shift && (keys.w || keys.s || keys.a || keys.d)) state.sanity -= 0.015; 
 
-            // Eksekusi Pergerakan Player
             if (keys.w) camera.translateZ(-currentSpeed);
             if (keys.s) camera.translateZ(currentSpeed);
-            if (keys.a) camera.translateX(-currentSpeed); 
-            if (keys.d) camera.translateX(currentSpeed);  
+            if (keys.a) camera.translateX(-currentSpeed);
+            if (keys.d) camera.translateX(currentSpeed);
 
-            camera.position.y = 1.6; 
-            camera.position.x = Math.max(-1.3, Math.min(1.3, camera.position.x));
-            camera.position.z = Math.max(-caveLength + 5, Math.min(-10, camera.position.z));
+            camera.position.y = 1.6;
+            camera.position.x = Math.max(-1.4, Math.min(1.4, camera.position.x));
+            camera.position.z = Math.max(-caveLength + 5, Math.min(-5, camera.position.z));
 
-            // Jarak hitung dari titik awal start (-25m)
-            state.distance = Math.floor(-25 - camera.position.z);
+            state.distance = Math.floor(-20 - camera.position.z);
 
-            // ENGINE LOGIKA AI MONSTER PENGINTAI BELAKANG
+            // LOGIKA BRAIN AI UTAMA MONSTER
             if (monsterState.active) {
-                monsterState.bobbingTimer += keys.shift ? 0.3 : 0.15;
-                monsterMesh.position.y = -0.1 + Math.sin(monsterState.bobbingTimer) * 0.04;
+                let distToPlayer = camera.position.distanceTo(monsterMesh.position);
 
-                // Jarak real-time 3D antara player dengan monster
-                let distToMonster = camera.position.distanceTo(monsterMesh.position);
+                // Matematika Sudut Pandang Senter Player ke Monster
+                let camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
+                let pToM = new THREE.Vector3().subVectors(monsterMesh.position, camera.position).normalize();
+                let isLookingAtMonster = camDir.dot(pToM) > 0.78;
 
-                // MATEMATIKA LOOK-AT (Cek apakah player menengok ke arah monster di belakang)
-                let camDirection = new THREE.Vector3();
-                camera.getWorldDirection(camDirection); // Arah mata memandang
-                
-                let playerToMonster = new THREE.Vector3().subVectors(monsterMesh.position, camera.position).normalize();
-                let dotProduct = camDirection.dot(playerToMonster);
-
-                // AGGRO TRIGGER: Jika senter menyala DAN player nengok ke belakang menatap langsung wajah monster (dot > 0.75)
-                if (state.flashlightOn && distToMonster < 32 && dotProduct > 0.75) {
-                    monsterState.speed = 0.15; // Monster lari kesetanan menerkam!
-                    document.getElementById('warning-indicator').innerText = "KAU MELIHATNYA! DIA BERLARI KENCANG!";
-                    document.getElementById('warning-indicator').style.visibility = 'visible';
-                    document.getElementById('vignette').style.boxShadow = `inset 0 0 160px rgba(150, 0, 0, 0.98)`;
-                    bgm.playbackRate = 1.8; // Musik Cold_Linoleum_Floor dipercepat ekstrim
+                // FSM (Finite State Machine) AI LOGIC
+                if (state.flashlightOn && isLookingAtMonster && distToPlayer < 28) {
+                    // 1. STATE CHASING: Marah karena tersorot senter murni
+                    monsterState.state = 'chasing';
+                    monsterState.speed = 0.085; // Kecepatan lari seimbang (Kalah cepat dibanding sprint 0.11 kamu, Jae!)
+                } else if (!state.flashlightOn) {
+                    // 2. STATE SEARCHING: Kehilangan jejak mata saat senter padam
+                    if (monsterState.state !== 'searching') {
+                        monsterState.state = 'searching';
+                        monsterState.searchTimer = Date.now();
+                    }
+                    monsterState.speed = 0.02; // Melambat panik kebingungan
                 } else {
-                    // Mode normal: Membuntuti diam-diam dari belakang
-                    // Jika player lari (Shift), monster otomatis ikut sedikit mempercepat langkahnya agar konstan meneror
-                    monsterState.speed = keys.shift ? 0.08 : 0.045; 
-                    
-                    if (distToMonster < 15) {
-                        document.getElementById('warning-indicator').innerText = "ADA SUARA LANGKAH MERANGKAK DI BELAKANGMU...";
+                    // 3. STATE STALKING: Membuntuti diam-diam dari kegelapan belakang
+                    monsterState.state = 'stalking';
+                    monsterState.speed = keys.shift ? 0.065 : 0.04; 
+                }
+
+                // EKSEKUSI PERGERAKAN AI DALAM SPACE GUA
+                monsterState.wobble += 0.05;
+                monsterMesh.position.y = -0.1 + Math.sin(monsterState.wobble * 2) * 0.03;
+
+                if (monsterState.state === 'chasing') {
+                    // Kejar langsung koordinat lurus player
+                    monsterState.targetX = camera.position.x;
+                    document.getElementById('warning-indicator').innerText = "DIA MELIHAT CAHAYA! DIA MENGEJAR!";
+                    document.getElementById('warning-indicator').style.visibility = 'visible';
+                } else if (monsterState.state === 'searching') {
+                    // Bergerak tak tentu arah / zigzag panik mencari posisi player terakhir
+                    monsterState.targetX = Math.sin(monsterState.wobble) * 1.2;
+                    document.getElementById('warning-indicator').innerText = "SENTER MATI. DIA KEHILANGAN JEJAKMU...";
+                    document.getElementById('warning-indicator').style.visibility = 'visible';
+                } else {
+                    // Stalking: Mengikuti dengan jalur berkelok-kelok (Lebih menyeramkan & real)
+                    monsterState.targetX = Math.sin(monsterState.wobble * 0.5) * 0.9;
+                    if (distToPlayer < 14) {
+                        document.getElementById('warning-indicator').innerText = "MENDENGAR SUARA MERANGKAK DI BELAKANG...";
                         document.getElementById('warning-indicator').style.visibility = 'visible';
                     } else {
                         document.getElementById('warning-indicator').style.visibility = 'hidden';
                     }
-                    bgm.playbackRate = state.sanity < 45 ? 0.72 : 1.0;
                 }
 
-                // Monster bergerak mengejar koordinat Z player (Z makin lama makin minus masuk ke gua)
-                monsterMesh.position.z -= monsterState.speed;
+                // Interpolasi pergerakan X & Z agar gerak halus beneran ala AI
+                monsterState.xPos += (monsterState.targetX - monsterState.xPos) * 0.05;
+                monsterState.zPos -= monsterState.speed; // Maju ke kedalaman gua (Z minus)
 
-                // JUMPSCARE TRIGGER: Jika monster berhasil menyentuh punggung/wajahmu
-                if (distToMonster < 2.2) {
+                monsterMesh.position.x = monsterState.xPos;
+                monsterMesh.position.z = monsterState.zPos;
+
+                // Jumpscare Trigger
+                if (distToPlayer < 2.1) {
                     executeMonsterJumpscare();
                     return;
                 }
             }
 
-            // Pengurasan Energi Senter & Sanity
+            // Atur Konsumsi Baterai & Sanity Kontrol
             if (state.flashlightOn) {
-                state.battery -= 0.035; state.sanity -= 0.004;
-                if (state.battery < 30 && Math.random() < 0.1) {
-                    flashlight.intensity = Math.random() > 0.5 ? 3.5 : 0.2;
-                }
+                state.battery -= 0.035; state.sanity -= 0.003;
+                if (state.battery < 25 && Math.random() < 0.1) flashlight.intensity = Math.random() > 0.5 ? 3.8 : 0.3;
             } else {
-                state.sanity -= 0.085; 
-                let pulseShadow = 85 + Math.sin(Date.now() * 0.006) * 15;
-                document.getElementById('vignette').style.boxShadow = `inset 0 0 ${pulseShadow}px rgba(0, 0, 0, 0.99)`;
+                state.sanity -= 0.08;
+                let shadowPulse = 85 + Math.sin(Date.now() * 0.005) * 15;
+                document.getElementById('vignette').style.boxShadow = `inset 0 0 ${shadowPulse}px rgba(0, 0, 0, 0.99)`;
             }
 
-            if (state.battery <= 0 && state.flashlightOn) {
-                state.battery = 0; toggleFlashlight();
-            }
+            if (state.battery <= 0 && state.flashlightOn) { state.battery = 0; toggleFlashlight(); }
 
             updateHUD();
             checkMentalCollapse();
@@ -487,47 +587,37 @@
             state.battery = Math.max(0, state.battery);
             document.getElementById('sanity-fill').style.width = state.sanity + '%';
             document.getElementById('battery-fill').style.width = state.battery + '%';
-            document.getElementById('distance-txt').innerText = `Progress: ${state.distance}m / 130m`;
+            document.getElementById('distance-txt').innerText = `Progress: ${state.distance}m / 150m`;
         }
 
         function checkMentalCollapse() {
-            if (state.sanity <= 0) {
-                endGame("HILANG WARAS", "Kepanikan hebat melumpuhkan kakimu. Jiwamu tertinggal di kegelapan gua batu purba.");
-            }
-            if (state.distance >= 130) {
-                endGame("SELAMAT", "Kamu berhasil berlari mencapai ujung celah bebatuan gua dan selamat dari kejaran predator purba!");
-            }
+            if (state.sanity <= 0) endGame("HILANG WARAS", "Kamu terkena serangan panik akut di tengah kegelapan.");
+            if (state.distance >= 150) endGame("SELAMAT", "Kerja bagus Jae! Kamu berhasil meloloskan diri dari gua purba!");
         }
 
         function executeMonsterJumpscare() {
             gameActive = false;
             bgm.pause();
-            document.exitPointerLock(); 
+            if(!isMobile) document.exitPointerLock();
 
-            // Paksa mata kamera berbalik menatap langsung ke arah monster saat tertangkap
             camera.lookAt(monsterMesh.position);
             renderer.render(scene, camera);
 
-            const jsLayer = document.getElementById('jumpscare');
-            jsLayer.style.visibility = 'visible';
-
-            let flickerCount = 0;
-            const bloodFlash = setInterval(() => {
-                jsLayer.style.backgroundColor = flickerCount % 2 === 0 ? '#800' : '#000';
-                flickerCount++; if (flickerCount > 14) clearInterval(bloodFlash);
-            }, 30);
+            const js = document.getElementById('jumpscare');
+            js.style.visibility = 'visible';
 
             setTimeout(() => {
-                jsLayer.style.visibility = 'hidden';
-                endGame("KAMU DICABIK", "Makhluk bermata putih dari foto Gemini_Generated_Image_sged93sged93sged.png melompat mematahkan tulang lehermu dari belakang.");
-            }, 1400);
+                js.style.visibility = 'hidden';
+                endGame("DIKONSUMSI", "Predator berduri menerkam kepalamu dari kegelapan pekat gua.");
+            }, 1300);
         }
 
         function endGame(title, reason) {
             gameActive = false;
             monsterState.active = false;
-            document.exitPointerLock();
+            if(!isMobile) try { document.exitPointerLock(); } catch(e){}
             document.getElementById('ui-layer').classList.add('hidden');
+            document.getElementById('mobile-hud').style.display = 'none';
             document.getElementById('end-title').innerText = title;
             document.getElementById('end-reason').innerText = reason;
             document.getElementById('gameover-screen').classList.remove('hidden');
@@ -535,7 +625,7 @@
 
         function restartGame() {
             document.getElementById('gameover-screen').classList.add('hidden');
-            bgm.currentTime = 0;
+            if (isMobile) document.getElementById('mobile-hud').style.display = 'flex';
             startGame();
         }
 
@@ -547,6 +637,7 @@
             }
         });
 
+        checkDevice();
         init3D();
     </script>
 </body>
