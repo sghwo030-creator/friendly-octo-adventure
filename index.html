@@ -2,1043 +2,210 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Cold Cave: Absolute Terror (Massive Map)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kabur dari Goa!</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #010101; font-family: monospace; }
-        #game-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        #vignette { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; box-shadow: inset 0 0 180px rgba(0, 0, 0, 1); pointer-events: none; z-index: 5; transition: box-shadow 0.1s ease; }
-        
-        .ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
-        .hud { display: flex; justify-content: space-between; align-items: center; color: #fff; font-size: 0.8rem; letter-spacing: 2px; background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%); padding: 15px; width: 100%; max-width: 1100px; margin: 0 auto; border-bottom: 1px solid rgba(255, 0, 0, 0.15); pointer-events: auto; }
-        
-        .bar-group { display: flex; gap: 15px; }
-        .bar-container { display: flex; flex-direction: column; gap: 4px; width: 100px; }
-        .bar-label { font-size: 0.55rem; color: #aaa; text-transform: uppercase; font-weight: bold; }
-        .bar-bg { background: rgba(30, 10, 10, 0.6); width: 100%; height: 6px; border-radius: 3px; overflow: hidden; }
-        .bar-fill { height: 100%; width: 100%; transition: width 0.1s linear; }
-        #sanity-fill { background: #0077ff; box-shadow: 0 0 6px #0055ff; }
-        #stamina-fill { background: #00ff66; box-shadow: 0 0 6px #00cc44; }
-        #battery-fill { background: #ffaa00; box-shadow: 0 0 6px #cc8800; }
-        #objective-txt { font-weight: bold; color: #ff3333; font-size: 0.85rem; text-shadow: 0 0 5px rgba(255,0,0,0.5); text-align: center; }
-
-        #settings-trigger { background: rgba(20,20,20,0.8); border: 1px solid #555; color: #ccc; padding: 5px 10px; cursor: pointer; font-size: 0.7rem; font-weight: bold; }
-        
-        #minimap-container { position: absolute; bottom: 25px; right: 25px; width: 130px; height: 130px; border: 2px solid rgba(255, 0, 0, 0.25); background: rgba(4, 1, 1, 0.85); backdrop-filter: blur(4px); border-radius: 6px; z-index: 15; pointer-events: auto; }
-        #minimap { width: 100%; height: 100%; }
-
-        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #120505 0%, #020101 100%); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #e0e0e0; text-align: center; padding: 20px; }
-        .hidden { display: none !important; }
-
-        h1 { font-size: 2.5rem; color: #ba0000; text-shadow: 0 0 20px rgba(186, 0, 0, 0.7); margin-bottom: 25px; letter-spacing: 6px; font-weight: 900; }
-        p { max-width: 600px; line-height: 1.6; margin-bottom: 30px; color: #999; font-size: 0.8rem; }
-        
-        .btn-group { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
-        button.menu-btn { background: transparent; color: #ff3333; border: 1px solid #ba0000; padding: 12px 30px; font-size: 0.85rem; font-weight: bold; letter-spacing: 2px; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; }
-        button.menu-btn:hover { background: #ba0000; color: #fff; box-shadow: 0 0 15px rgba(255,0,0,0.5); }
-        button.menu-btn:disabled { border-color: #333; color: #555; cursor: not-allowed; }
-
-        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; background: rgba(15, 5, 5, 0.95); border: 2px solid #ba0000; padding: 25px; z-index: 200; color: #fff; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-        .modal-title { font-size: 1.1rem; color: #ff3333; font-weight: bold; text-align: center; letter-spacing: 2px; }
-        .setting-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; }
-        .setting-row input, .setting-row select { background: #222; border: 1px solid #555; color: #fff; padding: 4px; font-family: monospace; }
-
-        #warning-indicator { color: #ff3333; font-weight: bold; font-size: 0.8rem; visibility: hidden; text-align: center; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 80px; }
-
-        #mobile-hud { position: absolute; bottom: 20px; left: 0; width: 100%; display: none; justify-content: space-between; padding: 0 30px; pointer-events: none; z-index: 20; }
-        .touch-pad-container { display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 50px); gap: 6px; pointer-events: auto; }
-        .m-btn { background: rgba(20, 5, 5, 0.6); border: 1px solid rgba(150, 20, 20, 0.3); color: #ff7777; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; }
-        .m-btn:active { background: rgba(186, 0, 0, 0.8); color: #fff; }
-        .action-container { display: flex; flex-direction: column; gap: 10px; pointer-events: auto; justify-content: center; }
-        .act-btn { width: 90px; height: 40px; background: rgba(15, 15, 15, 0.8); border: 1px solid rgba(255, 255, 255, 0.15); color: #ccc; border-radius: 20px; font-size: 0.65rem; font-weight: bold; }
-        .act-btn.active-sprint { background: rgba(186,0,0,0.8); border-color: #ff5555; color: #fff; }
-
-        #jumpscare { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; z-index: 999; display: flex; justify-content: center; align-items: center; visibility: hidden; }
-        #jumpscare-text { color: #ff0000; font-size: 4rem; font-weight: 900; letter-spacing: 12px; animation: shake 0.1s infinite; }
-        @keyframes shake { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(1px, -1px); } }
+        body {
+            background-color: #1a1a1a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        canvas {
+            background: #2c1d11; /* Warna dalam goa */
+            border: 4px solid #5c3a21;
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.7);
+        }
+        .status {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        .btn {
+            background: #e74c3c;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .btn:hover { background: #c0392b; }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <div id="vignette"></div>
-    <canvas id="game-canvas"></canvas>
-
-    <div id="minimap-container" class="hidden">
-        <canvas id="minimap" width="130" height="130"></canvas>
+    <h1>🏃‍♂️ KABUR DARI GOA! 👹</h1>
+    <p>Tekan <strong>TOMBOL SPASI</strong> atau <strong>TAP LAYAR</strong> untuk melompat. Jangan sampai menabrak batu atau monster akan menangkapmu!</p>
+    
+    <div class="status">
+        Sisa Jarak Keluar: <span id="distance">100</span>m | 
+        Jarak Monster: <span id="monster-dist">Dekat</span>
     </div>
 
-    <div id="menu-screen" class="screen">
-        <h1>THE COLD CAVE</h1>
-        <p>[PROSEDURAL HYDRO-EROSION ENGINE V5.6] Peta raksasa (51x51) berbasis simulasi erosi air alami. Area labirin gua organik kini jauh lebih luas, dilengkapi kabut tebal, partikel debu mengambang, serta <span style="color:#0ff;">RADAR PERSPEKTIF ROTASI</span> untuk melacak entitas bawah tanah.</p>
-        <div class="btn-group">
-            <button class="menu-btn" onclick="startGame(false)">EKSPEDISI BARU</button>
-            <button class="menu-btn" id="resume-btn" onclick="startGame(true)" disabled>LANJUTKAN</button>
-        </div>
-    </div>
-
-    <div id="ui-layer" class="ui-overlay hidden">
-        <div class="hud">
-            <div class="bar-group">
-                <div class="bar-container"><div class="bar-label">Sanity</div><div class="bar-bg"><div id="sanity-fill" class="bar-fill"></div></div></div>
-                <div class="bar-container"><div class="bar-label">Stamina</div><div class="bar-bg"><div id="stamina-fill" class="bar-fill"></div></div></div>
-            </div>
-            <div id="objective-txt">RUNE: 0 / 5</div>
-            <div class="bar-group">
-                <div class="bar-container"><div class="bar-label">Senter</div><div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div></div>
-                <button id="settings-trigger" onclick="toggleSettingsModal(true)">OPSI</button>
-            </div>
-        </div>
-        <div id="warning-indicator">MENDETEKSI PERUBAHAN GELOMBANG...</div>
-    </div>
-
-    <div id="settings-modal" class="modal hidden">
-        <div class="modal-title">PENGATURAN</div>
-        <div class="setting-row">
-            <label>Master Volume</label>
-            <input type="range" id="vol-slider" min="0" max="1" step="0.1" value="0.7" onchange="adjustVolume(this.value)">
-        </div>
-        <div class="setting-row">
-            <label>Kualitas Grafis</label>
-            <select id="gfx-select" onchange="adjustGraphics(this.value)">
-                <option value="high" selected>TINGGI (BumpMaps & Fog)</option>
-                <option value="low">RENDAH (Sederhana)</option>
-            </select>
-        </div>
-        <button class="menu-btn" style="padding:8px 0; font-size:0.75rem;" onclick="toggleSettingsModal(false)">TUTUP</button>
-    </div>
-
-    <div id="mobile-hud">
-        <div class="touch-pad-container">
-            <div></div><div class="m-btn" id="btn-up">▲</div><div></div>
-            <div class="m-btn" id="btn-left">◀</div><div></div><div class="m-btn" id="btn-right">▶</div>
-            <div></div><div class="m-btn" id="btn-down">▼</div><div></div>
-        </div>
-        <div class="action-container">
-            <button class="act-btn" id="btn-sprint">RUN: OFF</button>
-            <button class="act-btn" id="btn-flash">SENTER</button>
-        </div>
-    </div>
-
-    <div id="gameover-screen" class="screen hidden">
-        <h1 id="end-title">DIELIMINASI</h1>
-        <p id="end-reason"></p>
-        <button class="menu-btn" onclick="goToMenu()">KEMBALI KE MENU</button>
-    </div>
-
-    <div id="jumpscare"><div id="jumpscare-text">TERPERANGKAP</div></div>
+    <canvas id="gameCanvas" width="800" height="300"></canvas>
+    <br>
+    <button class="btn" onclick="resetGame()">Main Lagi</button>
 
     <script>
-        let scene, camera, renderer, flashlight, flashBeam;
-        let gameActive = false, isMobile = false, settingsOpen = false;
-        let mapCanvas, mapCtx;
-        
-        let diffTexGlobal = null, bumpTexGlobal = null;
-        let wallMat = null, floorMat = null;
-        let wallInstMesh = null, floorInstMesh = null, ceilingInstMesh = null;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-        let audioCtx, masterGain, lastHeartbeat = 0, lastFootstep = 0, monsterGrowlOsc = null, monsterGrowlGain = null;
+        // Variabel Game
+        let player, monster, obstacles, gameSpeed, distance, isGameOver, isGameWon;
+        const gravity = 0.6;
 
-        let dustParticles, dropInstMesh, drops = [], ripples = [];
-        const MAX_DROPS = 35, MAX_RIPPLES = 35;
-        let nextRippleIdx = 0;
-
-        const MAZE_W = 51, MAZE_H = 51, GRID_SIZE = 4;
-        let MAP_GRID = [];
-        let runesArray = [];
-        let batteriesArray = [];
-        let secretArtifact = null;
-        let exitGateMesh = null;
-
-        let crawlerMesh, crawlerArms = [], crawlerState = { x: 0, z: 0, gridR: 0, gridC: 0, speed: 0.028, phase: 0, currentPath: [] };
-        let wraithMesh, wraithState = { x: 0, z: 0, speed: 0.018, active: false };
-
-        let state = { sanity: 100, battery: 100, stamina: 100, runesCollected: 0, totalRunesToWin: 5, hasSecret: false, flashlightOn: true, gfx: 'high' };
-        const keys = { w: false, a: false, s: false, d: false, shift: false };
-        let targetCamRotationX = 0, targetCamRotationY = 0, lastTouchX = 0, lastTouchY = 0, bobTimer = 0;
-
-        function checkSaveData() {
-            if (localStorage.getItem('cold_cave_v5_save')) document.getElementById('resume-btn').disabled = false;
+        function resetGame() {
+            player = { x: 180, y: 200, width: 30, height: 40, vy: 0, isJumping: false, color: '#3498db' };
+            monster = { x: 20, width: 60, height: 80, color: '#e74c3c' };
+            obstacles = [];
+            gameSpeed = 5;
+            distance = 100; // Target jarak untuk menang
+            isGameOver = false;
+            isGameWon = false;
+            document.getElementById('distance').innerText = distance;
         }
 
-        function generateProceduralMaze() {
-            MAP_GRID = Array(MAZE_H).fill().map(() => Array(MAZE_W).fill(1));
-            
-            let startR = 1, startC = 1;
-            let exitR = MAZE_H - 2, exitC = MAZE_W - 2;
-            
-            let cr = startR, cc = startC;
-            MAP_GRID[cr][cc] = 0;
-            
-            while (cr !== exitR || cc !== exitC) {
-                if (Math.random() < 0.5 && cr < exitR) cr++;
-                else if (cc < exitC) cc++;
-                else if (cr < exitR) cr++;
-                
-                MAP_GRID[cr][cc] = 0;
-                if(cr + 1 < MAZE_H - 1 && Math.random() < 0.45) MAP_GRID[cr + 1][cc] = 0;
-                if(cc + 1 < MAZE_W - 1 && Math.random() < 0.45) MAP_GRID[cr][cc + 1] = 0;
+        // Input Kontrol (Spasi & Touch)
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !player.isJumping && !isGameOver) {
+                player.vy = -12;
+                player.isJumping = true;
             }
-            
-            for (let i = 0; i < 15; i++) {
-                let centerR = Math.floor(Math.random() * (MAZE_H - 6)) + 3;
-                let centerC = Math.floor(Math.random() * (MAZE_W - 6)) + 3;
-                let roomRadius = Math.floor(Math.random() * 2) + 2; 
-                
-                for (let r = centerR - roomRadius; r <= centerR + roomRadius; r++) {
-                    for (let c = centerC - roomRadius; c <= centerC + roomRadius; c++) {
-                        if (r > 0 && r < MAZE_H - 1 && c > 0 && c < MAZE_W - 1) {
-                            if (Math.sqrt((r - centerR)**2 + (c - centerC)**2) <= roomRadius + 0.5) {
-                                MAP_GRID[r][c] = 0;
-                            }
-                        }
-                    }
-                }
-            }
-
-            let smoothedGrid = Array(MAZE_H).fill().map(() => Array(MAZE_W).fill(1));
-            for (let r = 1; r < MAZE_H - 1; r++) {
-                for (let c = 1; c < MAZE_W - 1; c++) {
-                    let wallNeighbors = 0;
-                    for (let dr = -1; dr <= 1; dr++) {
-                        for (let dc = -1; dc <= 1; dc++) {
-                            if (MAP_GRID[r + dr][c + dc] === 1) wallNeighbors++;
-                        }
-                    }
-                    if (MAP_GRID[r][c] === 1) {
-                        smoothedGrid[r][c] = (wallNeighbors >= 4) ? 1 : 0;
-                    } else {
-                        smoothedGrid[r][c] = (wallNeighbors >= 5) ? 1 : 0;
-                    }
-                }
-            }
-            MAP_GRID = smoothedGrid;
-            
-            cr = startR; cc = startC; MAP_GRID[cr][cc] = 2; 
-            while (cr !== exitR || cc !== exitC) {
-                if (cr < exitR) cr++;
-                if (cc < exitC) cc++;
-                if(MAP_GRID[cr][cc] === 1) MAP_GRID[cr][cc] = 0;
-            }
-            MAP_GRID[exitR][exitC] = 4; 
-
-            let validOpenSpaces = [];
-            for (let r = 1; r < MAZE_H - 1; r++) {
-                for (let c = 1; c < MAZE_W - 1; c++) {
-                    if (MAP_GRID[r][c] === 0 && !(r === startR && c === startC) && !(r === exitR && c === exitC)) {
-                        validOpenSpaces.push({ r, c });
-                    }
-                }
-            }
-            validOpenSpaces.sort(() => Math.random() - 0.5);
-
-            if (validOpenSpaces.length > 0) MAP_GRID[validOpenSpaces[0].r][validOpenSpaces[0].c] = 6; 
-            
-            for (let i = 1; i <= 5 && i < validOpenSpaces.length; i++) {
-                MAP_GRID[validOpenSpaces[i].r][validOpenSpaces[i].c] = 3; 
-            }
-            for (let i = 6; i <= 20 && i < validOpenSpaces.length; i++) {
-                MAP_GRID[validOpenSpaces[i].r][validOpenSpaces[i].c] = 5; 
-            }
-        }
-
-        function findShortestPathAStar(start, end) {
-            let openList = [];
-            let closedSet = new Set();
-            let startH = Math.abs(start.r - end.r) + Math.abs(start.c - end.c);
-            openList.push({ r: start.r, c: start.c, g: 0, h: startH, f: startH, parent: null });
-
-            while (openList.length > 0) {
-                openList.sort((a, b) => a.f - b.f);
-                let current = openList.shift();
-
-                if (current.r === end.r && current.c === end.c) {
-                    let path = [];
-                    let curr = current;
-                    while (curr !== null) { path.push({ r: curr.r, c: curr.c }); curr = curr.parent; }
-                    return path.reverse();
-                }
-
-                closedSet.add(`${current.r},${current.c}`);
-                let neighbors = [{r:current.r-1, c:current.c}, {r:current.r+1, c:current.c}, {r:current.r, c:current.c-1}, {r:current.r, c:current.c+1}];
-
-                for (let n of neighbors) {
-                    if (n.r < 0 || n.r >= MAZE_H || n.c < 0 || n.c >= MAZE_W) continue;
-                    if (MAP_GRID[n.r][n.c] === 1) continue;
-                    if (closedSet.has(`${n.r},${n.c}`)) continue;
-
-                    let gScore = current.g + 1;
-                    let hScore = Math.abs(n.r - end.r) + Math.abs(n.c - end.c);
-                    let fScore = gScore + hScore;
-
-                    let existing = openList.find(o => o.r === n.r && o.c === n.c);
-                    if (existing) {
-                        if (gScore < existing.g) { existing.g = gScore; existing.f = fScore; existing.parent = current; }
-                    } else {
-                        openList.push({ r: n.r, c: n.c, g: gScore, h: hScore, f: fScore, parent: current });
-                    }
-                }
-            }
-            return [];
-        }
-
-        function findEmptyCell() {
-            for(let r = MAZE_H-2; r > 0; r--) {
-                for(let c = MAZE_W-2; c > 0; c--) {
-                    if(MAP_GRID[r][c] === 0) return {r, c};
-                }
-            }
-            return {r: 1, c: 1}; 
-        }
-
-        function initAudio() {
-            if (audioCtx) return;
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            masterGain = audioCtx.createGain();
-            masterGain.gain.setValueAtTime(0.7, audioCtx.currentTime);
-            masterGain.connect(audioCtx.destination);
-
-            let bufferSize = 2 * audioCtx.sampleRate, noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate), output = noiseBuffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; }
-            let whiteNoise = audioCtx.createBufferSource(); whiteNoise.buffer = noiseBuffer; whiteNoise.loop = true;
-            let windFilter = audioCtx.createBiquadFilter(); windFilter.type = 'lowpass'; windFilter.frequency.setValueAtTime(200, audioCtx.currentTime);
-            let windGain = audioCtx.createGain(); windGain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-            whiteNoise.connect(windFilter); windFilter.connect(windGain); windGain.connect(masterGain);
-            whiteNoise.start();
-
-            setInterval(() => {
-                if(!gameActive || settingsOpen) return;
-                let dynamicFreq = 180 + Math.sin(Date.now() * 0.0006) * 110;
-                windFilter.frequency.setValueAtTime(dynamicFreq, audioCtx.currentTime);
-            }, 100);
-
-            function triggerDrip() {
-                if (gameActive && !settingsOpen && Math.random() < 0.65) {
-                    let now = audioCtx.currentTime;
-                    let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-                    osc.type = 'sine'; osc.frequency.setValueAtTime(750 + Math.random()*200, now);
-                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.04);
-                    gain.gain.setValueAtTime(0.06, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-                    osc.connect(gain); gain.connect(masterGain); osc.start(now); osc.stop(now + 0.07);
-                }
-                setTimeout(triggerDrip, 1500 + Math.random() * 3500);
-            }
-            triggerDrip();
-        }
-
-        function startMonsterAudio() {
-            if(!audioCtx) return;
-            if(monsterGrowlOsc) { try { monsterGrowlOsc.stop(); } catch(e){} }
-            
-            monsterGrowlOsc = audioCtx.createOscillator();
-            monsterGrowlGain = audioCtx.createGain();
-            monsterGrowlOsc.type = 'sawtooth';
-            monsterGrowlOsc.frequency.setValueAtTime(26, audioCtx.currentTime);
-            
-            let mFilter = audioCtx.createBiquadFilter();
-            mFilter.type = 'lowpass';
-            mFilter.frequency.setValueAtTime(120, audioCtx.currentTime);
-            
-            monsterGrowlOsc.connect(mFilter);
-            mFilter.connect(monsterGrowlGain);
-            monsterGrowlGain.connect(masterGain);
-            
-            monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
-            monsterGrowlOsc.start();
-        }
-
-        function playRuneSFX() {
-            let now = audioCtx.currentTime;
-            [330, 440, 550, 660].forEach((f, i) => {
-                let osc = audioCtx.createOscillator(); let g = audioCtx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(f, now + i*0.07);
-                g.gain.setValueAtTime(0.2, now + i*0.07); g.gain.exponentialRampToValueAtTime(0.001, now + i*0.07 + 0.25);
-                osc.connect(g); g.connect(masterGain); osc.start(now + i*0.07); osc.stop(now + i*0.07 + 0.3);
-            });
-        }
-
-        function playBatterySFX() {
-            let now = audioCtx.currentTime;
-            let osc = audioCtx.createOscillator(); let g = audioCtx.createGain();
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(800, now + 0.06);
-            g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-            osc.connect(g); g.connect(masterGain); osc.start(); osc.stop(now + 0.18);
-        }
-
-        function playFootstepSynth(isSprinting) {
-            let now = audioCtx.currentTime;
-            let rate = isSprinting ? 0.28 : 0.48;
-            if (now - lastFootstep < rate) return; lastFootstep = now;
-            let osc = audioCtx.createOscillator(); let g = audioCtx.createGain();
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(50, now); osc.frequency.exponentialRampToValueAtTime(2, now + 0.08);
-            g.gain.setValueAtTime(0.3, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-            osc.connect(g); g.connect(masterGain); osc.start(); osc.stop(now + 0.09);
-        }
-
-        function playHeartbeatSynth(tempo) {
-            let now = audioCtx.currentTime;
-            if (now - lastHeartbeat < tempo) return; lastHeartbeat = now;
-            const thud = (t) => {
-                let osc = audioCtx.createOscillator(); let g = audioCtx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(42, t); osc.frequency.exponentialRampToValueAtTime(1, t + 0.08);
-                g.gain.setValueAtTime(0.8, t); g.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
-                osc.connect(g); g.connect(masterGain); osc.start(t); osc.stop(t + 0.09);
-            };
-            thud(now); thud(now + 0.12);
-        }
-
-        function generateProceduralRockTexture(isBump = false) {
-            let canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
-            let ctx = canvas.getContext('2d');
-            ctx.fillStyle = isBump ? '#808080' : '#14110f'; ctx.fillRect(0,0,256,256);
-            for (let i = 0; i < 9000; i++) {
-                let x = Math.random() * 256; let y = Math.random() * 256;
-                let c = Math.floor(Math.random() * 35);
-                ctx.fillStyle = isBump ? `rgb(${128+c},${128+c},${128+c})` : `rgb(${15+c},${12+c},${10+c})`;
-                ctx.fillRect(x, y, 2, 2);
-            }
-            ctx.strokeStyle = isBump ? '#404040' : '#0a0807'; ctx.lineWidth = 1;
-            for(let i=0; i<12; i++) {
-                ctx.beginPath(); ctx.moveTo(Math.random()*256, Math.random()*256);
-                ctx.lineTo(Math.random()*256, Math.random()*256); ctx.stroke();
-            }
-            let tex = new THREE.CanvasTexture(canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(1,1);
-            return tex;
-        }
-
-        function init3D() {
-            scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x010000, 0.25);
-
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.rotation.order = 'YXZ';
-
-            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-
-            mapCanvas = document.getElementById('minimap'); mapCtx = mapCanvas.getContext('2d');
-
-            if (!diffTexGlobal) diffTexGlobal = generateProceduralRockTexture(false);
-            if (!bumpTexGlobal) bumpTexGlobal = generateProceduralRockTexture(true);
-
-            wallMat = new THREE.MeshStandardMaterial({ map: diffTexGlobal, bumpMap: bumpTexGlobal, bumpScale: 0.06, roughness: 0.85 });
-            floorMat = new THREE.MeshStandardMaterial({ map: diffTexGlobal, bumpMap: bumpTexGlobal, bumpScale: 0.04, roughness: 0.2, metalness: 0.2 });
-
-            setupControls();
-        }
-
-        function build3DWorld() {
-            if(wallInstMesh) { scene.remove(wallInstMesh); wallInstMesh.geometry.dispose(); }
-            if(floorInstMesh) { scene.remove(floorInstMesh); floorInstMesh.geometry.dispose(); }
-            if(ceilingInstMesh) { scene.remove(ceilingInstMesh); ceilingInstMesh.geometry.dispose(); }
-
-            if(dustParticles) { scene.remove(dustParticles); dustParticles.geometry.dispose(); dustParticles.material.dispose(); }
-            if(dropInstMesh) { scene.remove(dropInstMesh); dropInstMesh.geometry.dispose(); dropInstMesh.material.dispose(); }
-            ripples.forEach(r => { scene.remove(r.mesh); r.mesh.geometry.dispose(); r.mesh.material.dispose(); });
-            ripples = []; drops = [];
-
-            runesArray.forEach(r => { scene.remove(r.mesh); r.mesh.geometry.dispose(); r.mesh.material.dispose(); }); runesArray = [];
-            batteriesArray.forEach(b => { 
-                scene.remove(b.mesh); 
-                b.mesh.traverse(child => { if(child.isMesh) { child.geometry.dispose(); child.material.dispose(); } });
-            }); batteriesArray = [];
-            
-            if(secretArtifact) { scene.remove(secretArtifact); secretArtifact.geometry.dispose(); secretArtifact.material.dispose(); secretArtifact = null; }
-            if(exitGateMesh) { scene.remove(exitGateMesh); exitGateMesh.geometry.dispose(); exitGateMesh.material.dispose(); exitGateMesh = null; }
-
-            let wallCount = 0, floorCount = 0;
-            for (let r = 0; r < MAZE_H; r++) {
-                for (let c = 0; c < MAZE_W; c++) {
-                    if (MAP_GRID[r][c] === 1) wallCount++; else floorCount++;
-                }
-            }
-
-            let wallGeo = new THREE.BoxGeometry(GRID_SIZE, 4.0, GRID_SIZE);
-            let floorGeo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
-
-            wallInstMesh = new THREE.InstancedMesh(wallGeo, wallMat, wallCount);
-            floorInstMesh = new THREE.InstancedMesh(floorGeo, floorMat, floorCount);
-            ceilingInstMesh = new THREE.InstancedMesh(floorGeo, wallMat, floorCount);
-
-            let dummy = new THREE.Object3D();
-            let wIdx = 0, fIdx = 0;
-
-            for (let r = 0; r < MAZE_H; r++) {
-                for (let c = 0; c < MAZE_W; c++) {
-                    let x = c * GRID_SIZE; let z = r * GRID_SIZE;
-                    let type = MAP_GRID[r][c];
-
-                    if (type !== 1) {
-                        dummy.position.set(x, -1.5, z); dummy.rotation.set(-Math.PI/2, 0, 0); dummy.updateMatrix();
-                        floorInstMesh.setMatrixAt(fIdx, dummy.matrix);
-
-                        dummy.position.set(x, 2.5, z); dummy.rotation.set(Math.PI/2, 0, 0); dummy.updateMatrix();
-                        ceilingInstMesh.setMatrixAt(fIdx, dummy.matrix);
-                        fIdx++;
-                    }
-
-                    if (type === 1) {
-                        dummy.position.set(x, 0.5, z); dummy.rotation.set(0,0,0); dummy.updateMatrix();
-                        wallInstMesh.setMatrixAt(wIdx, dummy.matrix);
-                        wIdx++;
-                    } else if (type === 2) {
-                        camera.position.set(x, 0.1, z);
-                    } else if (type === 3) {
-                        let rune = new THREE.Mesh(new THREE.OctahedronGeometry(0.2,0), new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x880000 }));
-                        rune.position.set(x, -0.2, z); scene.add(rune); runesArray.push({ mesh: rune, gridR: r, gridC: c, picked: false });
-                    } else if (type === 4) {
-                        exitGateMesh = new THREE.Mesh(new THREE.BoxGeometry(GRID_SIZE, 4.0, 0.3), new THREE.MeshStandardMaterial({ color: 0x2a1414, roughness: 0.9 }));
-                        exitGateMesh.position.set(x, 0.5, z); scene.add(exitGateMesh);
-                    } else if (type === 5) {
-                        let batGroup = new THREE.Group();
-                        let bBody = new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.22,8), new THREE.MeshStandardMaterial({ color: 0x00ff66, roughness: 0.4 }));
-                        let bCap = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.04,8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-                        bCap.position.y = 0.12; batGroup.add(bBody, bCap); batGroup.position.set(x, -1.3, z);
-                        scene.add(batGroup); batteriesArray.push({ mesh: batGroup, gridR: r, gridC: c, picked: false });
-                    } else if (type === 6) {
-                        secretArtifact = new THREE.Mesh(new THREE.TorusKnotGeometry(0.16, 0.04, 48, 6), new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.1 }));
-                        secretArtifact.position.set(x, -0.1, z); scene.add(secretArtifact);
-                    }
-                }
-            }
-
-            scene.add(wallInstMesh); scene.add(floorInstMesh); scene.add(ceilingInstMesh);
-            buildMonster3D();
-
-            flashlight = new THREE.SpotLight(0xfff5e2, 6.0, 24, Math.PI / 4.5, 0.6, 1.2); scene.add(flashlight);
-            let target = new THREE.Object3D(); scene.add(target); flashlight.target = target;
-            flashBeam = new THREE.Mesh(new THREE.ConeGeometry(1.9, 18, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff5e2, transparent: true, opacity: 0.02, side: THREE.DoubleSide, depthWrite: false }));
-            flashBeam.geometry.translate(0, -9, 0); flashBeam.geometry.rotateX(Math.PI / 2); scene.add(flashBeam);
-            scene.add(new THREE.AmbientLight(0x010000));
-
-            let dustGeo = new THREE.BufferGeometry();
-            let dustCount = 800;
-            let dustPositions = new Float32Array(dustCount * 3);
-            for(let i=0; i<dustCount*3; i+=3) {
-                dustPositions[i] = Math.random() * MAZE_W * GRID_SIZE;
-                dustPositions[i+1] = Math.random() * 4 - 1.5;
-                dustPositions[i+2] = Math.random() * MAZE_H * GRID_SIZE;
-            }
-            dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
-            dustParticles = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0x99ccff, size: 0.035, transparent: true, opacity: 0.3, depthWrite: false }));
-            scene.add(dustParticles);
-
-            let dropGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.12, 4);
-            let dropMat = new THREE.MeshBasicMaterial({ color: 0x66aacc, transparent: true, opacity: 0.4 });
-            dropInstMesh = new THREE.InstancedMesh(dropGeo, dropMat, MAX_DROPS);
-            scene.add(dropInstMesh);
-            
-            let dummyDrop = new THREE.Object3D();
-            for(let i=0; i<MAX_DROPS; i++) {
-                drops.push({ x: 0, y: -100, z: 0, speed: 0.1 + Math.random()*0.04, active: false });
-                dummyDrop.position.set(0, -100, 0); dummyDrop.updateMatrix();
-                dropInstMesh.setMatrixAt(i, dummyDrop.matrix);
-            }
-            dropInstMesh.instanceMatrix.needsUpdate = true;
-
-            let rippleGeo = new THREE.RingGeometry(0.01, 0.12, 8);
-            for(let i=0; i<MAX_RIPPLES; i++) {
-                let rMesh = new THREE.Mesh(rippleGeo, new THREE.MeshBasicMaterial({ color: 0x5599bb, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
-                rMesh.rotation.x = -Math.PI / 2;
-                rMesh.position.set(0, -1.49, 0);
-                scene.add(rMesh);
-                ripples.push({ mesh: rMesh, active: false, scale: 1, opacity: 0 });
-            }
-        }
-
-        function buildMonster3D() {
-            if(crawlerMesh) scene.remove(crawlerMesh);
-            crawlerMesh = new THREE.Group(); let bMat = new THREE.MeshStandardMaterial({ color: 0x040404, roughness: 0.95 });
-            crawlerMesh.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), bMat)); 
-            let head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 6, 6), bMat); head.position.y = 0.4; crawlerMesh.add(head);
-            let eMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            let eL = new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4), eMat); eL.position.set(-0.07, 0.45, -0.15);
-            let eR = new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4), eMat); eR.position.set(0.07, 0.45, -0.15); crawlerMesh.add(eL, eR);
-            
-            crawlerArms = [];
-            for (let i = 0; i < 6; i++) {
-                let arm = new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.01,1.3,4), bMat); arm.geometry.translate(0,-0.65,0);
-                arm.position.set(i%2===0?0.25:-0.25, 0.1, (i*0.12 - 0.3)); crawlerMesh.add(arm); crawlerArms.push(arm);
-            }
-            scene.add(crawlerMesh); crawlerMesh.position.set(0, -100, 0);
-
-            if(wraithMesh) scene.remove(wraithMesh);
-            wraithMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3,8,8), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent:true, opacity:0.4, wireframe:true }));
-            scene.add(wraithMesh); wraithMesh.position.set(0,-100,0);
-        }
-
-        function checkCollision(x, z) {
-            let buffer = 0.45;
-            let currentC = Math.round(x / GRID_SIZE);
-            let currentR = Math.round(z / GRID_SIZE);
-            
-            for (let r = currentR - 1; r <= currentR + 1; r++) {
-                for (let c = currentC - 1; c <= currentC + 1; c++) {
-                    if (r >= 0 && r < MAZE_H && c >= 0 && c < MAZE_W) {
-                        if (MAP_GRID[r][c] === 1) {
-                            let wX = c * GRID_SIZE; let wZ = r * GRID_SIZE;
-                            if (Math.abs(x - wX) < (GRID_SIZE / 2 + buffer) && Math.abs(z - wZ) < (GRID_SIZE / 2 + buffer)) return true;
-                        }
-                    }
-                }
-            }
-            if (exitGateMesh && state.runesCollected < state.totalRunesToWin) {
-                if (Math.abs(x - exitGateMesh.position.x) < (GRID_SIZE / 2 + buffer) && Math.abs(z - exitGateMesh.position.z) < (0.2 + buffer)) return true;
-            }
-            return false;
-        }
-
-        function setupControls() {
-            const canvas = document.getElementById('game-canvas');
-            canvas.addEventListener('click', () => { if (gameActive && !isMobile && !settingsOpen && document.pointerLockElement !== canvas) canvas.requestPointerLock(); });
-            document.addEventListener('mousemove', (e) => {
-                if (gameActive && document.pointerLockElement === canvas && !settingsOpen) {
-                    targetCamRotationY -= e.movementX * 0.0025; targetCamRotationX -= e.movementY * 0.0025;
-                    targetCamRotationX = Math.max(-1.2, Math.min(1.2, targetCamRotationX));
-                }
-            });
-            canvas.addEventListener('touchstart', (e) => { if (!gameActive || settingsOpen) return; initAudio(); lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY; }, {passive:true});
-            canvas.addEventListener('touchmove', (e) => {
-                if (!gameActive || settingsOpen) return;
-                let dX = e.touches[0].clientX - lastTouchX; let dY = e.touches[0].clientY - lastTouchY;
-                targetCamRotationY -= dX * 0.004; targetCamRotationX -= dY * 0.004;
-                targetCamRotationX = Math.max(-1.1, Math.min(1.1, targetCamRotationX));
-                lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY;
-            }, {passive:true});
-
-            window.addEventListener('keydown', (e) => {
-                initAudio(); if (e.key === 'Shift') { keys.shift = true; return; }
-                let k = e.key.toLowerCase(); if (keys.hasOwnProperty(k)) keys[k] = true;
-                if (e.code === 'Space' && gameActive) { e.preventDefault(); state.flashlightOn = !state.flashlightOn; }
-            });
-            window.addEventListener('keyup', (e) => { if (e.key === 'Shift') { keys.shift = false; return; } keys[e.key.toLowerCase()] = false; });
-
-            const setTouch = (id, keyName) => {
-                document.getElementById(id).addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); keys[keyName] = true; });
-                document.getElementById(id).addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
-            };
-            setTouch('btn-up', 'w'); setTouch('btn-down', 's'); setTouch('btn-left', 'a'); setTouch('btn-right', 'd');
-            document.getElementById('btn-sprint').addEventListener('touchstart', (e) => { e.preventDefault(); keys.shift = !keys.shift; e.target.innerText = keys.shift ? "RUN: ON" : "RUN: OFF"; if(keys.shift) e.target.classList.add('active-sprint'); else e.target.classList.remove('active-sprint'); });
-            document.getElementById('btn-flash').addEventListener('touchstart', (e) => { e.preventDefault(); state.flashlightOn = !state.flashlightOn; });
-        }
-
-        function toggleSettingsModal(open) {
-            settingsOpen = open;
-            if(open) {
-                document.getElementById('settings-modal').classList.remove('hidden');
-                try { document.exitPointerLock(); } catch(e){}
-            } else {
-                document.getElementById('settings-modal').classList.add('hidden');
-                if(!isMobile && gameActive) document.getElementById('game-canvas').requestPointerLock();
-            }
-        }
-        
-        function adjustVolume(val) { if(masterGain) masterGain.gain.setValueAtTime(val, audioCtx.currentTime); }
-        
-        function adjustGraphics(type) {
-            state.gfx = type;
-            const activeBump = (type === 'high') ? bumpTexGlobal : null;
-            scene.fog = (type === 'high') ? new THREE.FogExp2(0x010000, 0.25) : null;
-            if (wallMat) { wallMat.bumpMap = activeBump; wallMat.needsUpdate = true; }
-            if (floorMat) { floorMat.bumpMap = activeBump; floorMat.needsUpdate = true; }
-        }
-
-        function startGame(loadFromCheckpoint) {
-            initAudio();
-            document.getElementById('menu-screen').classList.add('hidden');
-            document.getElementById('ui-layer').classList.remove('hidden');
-            document.getElementById('minimap-container').classList.remove('hidden');
-            if (!isMobile) document.getElementById('game-canvas').requestPointerLock();
-
-            state.sanity = 100; state.battery = 100; state.stamina = 100; state.flashlightOn = true; state.hasSecret = false;
-            
-            if (loadFromCheckpoint && localStorage.getItem('cold_cave_v5_save')) {
-                const data = JSON.parse(localStorage.getItem('cold_cave_v5_save'));
-                MAP_GRID = data.grid; state.runesCollected = data.runes; state.hasSecret = data.hasSecret;
-                build3DWorld();
-                camera.position.set(data.pX, 0.1, data.pZ);
-                runesArray.forEach((r, i) => { if (data.pickedRunes.includes(i)) { scene.remove(r.mesh); r.picked = true; } });
-                batteriesArray.forEach((b, i) => { if (data.pickedBats.includes(i)) { scene.remove(b.mesh); b.picked = true; } });
-                if(state.hasSecret && secretArtifact) scene.remove(secretArtifact);
-            } else {
-                generateProceduralMaze();
-                build3DWorld();
-            }
-
-            let safeSpawn = findEmptyCell();
-            crawlerState.gridR = safeSpawn.r; crawlerState.gridC = safeSpawn.c;
-            crawlerState.x = safeSpawn.c * GRID_SIZE; crawlerState.z = safeSpawn.r * GRID_SIZE;
-            crawlerMesh.position.set(crawlerState.x, -0.5, crawlerState.z);
-            crawlerState.currentPath = [];
-
-            wraithState.active = false; wraithMesh.position.set(0,-100,0);
-
-            startMonsterAudio();
-            gameActive = true; updateHUD(); animate();
-        }
-
-        function animate() {
-            if (settingsOpen) {
-                renderer.render(scene, camera);
-                requestAnimationFrame(animate);
-                return;
-            }
-            if (!gameActive) return; 
-            
-            requestAnimationFrame(animate);
-
-            camera.rotation.y += (targetCamRotationY - camera.rotation.y) * 0.2;
-            camera.rotation.x += (targetCamRotationX - camera.rotation.x) * 0.2;
-
-            let targetRoll = 0;
-            if (keys.a) targetRoll = 0.012;
-            if (keys.d) targetRoll = -0.012;
-            camera.rotation.z += (targetRoll - camera.rotation.z) * 0.1;
-
-            let moveX = 0, moveZ = 0;
-            if (keys.w) moveZ -= 1; if (keys.s) moveZ += 1;
-            if (keys.a) moveX -= 1; if (keys.d) moveX += 1;
-
-            let isMoving = moveX !== 0 || moveZ !== 0;
-            let actualSprint = keys.shift && isMoving && state.stamina > 5;
-
-            if (actualSprint) {
-                state.stamina = Math.max(0, state.stamina - 0.4);
-            } else {
-                state.stamina = Math.min(100, state.stamina + 0.25);
-            }
-
-            if (isMoving) {
-                let speed = actualSprint ? 0.08 : 0.042;
-                let dir = new THREE.Vector3(moveX, 0, moveZ).normalize().applyQuaternion(camera.quaternion);
-                let nextX = camera.position.x + dir.x * speed; let nextZ = camera.position.z + dir.z * speed;
-
-                if (!checkCollision(nextX, camera.position.z)) camera.position.x = nextX;
-                if (!checkCollision(camera.position.x, nextZ)) camera.position.z = nextZ;
-
-                playFootstepSynth(actualSprint);
-                bobTimer += actualSprint ? 0.28 : 0.15;
-                camera.position.y = 0.1 + Math.sin(bobTimer) * (actualSprint ? 0.06 : 0.03);
-            } else {
-                camera.position.y += (0.1 - camera.position.y) * 0.1;
-            }
-
-            flashlight.position.copy(camera.position); flashBeam.position.copy(camera.position);
-            let camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            let targetLookAt = camera.position.clone().add(camDir.clone().multiplyScalar(5));
-            
-            flashlight.target.position.lerp(targetLookAt, 0.12);
-            flashBeam.lookAt(flashlight.target.position);
-
-            if (state.flashlightOn && state.battery > 0) {
-                let currentInt = 6.0;
-                if (state.sanity < 45 && Math.random() < 0.05) {
-                    currentInt = Math.random() * 1.5; 
-                }
-                if(state.battery < 20 && Math.random() < 0.12) { 
-                    flashlight.intensity = 0.2; flashBeam.visible = false; 
-                } else { 
-                    flashlight.intensity = currentInt; flashBeam.visible = true; 
-                }
-            } else { flashlight.intensity = 0; flashBeam.visible = false; }
-            if (state.battery <= 0) state.flashlightOn = false;
-
-            if (!state.flashlightOn) state.sanity -= 0.04; else state.sanity -= 0.004;
-            state.sanity = Math.max(0, state.sanity);
-
-            if (dustParticles) {
-                let dustPos = dustParticles.geometry.attributes.position.array;
-                for (let i = 0; i < dustPos.length; i += 3) {
-                    dustPos[i+1] -= 0.002; 
-                    dustPos[i] += Math.sin(Date.now() * 0.0006 + i) * 0.0015; 
-                    if (dustPos[i+1] < -1.5) { 
-                        dustPos[i+1] = 2.5; 
-                        dustPos[i] = Math.random() * MAZE_W * GRID_SIZE;
-                    }
-                }
-                dustParticles.geometry.attributes.position.needsUpdate = true;
-            }
-
-            if (dropInstMesh) {
-                let dummyD = new THREE.Object3D();
-                if (Math.random() < 0.25) { 
-                    let slot = drops.find(d => !d.active);
-                    if (slot) {
-                        let randR = Math.floor(Math.random() * MAZE_H);
-                        let randC = Math.floor(Math.random() * MAZE_W);
-                        if (MAP_GRID[randR] && MAP_GRID[randR][randC] === 0) {
-                            slot.x = randC * GRID_SIZE + (Math.random() - 0.5) * 2;
-                            slot.z = randR * GRID_SIZE + (Math.random() - 0.5) * 2;
-                            slot.y = 2.5; slot.active = true;
-                        }
-                    }
-                }
-                drops.forEach((d, idx) => {
-                    if (d.active) {
-                        d.y -= d.speed;
-                        if (d.y <= -1.49) {
-                            d.active = false; dummyD.position.set(0, -100, 0);
-                            
-                            let rip = ripples[nextRippleIdx];
-                            rip.mesh.position.set(d.x, -1.49, d.z);
-                            rip.scale = 0.1; rip.opacity = 0.8; rip.active = true;
-                            nextRippleIdx = (nextRippleIdx + 1) % MAX_RIPPLES;
-                        } else {
-                            dummyD.position.set(d.x, d.y, d.z);
-                        }
-                    } else { dummyD.position.set(0, -100, 0); }
-                    dummyD.updateMatrix(); dropInstMesh.setMatrixAt(idx, dummyD.matrix);
-                });
-                dropInstMesh.instanceMatrix.needsUpdate = true;
-            }
-
-            ripples.forEach(r => {
-                if (r.active) {
-                    r.scale += 0.09; r.opacity -= 0.04;
-                    r.mesh.scale.set(r.scale, r.scale, 1);
-                    r.mesh.material.opacity = r.opacity;
-                    if (r.opacity <= 0) r.active = false;
-                }
-            });
-
-            let pGridC = Math.round(camera.position.x / GRID_SIZE);
-            let pGridR = Math.round(camera.position.z / GRID_SIZE);
-
-            if (crawlerState.currentPath.length === 0) {
-                crawlerState.currentPath = findShortestPathAStar({r: crawlerState.gridR, c: crawlerState.gridC}, {r: pGridR, c: pGridC});
-                if(crawlerState.currentPath.length > 0) crawlerState.currentPath.shift(); 
-            }
-
-            if (crawlerState.currentPath.length > 0) {
-                let nextNode = crawlerState.currentPath[0]; let targetX = nextNode.c * GRID_SIZE; let targetZ = nextNode.r * GRID_SIZE;
-                let mDir = new THREE.Vector3(targetX - crawlerState.x, 0, targetZ - crawlerState.z); let distToTarget = mDir.length();
-                let currentDistToPlayer = camera.position.distanceTo(crawlerMesh.position);
-                let mSpeed = currentDistToPlayer < 6 ? crawlerState.speed * 1.5 : crawlerState.speed;
-                
-                if (distToTarget > mSpeed) {
-                    mDir.normalize(); crawlerState.x += mDir.x * mSpeed; crawlerState.z += mDir.z * mSpeed;
-                } else {
-                    crawlerState.x = targetX; crawlerState.z = targetZ;
-                    crawlerState.gridR = nextNode.r; crawlerState.gridC = nextNode.c;
-                    crawlerState.currentPath.shift();
-                    crawlerState.currentPath = findShortestPathAStar({r: crawlerState.gridR, c: crawlerState.gridC}, {r: pGridR, c: pGridC});
-                    if(crawlerState.currentPath.length > 0) crawlerState.currentPath.shift();
-                }
-            }
-            crawlerMesh.position.set(crawlerState.x, -0.5, crawlerState.z);
-            if(camera.position.distanceTo(crawlerMesh.position) > 0.5) crawlerMesh.lookAt(camera.position.x, -0.5, camera.position.z);
-
-            crawlerState.phase += 0.05;
-            crawlerArms.forEach((arm, i) => { arm.rotation.z = Math.sin(crawlerState.phase * 5 + i) * 0.3; });
-
-            let distToWraith = 999;
-            if (state.sanity < 50) {
-                if(!wraithState.active) { wraithState.active = true; wraithState.x = camera.position.x + 15; wraithState.z = camera.position.z + 15; }
-                wraithMesh.position.set(wraithState.x, Math.sin(Date.now()*0.003)*0.2, wraithState.z);
-                let wDir = new THREE.Vector3().subVectors(camera.position, wraithMesh.position).normalize();
-                wraithState.x += wDir.x * wraithState.speed; wraithState.z += wDir.z * wraithState.speed;
-                distToWraith = camera.position.distanceTo(wraithMesh.position);
-            } else { wraithState.active = false; wraithMesh.position.set(0,-100,0); }
-
-            let distToCrawler = camera.position.distanceTo(crawlerMesh.position);
-            let closestDist = Math.min(distToCrawler, distToWraith);
-            let hbTempo = (closestDist < 5) ? 0.20 : (closestDist < 12) ? 0.45 : 0.8;
-            playHeartbeatSynth(hbTempo);
-
-            if (monsterGrowlGain && monsterGrowlOsc) {
-                let vol = Math.max(0, 1.0 - (closestDist / 20));
-                monsterGrowlGain.gain.setValueAtTime(vol * 0.45, audioCtx.currentTime);
-                monsterGrowlOsc.frequency.setValueAtTime(25 + (vol*35), audioCtx.currentTime);
-            }
-
-            if (distToCrawler < 1.2 || distToWraith < 1.2) { executeJumpscare(); return; }
-
-            if (closestDist < 8) {
-                let shake = (8 - closestDist) * 0.005;
-                camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake;
-                document.getElementById('warning-indicator').style.visibility = 'visible';
-                document.getElementById('warning-indicator').innerText = "ENTITAS MENDETEKSI PRESENSIMU!";
-            } else { document.getElementById('warning-indicator').style.visibility = 'hidden'; }
-
-            let redPulse = Math.abs(Math.sin(Date.now() * 0.004)) * (closestDist < 6 ? 0.8 : 0.2);
-            document.getElementById('vignette').style.boxShadow = `inset 0 0 180px rgba(${Math.floor(redPulse * 200)}, 0, 0, 0.95)`;
-
-            runesArray.forEach((rune, i) => {
-                if (!rune.picked) {
-                    rune.mesh.rotation.y += 0.04;
-                    if (camera.position.distanceTo(rune.mesh.position) < 1.3) {
-                        rune.picked = true; scene.remove(rune.mesh); state.runesCollected++;
-                        playRuneSFX(); updateHUD(); saveGameProgress();
-                    }
-                }
-            });
-
-            batteriesArray.forEach((bat, i) => {
-                if (!bat.picked) {
-                    bat.mesh.rotation.y += 0.02;
-                    if (camera.position.distanceTo(bat.mesh.position) < 1.3) {
-                        bat.picked = true; scene.remove(bat.mesh); state.battery = Math.min(100, state.battery + 35);
-                        playBatterySFX(); updateHUD();
-                    }
-                }
-            });
-
-            if (secretArtifact && !state.hasSecret) {
-                secretArtifact.rotation.y += 0.03;
-                if (camera.position.distanceTo(secretArtifact.position) < 1.3) {
-                    state.hasSecret = true; scene.remove(secretArtifact); playRuneSFX();
-                    document.getElementById('warning-indicator').innerText = "RELIK EMAS KOSMIK DIAMANKAN!";
-                    document.getElementById('warning-indicator').style.visibility = 'visible';
-                }
-            }
-
-            if (exitGateMesh) {
-                if (state.runesCollected >= state.totalRunesToWin && exitGateMesh.position.y < 4.0) exitGateMesh.position.y += 0.02;
-                if (state.runesCollected >= state.totalRunesToWin && camera.position.distanceTo(exitGateMesh.position) < 1.4) {
-                    gameActive = false; try { localStorage.removeItem('cold_cave_v5_save'); } catch(e){}
-                    if (state.hasSecret) {
-                        endGame("SECRET ENDING: COSMIC OVERLORD", "Luar biasa! Relik Emas Kuno menyatu dengan jiwamu. Labirin gua runtuh dan jiwamu berevolusi melampaui batas manusia, menjadi penguasa absolut dimensi kosmologi gua es raksasa.");
-                    } else {
-                        endGame("NORMAL ENDING: ESCAPE", "Selamat! Kamu berhasil menembus gua organik masif ini dengan konvergensi energi 5 rune dan kembali ke permukaan bumi.");
-                    }
-                    return;
-                }
-            }
-
-            if (state.sanity <= 0) { endGame("JIWA HANCUR", "Sanity mentalmu menyentuh titik nol. Kesadaranmu diserap oleh kegelapan gua selamanya."); return; }
-
-            updateHUD(); renderMinimapRadar();
-            renderer.render(scene, camera);
-        }
-
-        // ========================================================
-        // BUG FIX: ROTASI PERSPEKTIF MINIMAP & CULLING RENDERER
-        // ========================================================
-        function renderMinimapRadar() {
-            mapCtx.clearRect(0, 0, 130, 130);
-            let pGridX = camera.position.x / GRID_SIZE; 
-            let pGridZ = camera.position.z / GRID_SIZE;
-            let center = 65; 
-            let scale = 6.0;
-
-            mapCtx.save();
-            mapCtx.translate(center, center);
-            mapCtx.rotate(camera.rotation.y); 
-
-            // Culling System: Gambar Dinding yang cuma masuk radius radar
-            mapCtx.fillStyle = "rgba(180, 0, 0, 0.25)";
-            for (let r = 0; r < MAZE_H; r++) {
-                for (let c = 0; c < MAZE_W; c++) {
-                    if (MAP_GRID[r][c] === 1) {
-                        let dX = (c - pGridX) * scale; 
-                        let dZ = (r - pGridZ) * scale;
-                        if (Math.abs(dX) <= 90 && Math.abs(dZ) <= 90) { 
-                            mapCtx.fillRect(dX, dZ, scale - 0.5, scale - 0.5);
-                        }
-                    }
-                }
-            }
-
-            // Gambar Rune (Merah)
-            mapCtx.fillStyle = "#ff0000";
-            runesArray.forEach(r => { 
-                if (!r.picked) {
-                    let rX = (r.gridC - pGridX) * scale;
-                    let rZ = (r.gridR - pGridZ) * scale;
-                    if (Math.abs(rX) <= 90 && Math.abs(rZ) <= 90) mapCtx.fillRect(rX, rZ, 3, 3); 
-                }
-            });
-
-            // Gambar Baterai (Hijau)
-            mapCtx.fillStyle = "#00ff66";
-            batteriesArray.forEach(b => { 
-                if (!b.picked) {
-                    let bX = (b.gridC - pGridX) * scale;
-                    let bZ = (b.gridR - pGridZ) * scale;
-                    if (Math.abs(bX) <= 90 && Math.abs(bZ) <= 90) mapCtx.fillRect(bX, bZ, 3, 3); 
-                }
-            });
-
-            // Gambar Gerbang Keluar
-            if (exitGateMesh && state.runesCollected >= state.totalRunesToWin) {
-                mapCtx.fillStyle = "#ff00ff";
-                let gX = (exitGateMesh.position.x / GRID_SIZE - pGridX) * scale;
-                let gZ = (exitGateMesh.position.z / GRID_SIZE - pGridZ) * scale;
-                if (Math.abs(gX) <= 90 && Math.abs(gZ) <= 90) mapCtx.fillRect(gX, gZ, 6, 6);
-            }
-
-            mapCtx.restore();
-
-            // Player Marker Posisi Selalu Lurus Fix (Forward = Up)
-            mapCtx.fillStyle = "#ffffff"; 
-            mapCtx.beginPath(); 
-            mapCtx.arc(center, center, 3.5, 0, Math.PI * 2); 
-            mapCtx.fill();
-            
-            mapCtx.strokeStyle = "rgba(0, 255, 255, 0.8)"; 
-            mapCtx.lineWidth = 1.5; 
-            mapCtx.beginPath(); 
-            mapCtx.moveTo(center, center);
-            mapCtx.lineTo(center, center - 12); 
-            mapCtx.stroke();
-        }
-
-        function saveGameProgress() {
-            let pickedRunes = []; runesArray.forEach((r, i) => { if(r.picked) pickedRunes.push(i); });
-            let pickedBats = []; batteriesArray.forEach((b, i) => { if(b.picked) pickedBats.push(i); });
-            try {
-                localStorage.setItem('cold_cave_v5_save', JSON.stringify({
-                    grid: MAP_GRID, runes: state.runesCollected, hasSecret: state.hasSecret, pX: camera.position.x, pZ: camera.position.z, pickedRunes, pickedBats
-                }));
-            } catch (e) { console.error("Save quota error:", e); }
-        }
-
-        function updateHUD() {
-            document.getElementById('sanity-fill').style.width = state.sanity + '%';
-            document.getElementById('stamina-fill').style.width = state.stamina + '%';
-            document.getElementById('battery-fill').style.width = state.battery + '%';
-            document.getElementById('objective-txt').innerText = `RUNE: ${state.runesCollected} / ${state.totalRunesToWin}` + (state.hasSecret ? " 🌟" : "");
-        }
-
-        function executeJumpscare() {
-            gameActive = false; 
-            if(monsterGrowlGain) monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
-            if(monsterGrowlOsc) { try { monsterGrowlOsc.stop(); monsterGrowlOsc = null; } catch(e){} }
-            
-            if(!isMobile) try{document.exitPointerLock();}catch(e){}
-            document.getElementById('jumpscare').style.visibility = 'visible';
-            setTimeout(() => {
-                document.getElementById('jumpscare').style.visibility = 'hidden';
-                endGame("DIELIMINASI", "Monster Crawler menyudutkanmu di ceruk batuan gua. Tubuhmu membeku menjadi fosil es abadi.");
-            }, 1100);
-        }
-
-        function endGame(title, reason) {
-            gameActive = false; 
-            if(monsterGrowlGain) monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
-            if(monsterGrowlOsc) { try { monsterGrowlOsc.stop(); monsterGrowlOsc = null; } catch(e){} }
-
-            document.getElementById('ui-layer').classList.add('hidden');
-            document.getElementById('mobile-hud').style.display = 'none'; document.getElementById('minimap-container').classList.add('hidden');
-            document.getElementById('end-title').innerText = title; document.getElementById('end-reason').innerText = reason;
-            document.getElementById('gameover-screen').classList.remove('hidden');
-        }
-
-        function goToMenu() {
-            document.getElementById('gameover-screen').classList.add('hidden');
-            document.getElementById('menu-screen').classList.remove('hidden'); checkSaveData();
-        }
-
-        window.addEventListener('resize', () => {
-            if (camera && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        canvas.addEventListener('touchstart', () => {
+            if (!player.isJumping && !isGameOver) {
+                player.vy = -12;
+                player.isJumping = true;
             }
         });
 
-        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) { isMobile = true; document.getElementById('mobile-hud').style.display = 'flex'; }
-        checkSaveData(); init3D();
+        function spawnObstacle() {
+            if (Math.random() < 0.02 && obstacles.length < 3) {
+                obstacles.push({
+                    x: canvas.width,
+                    y: 210,
+                    width: 20,
+                    height: 30,
+                    color: '#7f8c8d'
+                });
+            }
+        }
+
+        function update() {
+            if (isGameOver || isGameWon) return;
+
+            // Update Jarak Keluar Goa
+            distance -= 0.05;
+            if (distance <= 0) {
+                distance = 0;
+                isGameWon = true;
+            }
+            document.getElementById('distance').innerText = Math.ceil(distance);
+
+            // Logika Player (Lompat & Gravitasi)
+            player.vy += gravity;
+            player.y += player.vy;
+            if (player.y >= 200) {
+                player.y = 200;
+                player.vy = 0;
+                player.isJumping = false;
+            }
+
+            // Monster otomatis mendekat perlahan
+            monster.x += 0.3;
+
+            // Update Rintangan (Batu)
+            spawnObstacle();
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= gameSpeed;
+
+                // Cek Tabrakan Player dengan Batu
+                if (
+                    player.x < obstacles[i].x + obstacles[i].width &&
+                    player.x + player.width > obstacles[i].x &&
+                    player.y < obstacles[i].y + obstacles[i].height &&
+                    player.y + player.height > obstacles[i].y
+                ) {
+                    // Jika tabrak batu, monster langsung maju pesat!
+                    monster.x += 40; 
+                    player.color = '#f1c40f'; // Efek kaget/terluka sementara
+                    setTimeout(() => player.color = '#3498db', 300);
+                    obstacles.splice(i, 1);
+                    continue;
+                }
+
+                // Hapus batu yang lolos dari layar
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // Hitung teks jarak monster untuk UI
+            let selisih = player.x - (monster.x + monster.width);
+            document.getElementById('monster-dist').innerText = selisih > 100 ? "Jauh" : (selisih > 40 ? "Mendekat!" : "KRITIS!! 💀");
+
+            // Cek jika Monster berhasil menangkap Player
+            if (monster.x + monster.width >= player.x) {
+                isGameOver = true;
+            }
+        }
+
+        function draw() {
+            // Bersihkan layar
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Gambar Tanah Goa
+            ctx.fillStyle = '#1e120a';
+            ctx.fillRect(0, 240, canvas.width, 60);
+
+            // Gambar Monster
+            ctx.fillStyle = monster.color;
+            ctx.fillRect(monster.x, monster.y, monster.width, monster.height);
+            // Mata monster biar seram
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(monster.x + monster.width - 15, monster.y + 20, 10, 10);
+
+            // Gambar Player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // Gambar Rintangan (Batu-batu goa)
+            obstacles.forEach(obs => {
+                ctx.fillStyle = obs.color;
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+            });
+
+            // Teks Menang / Kalah
+            if (isGameOver) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#e74c3c';
+                ctx.font = '40px sans-serif';
+                ctx.fillText('KAMU DIMAKAN MONSTER! X_X', canvas.width/2 - 260, canvas.height/2);
+            } else if (isGameWon) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#2ecc71';
+                ctx.font = '40px sans-serif';
+                ctx.fillText('KAMU BERHASIL KELUAR GOA! 🎉', canvas.width/2 - 280, canvas.height/2);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Mulai Game pertama kali
+        resetGame();
+        gameLoop();
     </script>
 </body>
 </html>
