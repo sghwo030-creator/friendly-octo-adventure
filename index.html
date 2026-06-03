@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Dark Hallway: 3D First Person</title>
+    <title>The Cold Cave: 3D First Person Horror</title>
     <style>
         * {
             box-sizing: border-box;
@@ -20,7 +20,6 @@
             font-family: 'Courier New', Courier, monospace;
         }
 
-        /* WebGL Canvas untuk 3D */
         #game-canvas {
             position: absolute;
             top: 0;
@@ -30,7 +29,6 @@
             z-index: 1;
         }
 
-        /* UI Overlay di atas 3D render */
         .ui-overlay {
             position: absolute;
             top: 0;
@@ -50,40 +48,40 @@
             justify-content: space-between;
             color: #fff;
             font-size: 1.1rem;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.75);
             padding: 15px;
-            border: 1px solid #222;
+            border: 1px solid #332222;
             pointer-events: auto;
             width: 100%;
-            max-width: 500px;
+            max-width: 550px;
             margin: 0 auto;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
         }
 
         .bar-bg {
-            background: #222;
-            width: 120px;
+            background: #221111;
+            width: 110px;
             height: 8px;
             display: inline-block;
             margin-left: 10px;
             vertical-align: middle;
-            border: 1px solid #444;
+            border: 1px solid #443333;
         }
 
         .bar-fill { height: 100%; width: 100%; transition: width 0.2s; }
-        #sanity-fill { background-color: #0066cc; }
-        #battery-fill { background-color: #cc9900; }
+        #sanity-fill { background-color: #0066cc; box-shadow: 0 0 8px #0066cc; }
+        #battery-fill { background-color: #cc9900; box-shadow: 0 0 8px #cc9900; }
 
-        /* Layar Menu & Game Over */
         .screen {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #050505;
+            background-color: #050404;
             z-index: 100;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: #fff;
+            color: #dcdcdc;
             text-align: center;
             padding: 20px;
         }
@@ -93,43 +91,43 @@
         h1 {
             font-size: 3rem;
             color: #8b0000;
-            text-shadow: 0 0 10px rgba(139, 0, 0, 0.8);
+            text-shadow: 0 0 12px rgba(139, 0, 0, 0.9);
             margin-bottom: 20px;
-            letter-spacing: 5px;
+            letter-spacing: 6px;
+            font-weight: 900;
         }
 
-        p { max-width: 500px; line-height: 1.6; margin-bottom: 30px; }
+        p { max-width: 550px; line-height: 1.7; margin-bottom: 30px; color: #aaa; }
 
         button {
-            background: transparent;
+            background: rgba(20, 0, 0, 0.2);
             color: #8b0000;
             border: 2px solid #8b0000;
-            padding: 15px 40px;
+            padding: 15px 45px;
             font-size: 1.2rem;
             font-family: inherit;
             cursor: pointer;
             text-transform: uppercase;
             pointer-events: auto;
-            transition: 0.3s;
+            transition: 0.3s all;
         }
 
         button:hover {
             background: #8b0000;
             color: #fff;
-            box-shadow: 0 0 15px #8b0000;
+            box-shadow: 0 0 20px #8b0000;
         }
 
-        /* Panduan Kontrol */
         .controls-hint {
-            background: rgba(0,0,0,0.4);
-            padding: 10px;
-            color: #666;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 12px;
+            color: #888;
             font-size: 0.85rem;
             text-align: center;
             margin-top: auto;
+            border-top: 1px solid #221111;
         }
 
-        /* Jumpscare Screen */
         #jumpscare {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -139,10 +137,12 @@
             visibility: hidden;
         }
         #jumpscare-text {
-            color: #ff0000; font-size: 7rem; font-weight: bold; letter-spacing: 15px;
+            color: #ff0000; font-size: 7rem; font-weight: bold; letter-spacing: 20px;
+            font-family: 'Impact', sans-serif;
         }
     </style>
 
+    <!-- Mengimpor Engine 3D (Three.js) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
@@ -150,31 +150,35 @@
     <canvas id="game-canvas"></canvas>
     <audio id="bgm" src="https://raw.githubusercontent.com/sghwo030-creator/friendly-octo-adventure/refs/heads/main/Cold_Linoleum_Floor.mp3" loop></audio>
 
+    <!-- MENU UTAMA -->
     <div id="menu-screen" class="screen">
-        <h1>THE DARK HALLWAY</h1>
-        <p>Gunakan tombol W, A, S, D untuk bergerak di dalam lorong 3D. Musik linoleum yang dingin mengintaimu dari kegelapan.</p>
-        <button onclick="startGame()">Masuk Lorong 3D</button>
+        <h1>THE COLD CAVE</h1>
+        <p>Kamu tersesat di kedalaman gua batu yang lembap. Anehnya, gema langkah kakimu di sini terdengar persis seperti ketukan di atas lantai linoleum yang dingin...</p>
+        <button onclick="startGame()">Masuk Ke Dalam Gua</button>
     </div>
 
+    <!-- UI HUD GAMEPLAY -->
     <div id="ui-layer" class="ui-overlay hidden">
         <div class="hud">
-            <div>Sanity <div class="bar-bg"><div id="sanity-fill" class="bar-fill"></div></div></div>
-            <div>Senter <div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div></div>
-            <div id="distance-txt">Jarak: 0m</div>
+            <div>Kewarasan <div class="bar-bg"><div id="sanity-fill" class="bar-fill"></div></div></div>
+            <div>Baterai <div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div></div>
+            <div id="distance-txt">Kedalaman: 0m</div>
         </div>
         <div class="controls-hint">
-            [W/S] Maju/Mundur | [A/D] Tolak Kiri/Kanan | [SPACE] Senter ON/OFF | [E] Cari Baterai
+            [W/S] Gerak Maju/Mundur | [A/D] Hadap Kiri/Kanan | [SPACE] Senter ON/OFF | [E] Raba Lantai (Cari Baterai)
         </div>
     </div>
 
+    <!-- SCREEN AKHIR -->
     <div id="gameover-screen" class="screen hidden">
-        <h1 id="end-title">KAMU HILANG</h1>
+        <h1 id="end-title">MATI KAKU</h1>
         <p id="end-reason"></p>
-        <button onclick="restartGame()">Coba Lagi</button>
+        <button onclick="restartGame()">Ulangi Takdir</button>
     </div>
 
+    <!-- JUMPSCARE LAYER -->
     <div id="jumpscare">
-        <div id="jumpscare-text">MENOLEH!</div>
+        <div id="jumpscare-text">DI SINI!</div>
     </div>
 
     <script>
@@ -182,19 +186,16 @@
         let scene, camera, renderer, flashlight, ambientLight;
         let gameActive = false;
         
-        // Game Systems State
         let state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
         const keys = { w: false, a: false, s: false, d: false };
 
-        // 3D Hallway Configuration
-        const hallwayLength = 160;
-        const speed = 0.08;
+        const caveLength = 180;
+        const speed = 0.07;
         const turnSpeed = 0.025;
 
-        // Inisialisasi Dunia 3D Engine
         function init3D() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x000000, 0.15); // Efek kabut kegelapan
+            scene.fog = new THREE.FogExp2(0x020101, 0.18); // Kabut pekat khas gua gelap
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             
@@ -202,53 +203,141 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
 
-            // Membuat Tekstur Lantai Linoleum secara Prosedural (Tanpa file gambar luar)
+            // DETAIL 1: Membuat Tekstur Batu Gua Kasar via HTML Canvas (Procedural Noise)
             const canvasTex = document.createElement('canvas');
-            canvasTex.width = 256; canvasTex.height = 256;
+            canvasTex.width = 512; canvasTex.height = 512;
             const ctx = canvasTex.getContext('2d');
-            ctx.fillStyle = '#141414'; ctx.fillRect(0, 0, 256, 256);
-            ctx.strokeStyle = '#222222'; ctx.lineWidth = 4; ctx.strokeRect(0, 0, 256, 256);
+            ctx.fillStyle = '#1c1815'; ctx.fillRect(0, 0, 512, 512); // Warna dasar batu purba
             
-            const wallTexture = new THREE.CanvasTexture(canvasTex);
-            wallTexture.wrapS = THREE.RepeatWrapping; wallTexture.wrapT = THREE.RepeatWrapping;
-            wallTexture.repeat.set(2, 40);
+            // Menggambar bintik-bintik batu kasar
+            for(let i=0; i<30000; i++) {
+                let x = Math.random()*512; let y = Math.random()*512;
+                let size = Math.random()*3;
+                ctx.fillStyle = Math.random() > 0.5 ? '#110e0c' : '#2d2621';
+                ctx.fillRect(x, y, size, size);
+            }
+            // Goresan retakan batu purba
+            ctx.strokeStyle = '#0a0807'; ctx.lineWidth = 2;
+            for(let i=0; i<20; i++) {
+                ctx.beginPath();
+                ctx.moveTo(Math.random()*512, Math.random()*512);
+                ctx.lineTo(Math.random()*512, Math.random()*512);
+                ctx.stroke();
+            }
+            
+            const rockTexture = new THREE.CanvasTexture(canvasTex);
+            rockTexture.wrapS = THREE.RepeatWrapping; rockTexture.wrapT = THREE.RepeatWrapping;
+            rockTexture.repeat.set(3, 30);
 
-            // Membuat Struktur Geometri Lorong (Box raksasa yang dibalik)
-            const tunnelGeo = new THREE.BoxGeometry(4, 3.5, hallwayLength);
-            const tunnelMat = new THREE.MeshStandardMaterial({
-                map: wallTexture,
-                roughness: 0.8,
-                side: THREE.BackSide // Agar bagian dalam box yang terlihat
+            // DETAIL 2: Membuat Geometri Terowongan Gua Berbatu Irregular
+            const caveGeo = new THREE.BoxGeometry(5, 4.5, caveLength, 10, 10, 120);
+            
+            // Deformasi Vertices (Mengubah bentuk kotak mulus jadi struktur batu tebing hancur)
+            const pos = caveGeo.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+                let x = pos.getX(i); let y = pos.getY(i); let z = pos.getZ(i);
+
+                // Membuat gelombang batu acak (Jagged Wall Effect)
+                let wave = Math.sin(z * 0.7) * 0.3 + Math.cos(x * 2.5) * 0.2 + Math.sin(y * 1.5) * 0.2;
+                
+                // Supaya jalan tengah lantai tidak terlalu bergelombang ekstrim (menghindari bug amblas)
+                if (y < -2.1 && Math.abs(x) < 1.3) {
+                    pos.setY(i, y + Math.abs(wave) * 0.12);
+                } else {
+                    pos.setX(i, x + wave * (x > 0 ? 1 : -1) * 0.45);
+                    pos.setY(i, y + wave * (y > 0 ? 1 : -1) * 0.45);
+                }
+            }
+            caveGeo.computeVertexNormals();
+
+            const caveMat = new THREE.MeshStandardMaterial({
+                map: rockTexture,
+                roughness: 0.95,
+                metalness: 0.05,
+                side: THREE.BackSide
             });
-            const tunnel = new THREE.Mesh(tunnelGeo, tunnelMat);
-            tunnel.position.set(0, 1.75, -hallwayLength / 2);
-            scene.add(tunnel);
+            const caveMesh = new THREE.Mesh(caveGeo, caveMat);
+            caveMesh.position.set(0, 1.8, -caveLength / 2);
+            scene.add(caveMesh);
 
-            // Pencahayaan Utama (Senter Player)
-            flashlight = new THREE.SpotLight(0xfff6e0, 3, 18, Math.PI / 4, 0.6, 1);
+            // DETAIL 3: Membuat Stalaktit (Atas) & Stalamit (Bawah) Berwarna Senada dinding gua
+            const spikeMat = new THREE.MeshStandardMaterial({ map: rockTexture, roughness: 0.9 });
+            for(let zPos = 6; zPos < caveLength - 6; zPos += 3.5) {
+                // Stalaktit (Menggantung di langit gua)
+                if(Math.random() > 0.35) {
+                    const h = Math.random() * 1.3 + 0.5;
+                    const coneGeo = new THREE.ConeGeometry(0.22, h, 5);
+                    coneGeo.rotateX(Math.PI); 
+                    const stalactite = new THREE.Mesh(coneGeo, spikeMat);
+                    stalactite.position.set(Math.random() * 2.4 - 1.2, 3.4, -zPos);
+                    scene.add(stalactite);
+                }
+                // Stalamit (Tumbuh liar di pinggiran jalan lantai gua)
+                if(Math.random() > 0.4) {
+                    const h = Math.random() * 0.9 + 0.3;
+                    const coneGeo = new THREE.ConeGeometry(0.18, h, 5);
+                    const stalagmite = new THREE.Mesh(coneGeo, spikeMat);
+                    // Ditaruh agak ke kiri/kanan jalan agar tidak menutup jalur lurus player
+                    const sideX = Math.random() > 0.5 ? (Math.random() * 0.5 + 1.2) : -(Math.random() * 0.5 + 1.2);
+                    stalagmite.position.set(sideX, h/2 - 0.2, -zPos);
+                    scene.add(stalagmite);
+                }
+            }
+
+            // DETAIL 4: Jamur/Kristal Menyala (Glowing Bioluminescent Moss)
+            const mossMat = new THREE.MeshBasicMaterial({ color: 0x00ff55 });
+            for (let zPos = 10; zPos < caveLength; zPos += 7) {
+                if(Math.random() > 0.3) {
+                    const mossGeo = new THREE.SphereGeometry(Math.random() * 0.12 + 0.04, 5, 5);
+                    const moss = new THREE.Mesh(mossGeo, mossMat);
+                    const sideX = Math.random() > 0.5 ? 1.9 : -1.9;
+                    moss.position.set(sideX, Math.random() * 2.5 + 0.4, -zPos);
+                    scene.add(moss);
+                    
+                    // Cahaya pancaran hijau mistis konstan di sekitar kristal
+                    if(Math.random() > 0.6) {
+                        const light = new THREE.PointLight(0x00ff55, 0.4, 4);
+                        light.position.copy(moss.position);
+                        scene.add(light);
+                    }
+                }
+            }
+
+            // DETAIL 5: Efek Genangan Air Tanah Basah di Lantai Gua
+            const puddleMat = new THREE.MeshStandardMaterial({ color: 0x080706, roughness: 0.05, metalness: 0.8 });
+            for (let zPos = 12; zPos < caveLength; zPos += 14) {
+                if(Math.random() > 0.4) {
+                    const puddleGeo = new THREE.CircleGeometry(Math.random() * 0.7 + 0.3, 8);
+                    puddleGeo.rotateX(-Math.PI / 2); 
+                    const puddle = new THREE.Mesh(puddleGeo, puddleMat);
+                    puddle.position.set(Math.random() * 1.2 - 0.6, -0.18, -zPos);
+                    scene.add(puddle);
+                }
+            }
+
+            // Senter (Spotlight Intensitas Tinggi terikat Kamera)
+            flashlight = new THREE.SpotLight(0xfff5db, 3.5, 22, Math.PI / 4.2, 0.5, 1);
             flashlight.castShadow = true;
             camera.add(flashlight);
             
-            // Arah sorotan senter lurus ke depan kamera
-            const targetObject = new THREE.Object3D();
-            targetObject.position.set(0, 0, -1);
-            camera.add(targetObject);
-            flashlight.target = targetObject;
+            const target = new THREE.Object3D();
+            target.position.set(0, 0, -1);
+            camera.add(target);
+            flashlight.target = target;
 
-            // Cahaya ambient super redup untuk dekorasi kegelapan
-            ambientLight = new THREE.AmbientLight(0x0a0a0a);
+            ambientLight = new THREE.AmbientLight(0x050303);
             scene.add(ambientLight);
 
             scene.add(camera);
-            resetPlayerPosition();
+            resetPlayer();
         }
 
-        function resetPlayerPosition() {
-            camera.position.set(0, 1.6, 0); // Tinggi rata-rata mata manusia
+        function resetPlayer() {
+            camera.position.set(0, 1.6, 0); 
             camera.rotation.set(0, 0, 0);
         }
 
-        // Input Keyboard Listener
+        // Keyboard System
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
             if (keys.hasOwnProperty(key)) keys[key] = true;
@@ -258,7 +347,7 @@
                 toggleFlashlight();
             }
             if (key === 'e' && gameActive) {
-                scavengeBattery();
+                scavengeCaveFloor();
             }
         });
 
@@ -270,17 +359,17 @@
         function toggleFlashlight() {
             if (state.battery <= 0 && !state.flashlightOn) return;
             state.flashlightOn = !state.flashlightOn;
-            flashlight.intensity = state.flashlightOn ? 3 : 0;
+            flashlight.intensity = state.flashlightOn ? 3.5 : 0;
         }
 
-        function scavengeBattery() {
-            // Mekanik cari baterai di tempat
-            if(Math.random() < 0.4) {
-                const bonus = Math.floor(Math.random() * 20) + 15;
-                state.battery = Math.min(100, state.battery + bonus);
-                state.sanity -= 5; 
+        function scavengeCaveFloor() {
+            // Meraba batuan gua mencari sisa logistik pendaki mati terdahulu
+            if(Math.random() < 0.38) {
+                const energy = Math.floor(Math.random() * 25) + 15;
+                state.battery = Math.min(100, state.battery + energy);
+                state.sanity -= 4; 
             } else {
-                state.sanity -= 10; // Mengurangi sanity jika zonk karena stres meraba kegelapan
+                state.sanity -= 12; // Stress akibat meraba sesuatu yang aneh/lendir di dalam gua gelap
             }
             updateHUD();
         }
@@ -289,68 +378,65 @@
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('ui-layer').classList.remove('hidden');
             
-            bgm.play().catch(e => console.log("Audio play deferred."));
+            bgm.play().catch(e => console.log("Audio waiting for active node."));
             
             state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
-            flashlight.intensity = 3;
-            resetPlayerPosition();
+            flashlight.intensity = 3.5;
+            resetPlayer();
             gameActive = true;
             
             updateHUD();
             animate();
         }
 
-        // Core Game Loop Engine
         function animate() {
             if (!gameActive) return;
             requestAnimationFrame(animate);
 
-            // 1. Mekanik Pergerakan Pemain (3D Vector Translation)
+            // Engine Pergerakan Karakter 3D
             if (keys.w) camera.translateZ(-speed);
             if (keys.s) camera.translateZ(speed);
             if (keys.a) camera.rotation.y += turnSpeed;
             if (keys.d) camera.rotation.y -= turnSpeed;
 
-            // Batasi agar player tidak menembus dinding kiri/kanan lorong
-            camera.position.x = Math.max(-1.7, Math.min(1.7, camera.position.x));
-            camera.position.z = Math.max(-hallwayLength + 2, Math.min(1, camera.position.z));
+            // Memperketat koordinat batas dinding agar tidak menembus formasi bebatuan kasar gua
+            camera.position.x = Math.max(-1.4, Math.min(1.4, camera.position.x));
+            camera.position.z = Math.max(-caveLength + 3, Math.min(1, camera.position.z));
 
-            // Hitung jarak berdasarkan posisi koordinat Z murni
             let currentDist = Math.floor(Math.abs(camera.position.z));
             if (currentDist !== state.distance) {
                 state.distance = currentDist;
                 updateHUD();
             }
 
-            // 2. Simulasi Konsumsi Resource Senter & Sanity
+            // Aturan Pengurasan Energi & Mentalitas
             if (state.flashlightOn) {
-                state.battery -= 0.025;
-                state.sanity -= 0.005;
+                state.battery -= 0.03;
+                state.sanity -= 0.006;
                 
-                // Efek Senter Berkedip secara acak jika baterai di bawah 35%
-                if (state.battery < 35 && Math.random() < 0.08) {
-                    flashlight.intensity = Math.random() > 0.5 ? 3 : 0.2;
+                // Senter rusak berkedip jika baterai kritis
+                if (state.battery < 30 && Math.random() < 0.09) {
+                    flashlight.intensity = Math.random() > 0.5 ? 3.5 : 0.1;
                 }
             } else {
-                state.sanity -= 0.06; // Sanity ngedrop cepat jika gelap total
+                state.sanity -= 0.075; // Gelap total di dalam gua mempercepat kepanikan
             }
 
-            // Kecepatan musik melambat dramatis jika sanity hancur (Halusinasi)
-            if (state.sanity < 40) {
-                bgm.playbackRate = 0.75;
-                if(Math.random() < 0.03) flashlight.intensity = 0.1; // Kegelapan mulai mengambil alih visual
+            // Audio Modulation & Distorsi Visual saat Sanity drop di bawah 45%
+            if (state.sanity < 45) {
+                bgm.playbackRate = 0.72; // Lagu melambat, menciptakan distorsi psikologis mendalam
+                if(Math.random() < 0.04) flashlight.intensity = 0.05; 
             } else {
                 bgm.playbackRate = 1.0;
             }
 
-            // Auto-mati jika baterai 0
             if (state.battery <= 0 && state.flashlightOn) {
                 state.battery = 0;
                 toggleFlashlight();
             }
 
             updateHUD();
-            checkGameConditions();
+            evaluateRules();
             renderer.render(scene, camera);
         }
 
@@ -360,42 +446,39 @@
 
             document.getElementById('sanity-fill').style.width = state.sanity + '%';
             document.getElementById('battery-fill').style.width = state.battery + '%';
-            document.getElementById('distance-txt').innerText = `Jarak: ${state.distance}m / 100m`;
+            document.getElementById('distance-txt').innerText = `Kedalaman: ${state.distance}m / 120m`;
         }
 
-        function checkGameConditions() {
-            // Kalah karena gila
+        function evaluateRules() {
             if (state.sanity <= 0) {
-                endGame("KAMU GILA", "Pikiranmu runtuh total ditelan kegelapan koridor linoleum.");
+                endGame("HILANG AKAL", "Isolasi gua dan kegelapan absolut merenggut jiwamu. Kamu mati dalam keadaan histeris.");
             }
-            // Menang jika mencapai ujung lorong 3D (100 meter)
-            if (state.distance >= 100) {
-                endGame("KAMU SELAMAT", "Kamu melihat berkas cahaya fajar di ujung pintu keluar lorong. Kamu berhasil lolos!");
+            if (state.distance >= 120) {
+                endGame("SELAMAT", "Cahaya bulan menembus celah keluar gua! Kamu berhasil merangkak keluar dari kegelapan.");
             }
-            // Random Jumpscare Trigger jika nekat berjalan di kegelapan tanpa senter
-            if (!state.flashlightOn && state.distance > 15 && Math.random() < 0.002) {
-                triggerJumpscare("Sesuatu menerkammu tepat saat sentermu mati padam.");
+            // Mekanik Jumpscare Tak Terduga jika terlalu lama berjalan tanpa senter menyala
+            if (!state.flashlightOn && state.distance > 10 && Math.random() < 0.0025) {
+                triggerInstantJumpscare("Sesuatu yang merayap di langit-langit gua jatuh tepat di atas kepalamu.");
             }
         }
 
-        function triggerJumpscare(reason) {
+        function triggerInstantJumpscare(reason) {
             gameActive = false;
             bgm.pause();
             
             const js = document.getElementById('jumpscare');
             js.style.visibility = 'visible';
 
-            // Efek kedip visual jumpscare merah-hitam kilat
-            let f = 0;
-            const flash = setInterval(() => {
-                js.style.backgroundColor = f % 2 === 0 ? '#600' : '#000';
-                f++; if(f > 10) clearInterval(flash);
-            }, 30);
+            let step = 0;
+            const flashEffect = setInterval(() => {
+                js.style.backgroundColor = step % 2 === 0 ? '#400' : '#000';
+                step++; if(step > 12) clearInterval(flashEffect);
+            }, 35);
 
             setTimeout(() => {
                 js.style.visibility = 'hidden';
-                endGame("KAMU MATI", reason);
-            }, 1100);
+                endGame("KORBAN GUA", reason);
+            }, 1200);
         }
 
         function endGame(title, reason) {
@@ -412,7 +495,6 @@
             startGame();
         }
 
-        // Handle ukuran window browser dinamis demi menjaga aspek rasio 3D
         window.addEventListener('resize', () => {
             if(camera && renderer) {
                 camera.aspect = window.innerWidth / window.innerHeight;
@@ -421,7 +503,6 @@
             }
         });
 
-        // Jalankan inisialisasi engine 3D saat file di-load
         init3D();
     </script>
 </body>
