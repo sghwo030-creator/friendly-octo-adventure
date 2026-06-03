@@ -15,7 +15,7 @@
         /* Filter Tabung Kaca CRT Monitor */
         #monitor {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0,  blue, 0.06));
             background-size: 100% 3px, 3px 100%; z-index: 10; pointer-events: none;
         }
 
@@ -49,6 +49,26 @@
         h2 { font-size: 1.1rem; margin-top: 0; background: #33ff33; color: #000; padding: 3px 8px; display: inline-block; }
 
         .patient-info { line-height: 1.8; font-size: 0.85rem; margin-bottom: 20px; color: #88ff88; }
+
+        /* Gaya Khusus Foto CCTV Pasien */
+        #patient-photo-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        #patient-photo {
+            width: 150px;
+            height: 150px;
+            border: 3px solid #33ff33;
+            background: 
+                repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 2px, transparent 3px),
+                rgba(5, 20, 5, 0.9);
+            background-size: 100% 3px, 100% 100%;
+            image-rendering: pixelated; 
+            box-shadow: 0 0 10px rgba(0,255,0,0.2);
+        }
 
         /* Log Percakapan Wawancara */
         #dialogue-box {
@@ -119,14 +139,12 @@
         <div id="main-desk">
             <div class="panel">
                 <h2>BERKAS_MEDIS_PASIEN</h2>
-                <div class="patient-info" id="file-content">
-                    </div>
+                <div class="patient-info" id="file-content"></div>
             </div>
 
             <div class="panel">
                 <h2>REKAMAN_TRANSKRIP_SUARA</h2>
-                <div id="dialogue-box">
-                    </div>
+                <div id="dialogue-box"></div>
             </div>
         </div>
 
@@ -142,7 +160,7 @@
         let savedCount = 0;
         let caughtCount = 0;
 
-        // DATABASE PASIEN (Adanya Kombinasi Manusia Normal vs Anomali Menyeramkan)
+        // DATABASE PASIEN
         const patientDatabase = [
             {
                 name: "Bambang Sutrisno",
@@ -150,7 +168,7 @@
                 intakeDate: "12 Mei 1996",
                 symptoms: "Pasien dibawa oleh keluarga karena mengunci diri di kamar selama 4 hari berturut-turut. Mengaku ketakutan melihat bayangan tinggi di jendela kamarnya.",
                 notes: "Pekerjaan akuntan publik, riwayat kelelahan kerja ekstrem dan kurang tidur kronis.",
-                type: "HUMAN", // Manusia Normal (Hanya Paranoid)
+                type: "HUMAN",
                 dialogue: [
                     { speaker: "DOKTER", text: "Bisa Anda ceritakan mengapa Anda menolak keluar kamar, Pak Bambang?" },
                     { speaker: "PASIEN", text: "Saya lelah sekali, Dok... Di luar jendela kantor, di luar rumah, saya seperti melihat orang yang sama terus berdiri menatap saya tanpa berkedip." },
@@ -164,7 +182,7 @@
                 intakeDate: "03 Juni 1996",
                 symptoms: "Ditemukan berjalan di jalan tol tanpa busana pada jam 3 pagi. Tidak memiliki kartu identitas. Pupil mata tidak bereaksi terhadap cahaya senter medis.",
                 notes: "Suhu tubuh terukur 24 derajat Celcius (Sangat mustahil untuk manusia hidup namun subjek tetap bernapas secara teratur).",
-                type: "ANOMALY", // ANOMALI (Monster Penyamar)
+                type: "ANOMALY",
                 dialogue: [
                     { speaker: "DOKTER", text: "Bisa Anda sebutkan nama lengkap atau alamat rumah Anda?" },
                     { speaker: "PASIEN", text: "Rumah... di mana ada fondasi daging, di sana saya tinggal. Saya punya banyak nama di dalam laci kepala saya." },
@@ -178,7 +196,7 @@
                 intakeDate: "18 Juni 1996",
                 symptoms: "Mengalami histeria massal di pasar. Mengklaim bahwa bayinya digantikan oleh boneka kayu oleh tetangganya.",
                 notes: "Mengalami trauma pasca-melahirkan (Postpartum Depression) yang sangat berat menurut rekam medis puskesmas setempat.",
-                type: "HUMAN", // Manusia Normal (Sakit Jiwa Trauma Nyata)
+                type: "HUMAN",
                 dialogue: [
                     { speaker: "DOKTER", text: "Ibu Siti, silakan minum airnya dulu. Di mana bayi Ibu sekarang?" },
                     { speaker: "PASIEN", text: "(Menangis) Mereka tidak percaya saya, Dok! Waktu saya bangun menyusui jam 2 malam, anak saya tidak menangis, badannya kaku seperti kayu pinus! Itu bukan anak saya!" },
@@ -192,7 +210,7 @@
                 intakeDate: "29 Juni 1996",
                 symptoms: "Dibawa oleh petugas polisi militer setelah ditemukan di dalam gudang amunisi terlarang. Rahang bawah terlihat bergeser berulang kali secara tidak wajar saat diam.",
                 notes: "Hasil rontgen X-Ray menunjukkan susunan tulang rusuk subjek terbalik ke arah dalam menusuk organ jantung, namun tidak ada pendarahan internal.",
-                type: "ANOMALY", // ANOMALI
+                type: "ANOMALY",
                 dialogue: [
                     { speaker: "DOKTER", text: "Saudara Eko, apa tujuan Anda menyusup ke area gudang militer?" },
                     { speaker: "PASIEN", text: "Mencari... sumber frekuensi getaran rendah. Logam panas rasanya enak di tenggorokan kami." },
@@ -206,7 +224,7 @@
                 intakeDate: "05 Juli 1996",
                 symptoms: "Pasien mengklaim bisa mendengar siaran radio lokal langsung di dalam kepalanya tanpa alat bantu.",
                 notes: "Ditemukan serpihan logam bekas implan kecelakaan kerja pabrik tertanam di dekat tulang rahang belakangnya yang bertindak sebagai konduktor gelombang radio AM.",
-                type: "HUMAN", // MANUSIA (Kasus Medis Unik)
+                type: "HUMAN",
                 dialogue: [
                     { speaker: "DOKTER", text: "Rudi, suara apa yang paling jelas Anda dengar saat ini?" },
                     { speaker: "PASIEN", text: "Suara berita Radio RRI jam 12 siang, Dok. Sumpah demi Tuhan saya tidak gila! Kalau volume pemancar di kota dinaikkan, telinga saya langsung berdengung berdarah." },
@@ -220,7 +238,7 @@
                 intakeDate: "?? ?? ????",
                 symptoms: "Ditemukan di ruang bawah tanah bungker tua peninggalan kolonial. Wajahnya tidak memiliki fitur mata, hidung, atau mulut (rata sempurna) namun mampu meniru suara dokter dengan presisi 100%.",
                 notes: "Jangan menatap wajah subjek secara langsung lebih dari 10 detik.",
-                type: "ANOMALY", // ANOMALI UTAMA
+                type: "ANOMALY",
                 dialogue: [
                     { speaker: "DOKTER", text: "Siapa Anda sebenarnya? Mengapa Anda meniru penampilan fisik staf perawat kami?" },
                     { speaker: "PASIEN", text: "Siapa Anda sebenarnya? Mengapa Anda meniru penampilan fisik staf perawat kami?" },
@@ -254,7 +272,6 @@
 
         function loadPatient(index) {
             if (index >= patientDatabase.length) {
-                // Skenario Tamat/Evaluasi Akhir
                 alert(`EVALUASI SELESAI.\nManusia yang selamat: ${savedCount}\nAnomali tertangkap: ${caughtCount}\nSistem Keamanan Aman.`);
                 location.reload();
                 return;
@@ -262,8 +279,11 @@
 
             const p = patientDatabase[index];
             
-            // Masukkan data ke panel berkas kiri
+            // Masukkan layout berkas beserta wadah foto keamanan
             document.getElementById('file-content').innerHTML = `
+                <div id="patient-photo-container">
+                    <img id="patient-photo" src="" alt="FOTO KEAMANAN">
+                </div>
                 <strong>NAMA:</strong> ${p.name}<br>
                 <strong>USIA:</strong> ${p.age}<br>
                 <strong>TANGGAL MASUK:</strong> ${p.intakeDate}<br>
@@ -272,7 +292,20 @@
                 <strong>CATATAN PETUGAS:</strong><br>${p.notes}
             `;
 
-            // Cetak transkrip wawancara di panel kanan dengan efek mesin ketik jadul
+            // Data Base64 gambar wajah pixel art untuk Anomali Utama #000
+            const pixelFaceBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAVmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAH1SURBVGhD7dnNTsMwDAXggLsh7sh78O7Ie/AewHtwO+KOSDtiIBAFqZ36U5p2Tds7uUlbp36Upu2XtrVp87Rd7+1h6y0hZ5N5b7zM7yBnl6AHzC4xXhD3FncR8wYxb4iXiHmDmC/YV5iXiFnC9jXmJWIeYL8f8wBfD4iXiHmM5iFvD8RDPB5iXiDmZRgf8vhInEXYV9iXmC9gWGFfYb4A7hXiJeIz2G4RrxGfgv5fPEXMY0RvETMHeId4jZhHMH7S5wXmD7DdIua5WHeI54h5AOMlfV6Qv8D2B+IlYp4H8wH7L0XMIxh/0OcF+QuwH+X5wHyC8f/0eYH9AtuH8nwgz8He78bzgf4S/4/W5wV9C/wN9N7472A8C9mH4/lAfgN7/zbOD+QNzN46zwX5C2zfO84F/BvYvSveC/hX2L6rzwX5C9j9rXku4N+YPYfO64V4N5vLMD5A/XF+FvA56K2x3mZfFvA52P2beVnQ56H7735Z0OeBf4/Vf1vIWTB+V4zP4v+18A58PqK/xP9rzAnIWRhvEPfW5zPkO9huCfl9xNxFzBvEPPZ7ZncQW0LOfw62Tf0oTdsvaWsLOf852Dbt/7fwtm9bAtufAAAAAElFTkSuQmCC";
+
+            const photoImg = document.getElementById('patient-photo');
+            if (p.name === "PASIEN ISOLASI #000") {
+                photoImg.src = pixelFaceBase64;
+                photoImg.style.borderStyle = "solid";
+            } else {
+                // Gunakan piksel transparan untuk pasien tanpa foto dokumen berkas resmi
+                photoImg.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+                photoImg.style.borderStyle = "dashed"; 
+            }
+
+            // Transkrip dialog teks berjalan
             const diagBox = document.getElementById('dialogue-box');
             diagBox.innerHTML = '';
             
@@ -288,13 +321,12 @@
                     `;
                     diagBox.scrollTop = diagBox.scrollHeight;
                     
-                    // Efek suara mesin tik analog saat teks muncul
                     if(d.glitch) {
                         playBeep(80, 0.3, 'sawtooth');
                     } else {
                         playBeep(600, 0.03, 'sine');
                     }
-                }, i * 1500); // Teks muncul bergantian tiap 1.5 detik
+                }, i * 1500); 
             });
         }
 
@@ -304,7 +336,7 @@
             if (choice === 'HUMAN') {
                 if (currentPatient.type === 'HUMAN') {
                     savedCount++;
-                    playBeep(880, 0.2, 'sine'); // Suara benar teratur
+                    playBeep(880, 0.2, 'sine');
                     alert("KEPUTUSAN BENAR: Pasien dikembalikan ke keluarga setelah perawatan dasar.");
                 } else {
                     alert("⚠️ KESALAHAN FATAL: Anda melepaskan ANOMALI ke pemukiman warga! Tingkat bahaya meningkat.");
@@ -321,11 +353,9 @@
                 }
             }
 
-            // Update UI Scoreboard
             document.getElementById('txt-saved').innerText = savedCount;
             document.getElementById('txt-caught').innerText = caughtCount;
 
-            // Lanjut ke pasien berikutnya
             currentPatientIndex++;
             loadPatient(currentPatientIndex);
         }
