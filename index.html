@@ -71,7 +71,7 @@
 
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>[PROSEDURAL ENGINE V4.5 - JUICED] Engine performa tinggi dengan fitur InstancedMesh, Manajemen Memori Anti-Leak, riak air lantai dinamis, inersia senter organik, dan sistem cuaca partikel gua es mikro.</p>
+        <p>[PROSEDURAL HYDRO-EROSION ENGINE V5.0] Generasi peta gua organik berbasis simulasi aliran air alami, pengikisan dinding, pembentukan ruang kubah acak, dilengkapi efek cipratan lantai air dinamis, partikel debu melayang, dan inersia senter.</p>
         <div class="btn-group">
             <button class="menu-btn" onclick="startGame(false)">EKSPEDISI BARU</button>
             <button class="menu-btn" id="resume-btn" onclick="startGame(true)" disabled>LANJUTKAN</button>
@@ -141,12 +141,12 @@
 
         let audioCtx, masterGain, lastHeartbeat = 0, lastFootstep = 0, monsterGrowlOsc = null, monsterGrowlGain = null;
 
-        // Variabel untuk Efek Kosmetik Visual & Partikel (Game Juice)
         let dustParticles, dropInstMesh, drops = [], ripples = [];
         const MAX_DROPS = 25, MAX_RIPPLES = 25;
         let nextRippleIdx = 0;
 
-        const MAZE_W = 17, MAZE_H = 17, GRID_SIZE = 4;
+        // Skala diperbesar menjadi 21x21 untuk memberikan ruang struktur gua alami yang lebih lapang
+        const MAZE_W = 21, MAZE_H = 21, GRID_SIZE = 4;
         let MAP_GRID = [];
         let runesArray = [];
         let batteriesArray = [];
@@ -161,43 +161,98 @@
         let targetCamRotationX = 0, targetCamRotationY = 0, lastTouchX = 0, lastTouchY = 0, bobTimer = 0;
 
         function checkSaveData() {
-            if (localStorage.getItem('cold_cave_v4_save')) document.getElementById('resume-btn').disabled = false;
+            if (localStorage.getItem('cold_cave_v5_save')) document.getElementById('resume-btn').disabled = false;
         }
 
+        // ========================================================
+        // ALGORITMA BARU: SIMULASI ENJIN GUA ALAMI (HYDRO-ORGANIC)
+        // ========================================================
         function generateProceduralMaze() {
+            // Isi peta dengan batuan padat terlebih dahulu (1 = Dinding)
             MAP_GRID = Array(MAZE_H).fill().map(() => Array(MAZE_W).fill(1));
-            let stack = [];
-            function carve(r, c) {
-                MAP_GRID[r][c] = 0;
-                let dirs = [[-2,0],[2,0],[0,-2],[0,2]].sort(() => Math.random() - 0.5);
-                for(let [dr, dc] of dirs) {
-                    let nr = r + dr, nc = c + dc;
-                    if(nr > 0 && nr < MAZE_H-1 && nc > 0 && nc < MAZE_W-1 && MAP_GRID[nr][nc] === 1) {
-                        MAP_GRID[r + dr/2][c + dc/2] = 0;
-                        carve(nr, nc);
+            
+            let startR = 1, startC = 1;
+            let exitR = MAZE_H - 2, exitC = MAZE_W - 2;
+            
+            // 1. Simulasi Erosi Aliran Air Utama (Drunkard's Hydro-Carving Walk) dari Hulu ke Hilir
+            let cr = startR, cc = startC;
+            MAP_GRID[cr][cc] = 0; // Lubang terbuka
+            
+            while (cr !== exitR || cc !== exitC) {
+                if (Math.random() < 0.5 && cr < exitR) cr++;
+                else if (cc < exitC) cc++;
+                else if (cr < exitR) cr++;
+                
+                MAP_GRID[cr][cc] = 0;
+                // Kikis batuan kiri-kanan aliran air secara acak untuk membentuk kelebaran lorong yang variatif
+                if(cr + 1 < MAZE_H - 1 && Math.random() < 0.4) MAP_GRID[cr + 1][cc] = 0;
+                if(cc + 1 < MAZE_W - 1 && Math.random() < 0.4) MAP_GRID[cr][cc + 1] = 0;
+            }
+            
+            // 2. Pembentukan Cavern Chambers (Kantung Kubah Ruangan Gua Luas Akibat Pusaran Air Kuno)
+            for (let i = 0; i < 5; i++) {
+                let centerR = Math.floor(Math.random() * (MAZE_H - 5)) + 2;
+                let centerC = Math.floor(Math.random() * (MAZE_W - 5)) + 2;
+                let roomRadius = Math.floor(Math.random() * 2) + 2; // Radius 2-3 blok grid
+                
+                for (let r = centerR - roomRadius; r <= centerR + roomRadius; r++) {
+                    for (let c = centerC - roomRadius; c <= centerC + roomRadius; c++) {
+                        if (r > 0 && r < MAZE_H - 1 && c > 0 && c < MAZE_W - 1) {
+                            // Kalkulasi jarak Euclidean agar berbentuk elips/lingkaran erosi alami
+                            if (Math.sqrt((r - centerR)**2 + (c - centerC)**2) <= roomRadius + 0.4) {
+                                MAP_GRID[r][c] = 0;
+                            }
+                        }
                     }
                 }
             }
-            carve(1, 1);
-            MAP_GRID[1][1] = 2; 
 
-            let deadEnds = [];
-            for(let r=1; r<MAZE_H-1; r++){
-                for(let c=1; c<MAZE_W-1; c++){
-                    if(MAP_GRID[r][c] === 0) {
-                        let walls = 0;
-                        if(MAP_GRID[r-1][c] === 1) walls++; if(MAP_GRID[r+1][c] === 1) walls++;
-                        if(MAP_GRID[r][c-1] === 1) walls++; if(MAP_GRID[r][c+1] === 1) walls++;
-                        if(walls === 3 && !(r===1 && c===1)) deadEnds.push({r, c});
+            // 3. Sistem Pemulusan Struktur Batuan menggunakan Metode Matematika Cellular Automata
+            let smoothedGrid = Array(MAZE_H).fill().map(() => Array(MAZE_W).fill(1));
+            for (let r = 1; r < MAZE_H - 1; r++) {
+                for (let c = 1; c < MAZE_W - 1; c++) {
+                    let wallNeighbors = 0;
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            if (MAP_GRID[r + dr][c + dc] === 1) wallNeighbors++;
+                        }
+                    }
+                    if (MAP_GRID[r][c] === 1) {
+                        smoothedGrid[r][c] = (wallNeighbors >= 4) ? 1 : 0;
+                    } else {
+                        smoothedGrid[r][c] = (wallNeighbors >= 5) ? 1 : 0;
                     }
                 }
             }
-            deadEnds.sort(() => Math.random() - 0.5);
+            MAP_GRID = smoothedGrid;
+            
+            // Re-enforce rute jalan utama untuk menjamin peta tidak terisolasi/buntu akibat pemulusan batuan
+            cr = startR; cc = startC; MAP_GRID[cr][cc] = 2; // Titik Awal Player
+            while (cr !== exitR || cc !== exitC) {
+                if (cr < exitR) cr++;
+                if (cc < exitC) cc++;
+                if(MAP_GRID[cr][cc] === 1) MAP_GRID[cr][cc] = 0;
+            }
+            MAP_GRID[exitR][exitC] = 4; // Gerbang Keluar
 
-            if(deadEnds.length >= 1) MAP_GRID[deadEnds[0].r][deadEnds[0].c] = 4; 
-            if(deadEnds.length >= 4) { MAP_GRID[deadEnds[1].r][deadEnds[1].c] = 3; MAP_GRID[deadEnds[2].r][deadEnds[2].c] = 3; MAP_GRID[deadEnds[3].r][deadEnds[3].c] = 3; } 
-            if(deadEnds.length >= 7) { MAP_GRID[deadEnds[4].r][deadEnds[4].c] = 5; MAP_GRID[deadEnds[5].r][deadEnds[5].c] = 5; MAP_GRID[deadEnds[6].r][deadEnds[6].c] = 5; } 
-            if(deadEnds.length >= 8) MAP_GRID[deadEnds[7].r][deadEnds[7].c] = 6; 
+            // 4. Penempatan Komponen Item secara Logis pada Kantung Cavern Kosong
+            let validOpenSpaces = [];
+            for (let r = 1; r < MAZE_H - 1; r++) {
+                for (let c = 1; c < MAZE_W - 1; c++) {
+                    if (MAP_GRID[r][c] === 0 && !(r === startR && c === startC) && !(r === exitR && c === exitC)) {
+                        validOpenSpaces.push({ r, c });
+                    }
+                }
+            }
+            validOpenSpaces.sort(() => Math.random() - 0.5);
+
+            if (validOpenSpaces.length > 0) MAP_GRID[validOpenSpaces[0].r][validOpenSpaces[0].c] = 6; // Artefak Emas
+            for (let i = 1; i <= 3 && i < validOpenSpaces.length; i++) {
+                MAP_GRID[validOpenSpaces[i].r][validOpenSpaces[i].c] = 3; // Item Rune
+            }
+            for (let i = 4; i <= 8 && i < validOpenSpaces.length; i++) {
+                MAP_GRID[validOpenSpaces[i].r][validOpenSpaces[i].c] = 5; // Baterai Senter
+            }
         }
 
         function findShortestPathAStar(start, end) {
@@ -243,7 +298,7 @@
         function findEmptyCell() {
             for(let r = MAZE_H-2; r > 0; r--) {
                 for(let c = MAZE_W-2; c > 0; c--) {
-                    if(MAP_GRID[r][c] !== 1 && MAP_GRID[r][c] !== 2) return {r, c};
+                    if(MAP_GRID[r][c] === 0) return {r, c};
                 }
             }
             return {r: 1, c: 1}; 
@@ -390,7 +445,6 @@
             if(floorInstMesh) { scene.remove(floorInstMesh); floorInstMesh.geometry.dispose(); }
             if(ceilingInstMesh) { scene.remove(ceilingInstMesh); ceilingInstMesh.geometry.dispose(); }
 
-            // Pembersihan Memori Komponen Visual Jus Gimmick saat restart labirin
             if(dustParticles) { scene.remove(dustParticles); dustParticles.geometry.dispose(); dustParticles.material.dispose(); }
             if(dropInstMesh) { scene.remove(dropInstMesh); dropInstMesh.geometry.dispose(); dropInstMesh.material.dispose(); }
             ripples.forEach(r => { scene.remove(r.mesh); r.mesh.geometry.dispose(); r.mesh.material.dispose(); });
@@ -470,12 +524,9 @@
             flashBeam.geometry.translate(0, -9, 0); flashBeam.geometry.rotateX(Math.PI / 2); scene.add(flashBeam);
             scene.add(new THREE.AmbientLight(0x010000));
 
-            // ==========================================
-            // INISIALISASI EFEK DETAIL (GAME JUICE)
-            // ==========================================
-            // 1. Inisialisasi Partikel Debu Udara
+            // JUICE: Atmospheric Dust Particles
             let dustGeo = new THREE.BufferGeometry();
-            let dustCount = 200;
+            let dustCount = 250;
             let dustPositions = new Float32Array(dustCount * 3);
             for(let i=0; i<dustCount*3; i+=3) {
                 dustPositions[i] = Math.random() * MAZE_W * GRID_SIZE;
@@ -486,7 +537,7 @@
             dustParticles = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0x99ccff, size: 0.035, transparent: true, opacity: 0.3, depthWrite: false }));
             scene.add(dustParticles);
 
-            // 2. Inisialisasi Tetesan Air Atas Gua (Pooling)
+            // JUICE: Ceiling Water Drops Pooling
             let dropGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.12, 4);
             let dropMat = new THREE.MeshBasicMaterial({ color: 0x66aacc, transparent: true, opacity: 0.4 });
             dropInstMesh = new THREE.InstancedMesh(dropGeo, dropMat, MAX_DROPS);
@@ -500,7 +551,7 @@
             }
             dropInstMesh.instanceMatrix.needsUpdate = true;
 
-            // 3. Inisialisasi Kumpulan Mesh Cincin Percikan Air Lantai (Pooling)
+            // JUICE: Floor Water Splashes Ring
             let rippleGeo = new THREE.RingGeometry(0.01, 0.12, 8);
             for(let i=0; i<MAX_RIPPLES; i++) {
                 let rMesh = new THREE.Mesh(rippleGeo, new THREE.MeshBasicMaterial({ color: 0x5599bb, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
@@ -604,7 +655,6 @@
             state.gfx = type;
             const activeBump = (type === 'high') ? bumpTexGlobal : null;
             scene.fog = (type === 'high') ? new THREE.FogExp2(0x010000, 0.25) : null;
-            
             if (wallMat) { wallMat.bumpMap = activeBump; wallMat.needsUpdate = true; }
             if (floorMat) { floorMat.bumpMap = activeBump; floorMat.needsUpdate = true; }
         }
@@ -618,8 +668,8 @@
 
             state.sanity = 100; state.battery = 100; state.stamina = 100; state.flashlightOn = true; state.hasSecret = false;
             
-            if (loadFromCheckpoint && localStorage.getItem('cold_cave_v4_save')) {
-                const data = JSON.parse(localStorage.getItem('cold_cave_v4_save'));
+            if (loadFromCheckpoint && localStorage.getItem('cold_cave_v5_save')) {
+                const data = JSON.parse(localStorage.getItem('cold_cave_v5_save'));
                 MAP_GRID = data.grid; state.runesCollected = data.runes; state.hasSecret = data.hasSecret;
                 build3DWorld();
                 camera.position.set(data.pX, 0.1, data.pZ);
@@ -656,7 +706,7 @@
             camera.rotation.y += (targetCamRotationY - camera.rotation.y) * 0.2;
             camera.rotation.x += (targetCamRotationX - camera.rotation.x) * 0.2;
 
-            // Efek Kecil: Kemiringan Kamera (Roll) Organik saat Melangkah Samping
+            // JUICE: Camera Organic Strafe Roll
             let targetRoll = 0;
             if (keys.a) targetRoll = 0.012;
             if (keys.d) targetRoll = -0.012;
@@ -694,11 +744,11 @@
             let camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             let targetLookAt = camera.position.clone().add(camDir.clone().multiplyScalar(5));
             
-            // Efek Kecil: Inersia Elastis Senter (Smooth Delay Sway Target)
+            // JUICE: Smooth Flashlight Sway
             flashlight.target.position.lerp(targetLookAt, 0.12);
             flashBeam.lookAt(flashlight.target.position);
 
-            // Efek Kecil: Kedipan Halus Senter (Micro Flicker saat Sanity Drop)
+            // JUICE: Sanity-Based Micro-Flicker
             if (state.flashlightOn && state.battery > 0) {
                 let currentInt = 6.0;
                 if (state.sanity < 45 && Math.random() < 0.05) {
@@ -715,10 +765,7 @@
             if (!state.flashlightOn) state.sanity -= 0.04; else state.sanity -= 0.004;
             state.sanity = Math.max(0, state.sanity);
 
-            // ==================================================
-            // SIMULASI PARTIKEL & DETAIL VISUAL (JUICE PROCESSING)
-            // ==================================================
-            // 1. Animasi Partikel Debu Melayang
+            // JUICE: Animated Dust Particles
             if (dustParticles) {
                 let dustPos = dustParticles.geometry.attributes.position.array;
                 for (let i = 0; i < dustPos.length; i += 3) {
@@ -732,7 +779,7 @@
                 dustParticles.geometry.attributes.position.needsUpdate = true;
             }
 
-            // 2. Animasi Langit-Langit Gua Meneteskan Air
+            // JUICE: Natural Cave Water Ceiling Drips
             if (dropInstMesh) {
                 let dummyD = new THREE.Object3D();
                 if (Math.random() < 0.25) { 
@@ -753,7 +800,7 @@
                         if (d.y <= -1.49) {
                             d.active = false; dummyD.position.set(0, -100, 0);
                             
-                            // 3. Picu Efek Percikan Air Membesar di Atas Permukaan Lantai
+                            // JUICE: Trigger Water Ripples Expanding on Collision Floor
                             let rip = ripples[nextRippleIdx];
                             rip.mesh.position.set(d.x, -1.49, d.z);
                             rip.scale = 0.1; rip.opacity = 0.8; rip.active = true;
@@ -767,7 +814,6 @@
                 dropInstMesh.instanceMatrix.needsUpdate = true;
             }
 
-            // Perubahan Ukuran Cincin Percikan Air Lantai
             ripples.forEach(r => {
                 if (r.active) {
                     r.scale += 0.09; r.opacity -= 0.04;
@@ -776,7 +822,6 @@
                     if (r.opacity <= 0) r.active = false;
                 }
             });
-            // ==================================================
 
             let pGridC = Math.round(camera.position.x / GRID_SIZE);
             let pGridR = Math.round(camera.position.z / GRID_SIZE);
@@ -872,11 +917,11 @@
             if (exitGateMesh) {
                 if (state.runesCollected >= 3 && exitGateMesh.position.y < 4.0) exitGateMesh.position.y += 0.02;
                 if (state.runesCollected >= 3 && camera.position.distanceTo(exitGateMesh.position) < 1.4) {
-                    gameActive = false; try { localStorage.removeItem('cold_cave_v4_save'); } catch(e){}
+                    gameActive = false; try { localStorage.removeItem('cold_cave_v5_save'); } catch(e){}
                     if (state.hasSecret) {
-                        endGame("SECRET ENDING: COSMIC OVERLORD", "Luar biasa! Relik Emas Kuno menyatu dengan jiwamu. Labirin runtuh dan jiwamu berevolusi melampaui batas manusia, menjadi penguasa absolut dimensi gua es.");
+                        endGame("SECRET ENDING: COSMIC OVERLORD", "Luar biasa! Relik Emas Kuno menyatu dengan jiwamu. Labirin gua runtuh dan jiwamu berevolusi melampaui batas manusia, menjadi penguasa absolut dimensi kosmologi gua es.");
                     } else {
-                        endGame("NORMAL ENDING: ESCAPE", "Selamat! Kamu berhasil mendorong gerbang batu kuno menggunakan 3 energi rune dan kembali menghirup udara bebas di permukaan bumi.");
+                        endGame("NORMAL ENDING: ESCAPE", "Selamat! Kamu berhasil menembus gua organik alami ini dengan konvergensi energi 3 rune dan kembali ke permukaan bumi.");
                     }
                     return;
                 }
@@ -891,14 +936,14 @@
         function renderMinimapRadar() {
             mapCtx.clearRect(0,0,120,120);
             let pGridX = camera.position.x / GRID_SIZE; let pGridZ = camera.position.z / GRID_SIZE;
-            let center = 60; let scale = 6.5;
+            let center = 60; let scale = 5.5;
 
-            mapCtx.fillStyle = "rgba(180, 0, 0, 0.2)";
+            mapCtx.fillStyle = "rgba(180, 0, 0, 0.25)";
             for(let r=0; r<MAZE_H; r++){
                 for(let c=0; c<MAZE_W; c++){
                     if(MAP_GRID[r][c] === 1) {
                         let dX = center + (c - pGridX)*scale; let dZ = center + (r - pGridZ)*scale;
-                        if(dX>=0 && dX<=120 && dZ>=0 && dZ<=120) mapCtx.fillRect(dX, dZ, scale-1, scale-1);
+                        if(dX>=0 && dX<=120 && dZ>=0 && dZ<=120) mapCtx.fillRect(dX, dZ, scale-0.5, scale-0.5);
                     }
                 }
             }
@@ -916,10 +961,10 @@
             let pickedRunes = []; runesArray.forEach((r, i) => { if(r.picked) pickedRunes.push(i); });
             let pickedBats = []; batteriesArray.forEach((b, i) => { if(b.picked) pickedBats.push(i); });
             try {
-                localStorage.setItem('cold_cave_v4_save', JSON.stringify({
+                localStorage.setItem('cold_cave_v5_save', JSON.stringify({
                     grid: MAP_GRID, runes: state.runesCollected, hasSecret: state.hasSecret, pX: camera.position.x, pZ: camera.position.z, pickedRunes, pickedBats
                 }));
-            } catch (e) { console.error("Save system quota exceeded / blocked:", e); }
+            } catch (e) { console.error("Save quota error:", e); }
         }
 
         function updateHUD() {
@@ -938,7 +983,7 @@
             document.getElementById('jumpscare').style.visibility = 'visible';
             setTimeout(() => {
                 document.getElementById('jumpscare').style.visibility = 'hidden';
-                endGame("DIELIMINASI", "Monster Crawler berhasil menyudutkanmu. Tubuhmu hancur menjadi serpihan memori di lantai gua.");
+                endGame("DIELIMINASI", "Monster Crawler menyudutkanmu di ceruk batuan gua. Tubuhmu membeku menjadi fosil es abadi.");
             }, 1100);
         }
 
