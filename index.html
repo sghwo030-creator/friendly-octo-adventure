@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Dark Hallway: Deep Insanity</title>
+    <title>The Dark Hallway: 3D First Person</title>
     <style>
         * {
             box-sizing: border-box;
@@ -12,188 +12,165 @@
             user-select: none;
         }
 
-        body {
-            background-color: #020202;
-            color: #dcdcdc;
-            font-family: 'Courier New', Courier, monospace;
+        body, html {
+            width: 100%;
+            height: 100%;
             overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
         }
 
-        /* Efek Kegelapan Lorong */
-        #vignette {
-            position: fixed;
+        /* WebGL Canvas untuk 3D */
+        #game-canvas {
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.98);
-            pointer-events: none;
-            z-index: 10;
-            transition: box-shadow 0.5s ease;
-        }
-
-        #game-container {
             width: 100%;
-            max-width: 650px;
-            padding: 30px;
-            z-index: 2;
-            border: 1px solid #1a1a1a;
-            background: rgba(5, 5, 5, 0.85);
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+            height: 100%;
+            z-index: 1;
         }
 
-        h1 {
-            font-size: 2.2rem;
-            color: #8b0000;
-            text-shadow: 0 0 8px rgba(139, 0, 0, 0.6);
-            margin-bottom: 25px;
-            letter-spacing: 4px;
-            font-weight: 900;
+        /* UI Overlay di atas 3D render */
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
         }
 
-        /* Status Bar (Sanity & Battery) */
-        .status-container {
+        .hud {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 25px;
-            background: #0d0d0d;
-            padding: 10px;
+            color: #fff;
+            font-size: 1.1rem;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
             border: 1px solid #222;
-            font-size: 0.9rem;
-        }
-
-        .bar-wrapper {
-            width: 45%;
-            text-align: left;
+            pointer-events: auto;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
         }
 
         .bar-bg {
             background: #222;
-            height: 10px;
-            width: 100%;
-            margin-top: 5px;
-            border: 1px solid #333;
+            width: 120px;
+            height: 8px;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+            border: 1px solid #444;
         }
 
-        .bar-fill {
-            height: 100%;
-            transition: width 0.4s ease, background-color 0.4s ease;
+        .bar-fill { height: 100%; width: 100%; transition: width 0.2s; }
+        #sanity-fill { background-color: #0066cc; }
+        #battery-fill { background-color: #cc9900; }
+
+        /* Layar Menu & Game Over */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #050505;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
         }
 
-        #sanity-bar { background-color: #0066cc; width: 100%; }
-        #battery-bar { background-color: #cc9900; width: 100%; }
+        .hidden { display: none !important; }
 
-        .screen { display: none; }
-        .active { display: block; }
-
-        #story-text {
-            min-height: 100px;
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 30px;
-            text-align: left;
+        h1 {
+            font-size: 3rem;
+            color: #8b0000;
+            text-shadow: 0 0 10px rgba(139, 0, 0, 0.8);
+            margin-bottom: 20px;
+            letter-spacing: 5px;
         }
 
-        .btn-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+        p { max-width: 500px; line-height: 1.6; margin-bottom: 30px; }
 
         button {
-            background-color: rgba(20, 0, 0, 0.4);
-            color: #b3a2a2;
-            border: 1px solid #551a1a;
-            padding: 14px;
-            font-size: 1rem;
+            background: transparent;
+            color: #8b0000;
+            border: 2px solid #8b0000;
+            padding: 15px 40px;
+            font-size: 1.2rem;
             font-family: inherit;
             cursor: pointer;
-            transition: all 0.2s ease;
             text-transform: uppercase;
+            pointer-events: auto;
+            transition: 0.3s;
         }
 
-        button:hover:not(:disabled) {
-            background-color: #8b0000;
+        button:hover {
+            background: #8b0000;
             color: #fff;
-            border-color: #ff0000;
-            box-shadow: 0 0 10px rgba(139, 0, 0, 0.5);
+            box-shadow: 0 0 15px #8b0000;
         }
 
-        button:disabled {
-            border-color: #222;
-            color: #444;
-            cursor: not-allowed;
+        /* Panduan Kontrol */
+        .controls-hint {
+            background: rgba(0,0,0,0.4);
+            padding: 10px;
+            color: #666;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: auto;
         }
 
-        .full-width { grid-column: span 2; }
-
-        /* Glitch & Effects */
-        .flicker { animation: blink 0.15s infinite alternate; }
-        @keyframes blink {
-            0% { opacity: 0.2; }
-            100% { opacity: 0.9; }
-        }
-
+        /* Jumpscare Screen */
         #jumpscare {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
             background-color: #000;
+            z-index: 999;
             display: flex; justify-content: center; align-items: center;
-            z-index: 999; visibility: hidden;
+            visibility: hidden;
         }
-
         #jumpscare-text {
-            color: #ff0000; font-size: 6rem; font-weight: 100;
-            transform: scale(0.3); transition: transform 0.05s ease-out;
-            letter-spacing: 10px;
+            color: #ff0000; font-size: 7rem; font-weight: bold; letter-spacing: 15px;
         }
     </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <div id="vignette"></div>
-    
+    <canvas id="game-canvas"></canvas>
     <audio id="bgm" src="https://raw.githubusercontent.com/sghwo030-creator/friendly-octo-adventure/refs/heads/main/Cold_Linoleum_Floor.mp3" loop></audio>
 
-    <div id="game-container">
-        <div id="menu-screen" class="screen active">
-            <h1>THE DARK HALLWAY</h1>
-            <p style="margin-bottom: 25px; font-size: 0.95rem;">Lantai linoleum yang dingin menyerap kewarasanmu. Cari jalan keluar sebelum baterai senter atau pikiranmu habis.</p>
-            <button class="full-width" onclick="startGame()">Masuk ke Kegelapan</button>
+    <div id="menu-screen" class="screen">
+        <h1>THE DARK HALLWAY</h1>
+        <p>Gunakan tombol W, A, S, D untuk bergerak di dalam lorong 3D. Musik linoleum yang dingin mengintaimu dari kegelapan.</p>
+        <button onclick="startGame()">Masuk Lorong 3D</button>
+    </div>
+
+    <div id="ui-layer" class="ui-overlay hidden">
+        <div class="hud">
+            <div>Sanity <div class="bar-bg"><div id="sanity-fill" class="bar-fill"></div></div></div>
+            <div>Senter <div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div></div>
+            <div id="distance-txt">Jarak: 0m</div>
         </div>
-
-        <div id="game-screen" class="screen">
-            <div class="status-container">
-                <div class="bar-wrapper">
-                    <span>Sanity: <span id="sanity-text">100</span>%</span>
-                    <div class="bar-bg"><div id="sanity-bar" class="bar-fill"></div></div>
-                </div>
-                <div class="bar-wrapper">
-                    <span>Senter: <span id="battery-text">100</span>%</span>
-                    <div class="bar-bg"><div id="battery-bar" class="bar-fill"></div></div>
-                </div>
-            </div>
-
-            <p id="story-text"></p>
-            <p style="font-size: 0.85rem; color: #555; margin-bottom: 15px;" id="distance-text">Jarak: 0 meter</p>
-
-            <div class="btn-group">
-                <button id="btn-move" onclick="handleAction('move')">Maju ke Depan</button>
-                <button id="btn-scavenge" onclick="handleAction('scavenge')">Cari Baterai</button>
-                <button id="btn-flashlight" onclick="toggleFlashlight()">Senter: ON</button>
-                <button id="btn-hide" onclick="handleAction('hide')" disabled>Sembunyi!</button>
-            </div>
+        <div class="controls-hint">
+            [W/S] Maju/Mundur | [A/D] Tolak Kiri/Kanan | [SPACE] Senter ON/OFF | [E] Cari Baterai
         </div>
+    </div>
 
-        <div id="gameover-screen" class="screen">
-            <h1 id="end-title">KAMU HILANG</h1>
-            <p id="end-reason" style="margin-bottom: 25px;"></p>
-            <button class="full-width" onclick="restartGame()">Coba Lagi</button>
-        </div>
+    <div id="gameover-screen" class="screen hidden">
+        <h1 id="end-title">KAMU HILANG</h1>
+        <p id="end-reason"></p>
+        <button onclick="restartGame()">Coba Lagi</button>
     </div>
 
     <div id="jumpscare">
@@ -202,212 +179,250 @@
 
     <script>
         const bgm = document.getElementById('bgm');
+        let scene, camera, renderer, flashlight, ambientLight;
+        let gameActive = false;
         
-        let state = {
-            sanity: 100,
-            battery: 100,
-            distance: 0,
-            flashlightOn: true,
-            monsterAlert: false,
-            turnsSinceAlert: 0
-        };
+        // Game Systems State
+        let state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
+        const keys = { w: false, a: false, s: false, d: false };
 
-        let isTyping = false;
+        // 3D Hallway Configuration
+        const hallwayLength = 160;
+        const speed = 0.08;
+        const turnSpeed = 0.025;
 
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
+        // Inisialisasi Dunia 3D Engine
+        function init3D() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.15); // Efek kabut kegelapan
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+
+            // Membuat Tekstur Lantai Linoleum secara Prosedural (Tanpa file gambar luar)
+            const canvasTex = document.createElement('canvas');
+            canvasTex.width = 256; canvasTex.height = 256;
+            const ctx = canvasTex.getContext('2d');
+            ctx.fillStyle = '#141414'; ctx.fillRect(0, 0, 256, 256);
+            ctx.strokeStyle = '#222222'; ctx.lineWidth = 4; ctx.strokeRect(0, 0, 256, 256);
+            
+            const wallTexture = new THREE.CanvasTexture(canvasTex);
+            wallTexture.wrapS = THREE.RepeatWrapping; wallTexture.wrapT = THREE.RepeatWrapping;
+            wallTexture.repeat.set(2, 40);
+
+            // Membuat Struktur Geometri Lorong (Box raksasa yang dibalik)
+            const tunnelGeo = new THREE.BoxGeometry(4, 3.5, hallwayLength);
+            const tunnelMat = new THREE.MeshStandardMaterial({
+                map: wallTexture,
+                roughness: 0.8,
+                side: THREE.BackSide // Agar bagian dalam box yang terlihat
+            });
+            const tunnel = new THREE.Mesh(tunnelGeo, tunnelMat);
+            tunnel.position.set(0, 1.75, -hallwayLength / 2);
+            scene.add(tunnel);
+
+            // Pencahayaan Utama (Senter Player)
+            flashlight = new THREE.SpotLight(0xfff6e0, 3, 18, Math.PI / 4, 0.6, 1);
+            flashlight.castShadow = true;
+            camera.add(flashlight);
+            
+            // Arah sorotan senter lurus ke depan kamera
+            const targetObject = new THREE.Object3D();
+            targetObject.position.set(0, 0, -1);
+            camera.add(targetObject);
+            flashlight.target = targetObject;
+
+            // Cahaya ambient super redup untuk dekorasi kegelapan
+            ambientLight = new THREE.AmbientLight(0x0a0a0a);
+            scene.add(ambientLight);
+
+            scene.add(camera);
+            resetPlayerPosition();
         }
 
-        function typeWriter(text, elementId, callback) {
-            const el = document.getElementById(elementId);
-            el.innerHTML = '';
-            let i = 0;
-            isTyping = true;
-            disableButtons(true);
-
-            function type() {
-                if (i < text.length) {
-                    el.innerHTML += text.charAt(i);
-                    i++;
-                    setTimeout(type, 20);
-                } else {
-                    isTyping = false;
-                    disableButtons(false);
-                    if(callback) callback();
-                }
-            }
-            type();
+        function resetPlayerPosition() {
+            camera.position.set(0, 1.6, 0); // Tinggi rata-rata mata manusia
+            camera.rotation.set(0, 0, 0);
         }
 
-        function disableButtons(status) {
-            document.getElementById('btn-move').disabled = status;
-            document.getElementById('btn-scavenge').disabled = status;
-            document.getElementById('btn-flashlight').disabled = status;
-            if(!state.monsterAlert) document.getElementById('btn-hide').disabled = true;
-            else if(!status) document.getElementById('btn-hide').disabled = false;
-        }
-
-        function updateUI() {
-            state.sanity = Math.max(0, Math.min(100, state.sanity));
-            state.battery = Math.max(0, Math.min(100, state.battery));
-
-            document.getElementById('sanity-text').innerText = state.sanity;
-            document.getElementById('battery-text').innerText = state.battery;
-            document.getElementById('distance-text').innerText = `Jarak terlewati: ${state.distance} meter`;
-
-            document.getElementById('sanity-bar').style.width = state.sanity + '%';
-            document.getElementById('battery-bar').style.width = state.battery + '%';
-
-            const shadowIntensity = 100 - (state.sanity * 0.4);
-            document.getElementById('vignette').style.boxShadow = `inset 0 0 ${shadowIntensity}px rgba(0,0,0,0.98)`;
-
-            // Mengurangi kecepatan lagu jika Sanity di bawah 40% (Efek Halusinasi)
-            if (state.sanity < 40) {
-                bgm.playbackRate = 0.75; 
-                document.getElementById('game-screen').classList.add('flicker');
-            } else {
-                bgm.playbackRate = 1.0;
-                document.getElementById('game-screen').classList.remove('flicker');
-            }
-
-            if (state.battery <= 0 && state.flashlightOn) {
+        // Input Keyboard Listener
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = true;
+            
+            if (e.code === 'Space' && gameActive) {
+                e.preventDefault();
                 toggleFlashlight();
             }
+            if (key === 'e' && gameActive) {
+                scavengeBattery();
+            }
+        });
 
-            checkDeathConditions();
-        }
+        window.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (keys.hasOwnProperty(key)) keys[key] = false;
+        });
 
         function toggleFlashlight() {
-            if(isTyping) return;
-            if(state.battery <= 0 && !state.flashlightOn) {
-                return;
-            }
+            if (state.battery <= 0 && !state.flashlightOn) return;
             state.flashlightOn = !state.flashlightOn;
-            document.getElementById('btn-flashlight').innerText = `Senter: ${state.flashlightOn ? 'ON' : 'OFF'}`;
-            document.getElementById('btn-flashlight').style.color = state.flashlightOn ? '#cc9900' : '#444';
-            updateUI();
+            flashlight.intensity = state.flashlightOn ? 3 : 0;
+        }
+
+        function scavengeBattery() {
+            // Mekanik cari baterai di tempat
+            if(Math.random() < 0.4) {
+                const bonus = Math.floor(Math.random() * 20) + 15;
+                state.battery = Math.min(100, state.battery + bonus);
+                state.sanity -= 5; 
+            } else {
+                state.sanity -= 10; // Mengurangi sanity jika zonk karena stres meraba kegelapan
+            }
+            updateHUD();
         }
 
         function startGame() {
-            bgm.play().catch(e => console.log("Audio play blocked or delayed. Wait for next interaction."));
-            state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true, monsterAlert: false, turnsSinceAlert: 0 };
-            document.getElementById('btn-flashlight').innerText = "Senter: ON";
-            updateUI();
-            showScreen('game-screen');
-            typeWriter("Kamu terjebak di koridor bawah tanah berlantai linoleum dingin. Senter di tanganmu menyala redup. Sesuatu berbisik lewat musik di kepalamu...", 'story-text');
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('ui-layer').classList.remove('hidden');
+            
+            bgm.play().catch(e => console.log("Audio play deferred."));
+            
+            state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
+            flashlight.intensity = 3;
+            resetPlayerPosition();
+            gameActive = true;
+            
+            updateHUD();
+            animate();
         }
 
-        function handleAction(action) {
-            if(isTyping) return;
+        // Core Game Loop Engine
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
 
-            let logMsg = "";
+            // 1. Mekanik Pergerakan Pemain (3D Vector Translation)
+            if (keys.w) camera.translateZ(-speed);
+            if (keys.s) camera.translateZ(speed);
+            if (keys.a) camera.rotation.y += turnSpeed;
+            if (keys.d) camera.rotation.y -= turnSpeed;
 
+            // Batasi agar player tidak menembus dinding kiri/kanan lorong
+            camera.position.x = Math.max(-1.7, Math.min(1.7, camera.position.x));
+            camera.position.z = Math.max(-hallwayLength + 2, Math.min(1, camera.position.z));
+
+            // Hitung jarak berdasarkan posisi koordinat Z murni
+            let currentDist = Math.floor(Math.abs(camera.position.z));
+            if (currentDist !== state.distance) {
+                state.distance = currentDist;
+                updateHUD();
+            }
+
+            // 2. Simulasi Konsumsi Resource Senter & Sanity
             if (state.flashlightOn) {
-                state.battery -= Math.floor(Math.random() * 6) + 4; 
-                state.sanity -= 2;
-            } else {
-                state.sanity -= Math.floor(Math.random() * 12) + 8; 
-            }
-
-            if (action === 'move') {
-                state.distance += Math.floor(Math.random() * 4) + 3;
-                logMsg = "Kamu memaksakan diri melangkah maju di atas linoleum dingin. ";
+                state.battery -= 0.025;
+                state.sanity -= 0.005;
                 
-                if (state.monsterAlert) {
-                    triggerJumpscare("Kamu mencoba lari, tapi makhluk itu bergerak lebih cepat dari bayanganmu.");
-                    return;
+                // Efek Senter Berkedip secara acak jika baterai di bawah 35%
+                if (state.battery < 35 && Math.random() < 0.08) {
+                    flashlight.intensity = Math.random() > 0.5 ? 3 : 0.2;
                 }
-
-                if (state.distance >= 50) {
-                    gameWin();
-                    return;
-                }
-
-                if (Math.random() < 0.25 && state.distance > 10) {
-                    state.monsterAlert = true;
-                    state.turnsSinceAlert = 0;
-                    logMsg += "TIBA-TIBA, suara detak sepatu berat terdengar tepat di belakangmu! Musiknya mendadak kacau! Sembunyi sekarang atau matikan senter!";
-                }
-
-            } else if (action === 'scavenge') {
-                logMsg = "Kamu berhenti sejenak, meraba-raba area gelap di sudut dinding linoleum... ";
-                if (Math.random() < 0.5) {
-                    const foundBat = Math.floor(Math.random() * 25) + 15;
-                    state.battery += foundBat;
-                    logMsg += `Kamu menemukan baterai cadangan! (+${foundBat}% Baterai).`;
-                } else {
-                    state.sanity -= 10;
-                    logMsg += "Kamu tidak menemukan apa pun selain debu dingin dan keputusasaan yang makin pekat.";
-                }
-            } else if (action === 'hide') {
-                if (state.monsterAlert) {
-                    if (!state.flashlightOn) {
-                        state.monsterAlert = false;
-                        logMsg = "Kamu menahan napas di dalam gelap gulita. Suara deru napas berat melewati tubuhmu lalu menghilang... Kamu aman sementara.";
-                    } else {
-                        logMsg = "Kamu mencoba bersembunyi tapi SENTERMU MASIH MENYALA! Makhluk itu melihat cahayamu!";
-                        setTimeout(() => triggerJumpscare("Senter yang menyala menuntunnya langsung ke wajahmu."), 1500);
-                    }
-                }
+            } else {
+                state.sanity -= 0.06; // Sanity ngedrop cepat jika gelap total
             }
 
-            if (state.monsterAlert && action !== 'hide') {
-                state.turnsSinceAlert++;
-                if (state.turnsSinceAlert > 1) {
-                    triggerJumpscare("Waktumu habis. Sesuatu menarikmu dari belakang.");
-                    return;
-                }
+            // Kecepatan musik melambat dramatis jika sanity hancur (Halusinasi)
+            if (state.sanity < 40) {
+                bgm.playbackRate = 0.75;
+                if(Math.random() < 0.03) flashlight.intensity = 0.1; // Kegelapan mulai mengambil alih visual
+            } else {
+                bgm.playbackRate = 1.0;
             }
 
-            updateUI();
-            if(state.sanity > 0 && state.battery >= 0) {
-                typeWriter(logMsg, 'story-text');
+            // Auto-mati jika baterai 0
+            if (state.battery <= 0 && state.flashlightOn) {
+                state.battery = 0;
+                toggleFlashlight();
             }
+
+            updateHUD();
+            checkGameConditions();
+            renderer.render(scene, camera);
         }
 
-        function checkDeathConditions() {
+        function updateHUD() {
+            state.sanity = Math.max(0, state.sanity);
+            state.battery = Math.max(0, state.battery);
+
+            document.getElementById('sanity-fill').style.width = state.sanity + '%';
+            document.getElementById('battery-fill').style.width = state.battery + '%';
+            document.getElementById('distance-txt').innerText = `Jarak: ${state.distance}m / 100m`;
+        }
+
+        function checkGameConditions() {
+            // Kalah karena gila
             if (state.sanity <= 0) {
-                showEndScreen("KAMU GILA", "Kewarasanmu hancur sepenuhnya. Kamu menjadi bagian dari koridor gelap ini selamanya.");
+                endGame("KAMU GILA", "Pikiranmu runtuh total ditelan kegelapan koridor linoleum.");
+            }
+            // Menang jika mencapai ujung lorong 3D (100 meter)
+            if (state.distance >= 100) {
+                endGame("KAMU SELAMAT", "Kamu melihat berkas cahaya fajar di ujung pintu keluar lorong. Kamu berhasil lolos!");
+            }
+            // Random Jumpscare Trigger jika nekat berjalan di kegelapan tanpa senter
+            if (!state.flashlightOn && state.distance > 15 && Math.random() < 0.002) {
+                triggerJumpscare("Sesuatu menerkammu tepat saat sentermu mati padam.");
             }
         }
 
         function triggerJumpscare(reason) {
-            const jsDiv = document.getElementById('jumpscare');
-            const jsText = document.getElementById('jumpscare-text');
+            gameActive = false;
             bgm.pause();
+            
+            const js = document.getElementById('jumpscare');
+            js.style.visibility = 'visible';
 
-            jsDiv.style.visibility = 'visible';
-            jsText.style.transform = 'scale(2)';
-
-            let count = 0;
+            // Efek kedip visual jumpscare merah-hitam kilat
+            let f = 0;
             const flash = setInterval(() => {
-                jsDiv.style.backgroundColor = count % 2 === 0 ? '#500' : '#000';
-                count++;
-                if (count > 8) clearInterval(flash);
-            }, 40);
+                js.style.backgroundColor = f % 2 === 0 ? '#600' : '#000';
+                f++; if(f > 10) clearInterval(flash);
+            }, 30);
 
             setTimeout(() => {
-                jsDiv.style.visibility = 'hidden';
-                jsText.style.transform = 'scale(0.3)';
-                showEndScreen("KAMU MATI", reason);
-            }, 1000);
+                js.style.visibility = 'hidden';
+                endGame("KAMU MATI", reason);
+            }, 1100);
         }
 
-        function showEndScreen(title, reason) {
+        function endGame(title, reason) {
+            gameActive = false;
+            document.getElementById('ui-layer').classList.add('hidden');
             document.getElementById('end-title').innerText = title;
             document.getElementById('end-reason').innerText = reason;
-            showScreen('gameover-screen');
-        }
-
-        function gameWin() {
-            showEndScreen("KAMU SELAMAT", `Luar biasa, Jae! Kamu berhasil menempuh ${state.distance} meter melewati koridor maut dan menemukan pintu keluar ke dunia nyata.`);
+            document.getElementById('gameover-screen').classList.remove('hidden');
         }
 
         function restartGame() {
+            document.getElementById('gameover-screen').classList.add('hidden');
             bgm.currentTime = 0;
             startGame();
         }
+
+        // Handle ukuran window browser dinamis demi menjaga aspek rasio 3D
+        window.addEventListener('resize', () => {
+            if(camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+
+        // Jalankan inisialisasi engine 3D saat file di-load
+        init3D();
     </script>
 </body>
 </html>
