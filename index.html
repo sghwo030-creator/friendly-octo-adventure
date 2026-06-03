@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Cold Cave: 3D First Person Horror</title>
+    <title>The Cold Cave: Monster Hunt 3D</title>
     <style>
         * {
             box-sizing: border-box;
@@ -22,19 +22,24 @@
 
         #game-canvas {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: 1;
+        }
+
+        /* Efek Panik Detak Jantung */
+        #vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.98);
+            pointer-events: none;
+            z-index: 5;
+            transition: box-shadow 0.3s ease;
         }
 
         .ui-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10;
             pointer-events: none;
             display: flex;
@@ -48,20 +53,19 @@
             justify-content: space-between;
             color: #fff;
             font-size: 1.1rem;
-            background: rgba(0, 0, 0, 0.75);
+            background: rgba(5, 0, 0, 0.85);
             padding: 15px;
-            border: 1px solid #332222;
+            border: 1px solid #551a1a;
             pointer-events: auto;
             width: 100%;
-            max-width: 550px;
+            max-width: 600px;
             margin: 0 auto;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            box-shadow: 0 0 20px rgba(139,0,0,0.3);
         }
 
         .bar-bg {
             background: #221111;
-            width: 110px;
-            height: 8px;
+            width: 100px; height: 8px;
             display: inline-block;
             margin-left: 10px;
             vertical-align: middle;
@@ -108,7 +112,6 @@
             font-family: inherit;
             cursor: pointer;
             text-transform: uppercase;
-            pointer-events: auto;
             transition: 0.3s all;
         }
 
@@ -119,13 +122,27 @@
         }
 
         .controls-hint {
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.7);
             padding: 12px;
-            color: #888;
+            color: #999;
             font-size: 0.85rem;
             text-align: center;
             margin-top: auto;
-            border-top: 1px solid #221111;
+            border-top: 1px solid #551a1a;
+        }
+
+        #warning-indicator {
+            color: #ff0000;
+            font-weight: bold;
+            text-shadow: 0 0 8px #ff0000;
+            font-size: 1.3rem;
+            visibility: hidden;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.2; }
+            100% { opacity: 1; }
         }
 
         #jumpscare {
@@ -137,48 +154,48 @@
             visibility: hidden;
         }
         #jumpscare-text {
-            color: #ff0000; font-size: 7rem; font-weight: bold; letter-spacing: 20px;
-            font-family: 'Impact', sans-serif;
+            color: #ff0000; font-size: 8rem; font-weight: bold;
+            font-family: 'Impact', sans-serif; letter-spacing: 10px;
         }
     </style>
-
-    <!-- Mengimpor Engine 3D (Three.js) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
+    <div id="vignette"></div>
     <canvas id="game-canvas"></canvas>
     <audio id="bgm" src="https://raw.githubusercontent.com/sghwo030-creator/friendly-octo-adventure/refs/heads/main/Cold_Linoleum_Floor.mp3" loop></audio>
 
     <!-- MENU UTAMA -->
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>Kamu tersesat di kedalaman gua batu yang lembap. Anehnya, gema langkah kakimu di sini terdengar persis seperti ketukan di atas lantai linoleum yang dingin...</p>
-        <button onclick="startGame()">Masuk Ke Dalam Gua</button>
+        <p>Gua purba ini menyimpan predator purba berdarah dingin. Berhati-hatilah saat mengarahkan senter, cahaya terang akan memancingnya berlari ke arahmu...</p>
+        <button onclick="startGame()">Hadapi Monster</button>
     </div>
 
     <!-- UI HUD GAMEPLAY -->
     <div id="ui-layer" class="ui-overlay hidden">
         <div class="hud">
-            <div>Kewarasan <div class="bar-bg"><div id="sanity-fill" class="bar-fill"></div></div></div>
-            <div>Baterai <div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div></div>
-            <div id="distance-txt">Kedalaman: 0m</div>
+            <div>Mental <div class="bar-bg"><div id="sanity-fill" class="bar-fill"></div></div></div>
+            <div>Senter <div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div></div>
+            <div id="distance-txt">Jarak: 0m</div>
         </div>
+        <div id="warning-indicator">TERDETEKSI: MAKHLUK MENDEKAT!</div>
         <div class="controls-hint">
-            [W/S] Gerak Maju/Mundur | [A/D] Hadap Kiri/Kanan | [SPACE] Senter ON/OFF | [E] Raba Lantai (Cari Baterai)
+            [W/S] Maju/Mundur | [A/D] Hadap Kiri/Kanan | [SPACE] Senter ON/OFF | [E] Cari Baterai di Tanah
         </div>
     </div>
 
-    <!-- SCREEN AKHIR -->
+    <!-- SCREEN GAME OVER -->
     <div id="gameover-screen" class="screen hidden">
-        <h1 id="end-title">MATI KAKU</h1>
+        <h1 id="end-title">MATI DICERIK</h1>
         <p id="end-reason"></p>
         <button onclick="restartGame()">Ulangi Takdir</button>
     </div>
 
-    <!-- JUMPSCARE LAYER -->
+    <!-- JUMPSCARE FLASH -->
     <div id="jumpscare">
-        <div id="jumpscare-text">DI SINI!</div>
+        <div id="jumpscare-text">TERTANGKAP!</div>
     </div>
 
     <script>
@@ -186,175 +203,141 @@
         let scene, camera, renderer, flashlight, ambientLight;
         let gameActive = false;
         
+        // Entitas Monster 3D Berdasarkan Foto Gemini_Generated_Image_sged93sged93sged.png
+        let monsterMesh;
+        let monsterState = {
+            zPos: -45, 
+            active: false,
+            speed: 0.03,
+            bobbingTimer: 0
+        };
+
         let state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
         const keys = { w: false, a: false, s: false, d: false };
 
-        const caveLength = 180;
-        const speed = 0.07;
+        const caveLength = 160;
+        const playerSpeed = 0.07;
         const turnSpeed = 0.025;
 
         function init3D() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x020101, 0.18); // Kabut pekat khas gua gelap
+            scene.fog = new THREE.FogExp2(0x020101, 0.2); 
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            
             renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
 
-            // DETAIL 1: Membuat Tekstur Batu Gua Kasar via HTML Canvas (Procedural Noise)
-            const canvasTex = document.createElement('canvas');
-            canvasTex.width = 512; canvasTex.height = 512;
-            const ctx = canvasTex.getContext('2d');
-            ctx.fillStyle = '#1c1815'; ctx.fillRect(0, 0, 512, 512); // Warna dasar batu purba
-            
-            // Menggambar bintik-bintik batu kasar
-            for(let i=0; i<30000; i++) {
-                let x = Math.random()*512; let y = Math.random()*512;
-                let size = Math.random()*3;
-                ctx.fillStyle = Math.random() > 0.5 ? '#110e0c' : '#2d2621';
-                ctx.fillRect(x, y, size, size);
-            }
-            // Goresan retakan batu purba
-            ctx.strokeStyle = '#0a0807'; ctx.lineWidth = 2;
-            for(let i=0; i<20; i++) {
-                ctx.beginPath();
-                ctx.moveTo(Math.random()*512, Math.random()*512);
-                ctx.lineTo(Math.random()*512, Math.random()*512);
-                ctx.stroke();
-            }
-            
-            const rockTexture = new THREE.CanvasTexture(canvasTex);
-            rockTexture.wrapS = THREE.RepeatWrapping; rockTexture.wrapT = THREE.RepeatWrapping;
-            rockTexture.repeat.set(3, 30);
-
-            // DETAIL 2: Membuat Geometri Terowongan Gua Berbatu Irregular
-            const caveGeo = new THREE.BoxGeometry(5, 4.5, caveLength, 10, 10, 120);
-            
-            // Deformasi Vertices (Mengubah bentuk kotak mulus jadi struktur batu tebing hancur)
+            // 1. Procedural Cave Wall Mesh
+            const caveGeo = new THREE.BoxGeometry(4.8, 4, caveLength, 8, 8, 100);
             const pos = caveGeo.attributes.position;
             for (let i = 0; i < pos.count; i++) {
                 let x = pos.getX(i); let y = pos.getY(i); let z = pos.getZ(i);
-
-                // Membuat gelombang batu acak (Jagged Wall Effect)
-                let wave = Math.sin(z * 0.7) * 0.3 + Math.cos(x * 2.5) * 0.2 + Math.sin(y * 1.5) * 0.2;
-                
-                // Supaya jalan tengah lantai tidak terlalu bergelombang ekstrim (menghindari bug amblas)
-                if (y < -2.1 && Math.abs(x) < 1.3) {
-                    pos.setY(i, y + Math.abs(wave) * 0.12);
+                let noise = Math.sin(z * 0.8) * 0.25 + Math.cos(x * 2) * 0.15 + Math.sin(y * 1.2) * 0.15;
+                if (y < -1.8 && Math.abs(x) < 1.2) {
+                    pos.setY(i, y + Math.abs(noise) * 0.1); // Jaga jalur jalan aman
                 } else {
-                    pos.setX(i, x + wave * (x > 0 ? 1 : -1) * 0.45);
-                    pos.setY(i, y + wave * (y > 0 ? 1 : -1) * 0.45);
+                    pos.setX(i, x + noise * (x > 0 ? 1 : -1) * 0.4);
+                    pos.setY(i, y + noise * (y > 0 ? 1 : -1) * 0.4);
                 }
             }
             caveGeo.computeVertexNormals();
 
-            const caveMat = new THREE.MeshStandardMaterial({
-                map: rockTexture,
-                roughness: 0.95,
-                metalness: 0.05,
-                side: THREE.BackSide
-            });
+            // Canvas Texture Batu Kasar Gelap
+            const canvasTex = document.createElement('canvas');
+            canvasTex.width = 256; canvasTex.height = 256;
+            const ctx = canvasTex.getContext('2d');
+            ctx.fillStyle = '#161311'; ctx.fillRect(0, 0, 256, 256);
+            for(let i=0; i<8000; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#0d0b0a' : '#221d1a';
+                ctx.fillRect(Math.random()*256, Math.random()*256, Math.random()*2, Math.random()*2);
+            }
+            const rockTex = new THREE.CanvasTexture(canvasTex);
+            rockTex.wrapS = THREE.RepeatWrapping; rockTex.wrapT = THREE.RepeatWrapping;
+            rockTex.repeat.set(3, 25);
+
+            const caveMat = new THREE.MeshStandardMaterial({ map: rockTex, roughness: 0.95, side: THREE.BackSide });
             const caveMesh = new THREE.Mesh(caveGeo, caveMat);
-            caveMesh.position.set(0, 1.8, -caveLength / 2);
+            caveMesh.position.set(0, 1.6, -caveLength / 2);
             scene.add(caveMesh);
 
-            // DETAIL 3: Membuat Stalaktit (Atas) & Stalamit (Bawah) Berwarna Senada dinding gua
-            const spikeMat = new THREE.MeshStandardMaterial({ map: rockTexture, roughness: 0.9 });
-            for(let zPos = 6; zPos < caveLength - 6; zPos += 3.5) {
-                // Stalaktit (Menggantung di langit gua)
-                if(Math.random() > 0.35) {
-                    const h = Math.random() * 1.3 + 0.5;
-                    const coneGeo = new THREE.ConeGeometry(0.22, h, 5);
-                    coneGeo.rotateX(Math.PI); 
-                    const stalactite = new THREE.Mesh(coneGeo, spikeMat);
-                    stalactite.position.set(Math.random() * 2.4 - 1.2, 3.4, -zPos);
-                    scene.add(stalactite);
-                }
-                // Stalamit (Tumbuh liar di pinggiran jalan lantai gua)
-                if(Math.random() > 0.4) {
-                    const h = Math.random() * 0.9 + 0.3;
-                    const coneGeo = new THREE.ConeGeometry(0.18, h, 5);
-                    const stalagmite = new THREE.Mesh(coneGeo, spikeMat);
-                    // Ditaruh agak ke kiri/kanan jalan agar tidak menutup jalur lurus player
-                    const sideX = Math.random() > 0.5 ? (Math.random() * 0.5 + 1.2) : -(Math.random() * 0.5 + 1.2);
-                    stalagmite.position.set(sideX, h/2 - 0.2, -zPos);
-                    scene.add(stalagmite);
-                }
-            }
+            // 2. BUILD THE MONSTER (Referensi: Gemini_Generated_Image_sged93sged93sged.png)
+            buildProceduralMonster();
 
-            // DETAIL 4: Jamur/Kristal Menyala (Glowing Bioluminescent Moss)
-            const mossMat = new THREE.MeshBasicMaterial({ color: 0x00ff55 });
-            for (let zPos = 10; zPos < caveLength; zPos += 7) {
-                if(Math.random() > 0.3) {
-                    const mossGeo = new THREE.SphereGeometry(Math.random() * 0.12 + 0.04, 5, 5);
-                    const moss = new THREE.Mesh(mossGeo, mossMat);
-                    const sideX = Math.random() > 0.5 ? 1.9 : -1.9;
-                    moss.position.set(sideX, Math.random() * 2.5 + 0.4, -zPos);
-                    scene.add(moss);
-                    
-                    // Cahaya pancaran hijau mistis konstan di sekitar kristal
-                    if(Math.random() > 0.6) {
-                        const light = new THREE.PointLight(0x00ff55, 0.4, 4);
-                        light.position.copy(moss.position);
-                        scene.add(light);
-                    }
-                }
-            }
-
-            // DETAIL 5: Efek Genangan Air Tanah Basah di Lantai Gua
-            const puddleMat = new THREE.MeshStandardMaterial({ color: 0x080706, roughness: 0.05, metalness: 0.8 });
-            for (let zPos = 12; zPos < caveLength; zPos += 14) {
-                if(Math.random() > 0.4) {
-                    const puddleGeo = new THREE.CircleGeometry(Math.random() * 0.7 + 0.3, 8);
-                    puddleGeo.rotateX(-Math.PI / 2); 
-                    const puddle = new THREE.Mesh(puddleGeo, puddleMat);
-                    puddle.position.set(Math.random() * 1.2 - 0.6, -0.18, -zPos);
-                    scene.add(puddle);
-                }
-            }
-
-            // Senter (Spotlight Intensitas Tinggi terikat Kamera)
-            flashlight = new THREE.SpotLight(0xfff5db, 3.5, 22, Math.PI / 4.2, 0.5, 1);
-            flashlight.castShadow = true;
+            // Lighting System
+            flashlight = new THREE.SpotLight(0xfff3d1, 3.5, 20, Math.PI / 4.5, 0.5, 1);
             camera.add(flashlight);
-            
-            const target = new THREE.Object3D();
-            target.position.set(0, 0, -1);
-            camera.add(target);
-            flashlight.target = target;
+            const target = new THREE.Object3D(); target.position.set(0, 0, -1);
+            camera.add(target); flashlight.target = target;
 
-            ambientLight = new THREE.AmbientLight(0x050303);
+            ambientLight = new THREE.AmbientLight(0x040202);
             scene.add(ambientLight);
-
             scene.add(camera);
-            resetPlayer();
         }
 
-        function resetPlayer() {
-            camera.position.set(0, 1.6, 0); 
-            camera.rotation.set(0, 0, 0);
+        // Fungsi Menyusun Monster Spiky Merangkak Sesuai Gambar
+        function buildProceduralMonster() {
+            monsterMesh = new THREE.Group();
+
+            // Material Kulit Monster: Abu-abu pucat berlumut kasar
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0x4a4743, roughness: 0.9 });
+            const spikeMat = new THREE.MeshStandardMaterial({ color: 0x2d2b28, roughness: 0.95 });
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Mata Putih Menyala Murni tanpa pupil
+
+            // Tubuh Utama (Bentuk melengkung rendah merangkak)
+            const bodyGeo = new THREE.SphereGeometry(0.45, 8, 8);
+            bodyGeo.scale(1, 0.7, 1.4); // Memipih & memanjang horizontal
+            const body = new THREE.Mesh(bodyGeo, skinMat);
+            body.position.y = 0.3;
+            monsterMesh.add(body);
+
+            // Kepala Rendah Menunduk Ke Depan
+            const headGeo = new THREE.SphereGeometry(0.3, 8, 8);
+            headGeo.scale(1, 0.8, 1.1);
+            const head = new THREE.Mesh(headGeo, skinMat);
+            head.position.set(0, 0.35, -0.7);
+            monsterMesh.add(head);
+
+            // DETAIL 1: Sepasang Mata Putih Menyala Lebar
+            const eyeLeft = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), eyeMat);
+            eyeLeft.position.set(-0.13, 0.42, -0.92);
+            const eyeRight = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), eyeMat);
+            eyeRight.position.set(0.13, 0.42, -0.92);
+            monsterMesh.add(eyeLeft);
+            monsterMesh.add(eyeRight);
+
+            // DETAIL 2: Duri Punggung Tajam Bergerigi (Spikes)
+            for (let i = 0; i < 9; i++) {
+                const spikeGeo = new THREE.ConeGeometry(0.05, 0.22, 4);
+                const spike = new THREE.Mesh(spikeGeo, spikeMat);
+                // Berjejer di sepanjang tulang belakang Z-axis
+                spike.position.set((Math.random()*0.04 - 0.02), 0.65, -0.5 + (i * 0.14));
+                spike.rotation.x = Math.PI / 6; // Agak miring ke belakang
+                monsterMesh.add(spike);
+            }
+
+            // DETAIL 3: 4 Kaki Merangkak Lebar Bertekstur Kekar
+            const legGeo = new THREE.BoxGeometry(0.12, 0.5, 0.15);
+            
+            const frontLeft = new THREE.Mesh(legGeo, skinMat); frontLeft.position.set(-0.45, 0.15, -0.4); frontLeft.rotation.z = 0.3;
+            const frontRight = new THREE.Mesh(legGeo, skinMat); frontRight.position.set(0.45, 0.15, -0.4); frontRight.rotation.z = -0.3;
+            const backLeft = new THREE.Mesh(legGeo, skinMat); backLeft.position.set(-0.4, 0.15, 0.4); backLeft.rotation.z = 0.2;
+            const backRight = new THREE.Mesh(legGeo, skinMat); backRight.position.set(0.4, 0.15, 0.4); backRight.rotation.z = -0.2;
+
+            monsterMesh.add(frontLeft, frontRight, backLeft, backRight);
+
+            // Sembunyikan monster di awal permainan jauh di depan gua
+            monsterMesh.position.set(0, -0.1, monsterState.zPos);
+            scene.add(monsterMesh);
         }
 
-        // Keyboard System
+        // Keyboard Actions
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
             if (keys.hasOwnProperty(key)) keys[key] = true;
-            
-            if (e.code === 'Space' && gameActive) {
-                e.preventDefault();
-                toggleFlashlight();
-            }
-            if (key === 'e' && gameActive) {
-                scavengeCaveFloor();
-            }
+            if (e.code === 'Space' && gameActive) { e.preventDefault(); toggleFlashlight(); }
+            if (key === 'e' && gameActive) searchFloor();
         });
-
-        window.addEventListener('keyup', (e) => {
-            const key = e.key.toLowerCase();
-            if (keys.hasOwnProperty(key)) keys[key] = false;
-        });
+        window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
 
         function toggleFlashlight() {
             if (state.battery <= 0 && !state.flashlightOn) return;
@@ -362,27 +345,26 @@
             flashlight.intensity = state.flashlightOn ? 3.5 : 0;
         }
 
-        function scavengeCaveFloor() {
-            // Meraba batuan gua mencari sisa logistik pendaki mati terdahulu
-            if(Math.random() < 0.38) {
-                const energy = Math.floor(Math.random() * 25) + 15;
-                state.battery = Math.min(100, state.battery + energy);
-                state.sanity -= 4; 
-            } else {
-                state.sanity -= 12; // Stress akibat meraba sesuatu yang aneh/lendir di dalam gua gelap
-            }
+        function searchFloor() {
+            if(Math.random() < 0.4) {
+                state.battery = Math.min(100, state.battery + 20);
+                state.sanity -= 5;
+            } else { state.sanity -= 10; }
             updateHUD();
         }
 
         function startGame() {
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('ui-layer').classList.remove('hidden');
-            
-            bgm.play().catch(e => console.log("Audio waiting for active node."));
+            bgm.play().catch(e => console.log("Audio waiting..."));
             
             state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
+            monsterState.zPos = -45; // Spawn awal monster di kedalaman 45 meter depan player
+            monsterState.active = true;
+            monsterState.speed = 0.035;
+
+            camera.position.set(0, 1.6, 0); camera.rotation.set(0, 0, 0);
             flashlight.intensity = 3.5;
-            resetPlayer();
             gameActive = true;
             
             updateHUD();
@@ -393,96 +375,120 @@
             if (!gameActive) return;
             requestAnimationFrame(animate);
 
-            // Engine Pergerakan Karakter 3D
-            if (keys.w) camera.translateZ(-speed);
-            if (keys.s) camera.translateZ(speed);
+            // Pergerakan Player
+            if (keys.w) camera.translateZ(-playerSpeed);
+            if (keys.s) camera.translateZ(playerSpeed);
             if (keys.a) camera.rotation.y += turnSpeed;
             if (keys.d) camera.rotation.y -= turnSpeed;
 
-            // Memperketat koordinat batas dinding agar tidak menembus formasi bebatuan kasar gua
-            camera.position.x = Math.max(-1.4, Math.min(1.4, camera.position.x));
+            camera.position.x = Math.max(-1.3, Math.min(1.3, camera.position.x));
             camera.position.z = Math.max(-caveLength + 3, Math.min(1, camera.position.z));
 
-            let currentDist = Math.floor(Math.abs(camera.position.z));
-            if (currentDist !== state.distance) {
-                state.distance = currentDist;
-                updateHUD();
+            state.distance = Math.floor(Math.abs(camera.position.z));
+
+            // LOGIKA AI MONSTER (Berdasarkan Visual Gemini_Generated_Image_sged93sged93sged.png)
+            if (monsterState.active) {
+                // Efek Merangkak: Tubuh berosilasi naik turun naik turun seiring waktu
+                monsterState.bobbingTimer += 0.15;
+                monsterMesh.position.y = -0.1 + Math.sin(monsterState.bobbingTimer) * 0.04;
+
+                // Hitung jarak murni antara Player dengan Monster di sumbu Z
+                let distToMonster = Math.abs(camera.position.z - monsterMesh.position.z);
+
+                // MEKANIK AGGRO SENTER: Jika senter menyala dan menghadap monster, dia marah & berlari cepat!
+                if (state.flashlightOn && distToMonster < 25) {
+                    monsterState.speed = 0.11; // Kecepatan lari penuh!
+                    document.getElementById('warning-indicator').style.visibility = 'visible';
+                    document.getElementById('vignette').style.boxShadow = `inset 0 0 150px rgba(139, 0, 0, 0.95)`;
+                    bgm.playbackRate = 1.6; // Musik Cold_Linoleum_Floor dimodulasi super cepat memicu panik!
+                } else {
+                    // Jika mati senter (Stealth Mode), monster kehilangan jejak dan melambat merangkak acak
+                    monsterState.speed = 0.025; 
+                    document.getElementById('warning-indicator').style.visibility = 'hidden';
+                    bgm.playbackRate = state.sanity < 45 ? 0.75 : 1.0;
+                }
+
+                // Monster terus merangkak mendekati koordinat Z player
+                monsterMesh.position.z += monsterState.speed;
+
+                // Jika player berhasil menjauh, atau monster mati di batas gua, respawn acak di kegelapan depan
+                if (monsterMesh.position.z > camera.position.z + 5) {
+                    monsterMesh.position.z = camera.position.z - (Math.random() * 20 + 35);
+                }
+
+                // KONDISI JUMPSCARE: Jarak sangat dekat (< 2.2 Meter)
+                if (distToMonster < 2.2) {
+                    executeMonsterJumpscare();
+                    return;
+                }
             }
 
-            // Aturan Pengurasan Energi & Mentalitas
+            // Aturan Pengurasan Baterai & Sanity
             if (state.flashlightOn) {
-                state.battery -= 0.03;
-                state.sanity -= 0.006;
-                
-                // Senter rusak berkedip jika baterai kritis
-                if (state.battery < 30 && Math.random() < 0.09) {
-                    flashlight.intensity = Math.random() > 0.5 ? 3.5 : 0.1;
+                state.battery -= 0.035; state.sanity -= 0.005;
+                if (state.battery < 30 && Math.random() < 0.1) {
+                    flashlight.intensity = Math.random() > 0.5 ? 3.5 : 0.2;
                 }
             } else {
-                state.sanity -= 0.075; // Gelap total di dalam gua mempercepat kepanikan
-            }
-
-            // Audio Modulation & Distorsi Visual saat Sanity drop di bawah 45%
-            if (state.sanity < 45) {
-                bgm.playbackRate = 0.72; // Lagu melambat, menciptakan distorsi psikologis mendalam
-                if(Math.random() < 0.04) flashlight.intensity = 0.05; 
-            } else {
-                bgm.playbackRate = 1.0;
+                state.sanity -= 0.08; // Gelap total merusak mental dengan cepat
+                // Detak denyut merah konstan di pinggiran layar saat gelap gulita
+                let pulseShadow = 80 + Math.sin(Date.now() * 0.005) * 20;
+                document.getElementById('vignette').style.boxShadow = `inset 0 0 ${pulseShadow}px rgba(0, 0, 0, 0.99)`;
             }
 
             if (state.battery <= 0 && state.flashlightOn) {
-                state.battery = 0;
-                toggleFlashlight();
+                state.battery = 0; toggleFlashlight();
             }
 
             updateHUD();
-            evaluateRules();
+            checkMentalCollapse();
             renderer.render(scene, camera);
         }
 
         function updateHUD() {
             state.sanity = Math.max(0, state.sanity);
             state.battery = Math.max(0, state.battery);
-
             document.getElementById('sanity-fill').style.width = state.sanity + '%';
             document.getElementById('battery-fill').style.width = state.battery + '%';
-            document.getElementById('distance-txt').innerText = `Kedalaman: ${state.distance}m / 120m`;
+            document.getElementById('distance-txt').innerText = `Progress: ${state.distance}m / 110m`;
         }
 
-        function evaluateRules() {
+        function checkMentalCollapse() {
             if (state.sanity <= 0) {
-                endGame("HILANG AKAL", "Isolasi gua dan kegelapan absolut merenggut jiwamu. Kamu mati dalam keadaan histeris.");
+                endGame("HILANG WARAS", "Kewarasanmu hancur total akibat terisolasi di gua batu dan diteror sepasang mata putih menyala.");
             }
-            if (state.distance >= 120) {
-                endGame("SELAMAT", "Cahaya bulan menembus celah keluar gua! Kamu berhasil merangkak keluar dari kegelapan.");
-            }
-            // Mekanik Jumpscare Tak Terduga jika terlalu lama berjalan tanpa senter menyala
-            if (!state.flashlightOn && state.distance > 10 && Math.random() < 0.0025) {
-                triggerInstantJumpscare("Sesuatu yang merayap di langit-langit gua jatuh tepat di atas kepalamu.");
+            if (state.distance >= 110) {
+                endGame("SELAMAT", "Kamu berhasil merangkak keluar dari jerat gua purba dan lolos dari terkaman monster purba!");
             }
         }
 
-        function triggerInstantJumpscare(reason) {
+        // Eksekusi Jumpscare Mengunci Kamera ke Monster
+        function executeMonsterJumpscare() {
             gameActive = false;
             bgm.pause();
-            
-            const js = document.getElementById('jumpscare');
-            js.style.visibility = 'visible';
 
-            let step = 0;
-            const flashEffect = setInterval(() => {
-                js.style.backgroundColor = step % 2 === 0 ? '#400' : '#000';
-                step++; if(step > 12) clearInterval(flashEffect);
-            }, 35);
+            // Paksa Kamera Menatap Langsung ke koordinat Monster yang menerkam
+            camera.lookAt(monsterMesh.position);
+            renderer.render(scene, camera);
+
+            const jsLayer = document.getElementById('jumpscare');
+            jsLayer.style.visibility = 'visible';
+
+            let flickerCount = 0;
+            const bloodFlash = setInterval(() => {
+                jsLayer.style.backgroundColor = flickerCount % 2 === 0 ? '#700' : '#000';
+                flickerCount++; if (flickerCount > 14) clearInterval(bloodFlash);
+            }, 30);
 
             setTimeout(() => {
-                js.style.visibility = 'hidden';
-                endGame("KORBAN GUA", reason);
-            }, 1200);
+                jsLayer.style.visibility = 'hidden';
+                endGame("KAMU DICABIK", "Makhluk purba berduri tajam itu menerkam wajahmu di kegelapan gua batu.");
+            }, 1300);
         }
 
         function endGame(title, reason) {
             gameActive = false;
+            monsterState.active = false;
             document.getElementById('ui-layer').classList.add('hidden');
             document.getElementById('end-title').innerText = title;
             document.getElementById('end-reason').innerText = reason;
