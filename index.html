@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Cold Cave: Absolute Terror</title>
+    <title>The Cold Cave: Absolute Terror (Massive Map)</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #010101; font-family: monospace; }
@@ -25,7 +25,7 @@
 
         #settings-trigger { background: rgba(20,20,20,0.8); border: 1px solid #555; color: #ccc; padding: 5px 10px; cursor: pointer; font-size: 0.7rem; font-weight: bold; }
         
-        #minimap-container { position: absolute; bottom: 25px; right: 25px; width: 120px; height: 120px; border: 2px solid rgba(255, 0, 0, 0.25); background: rgba(4, 1, 1, 0.85); backdrop-filter: blur(4px); border-radius: 6px; z-index: 15; pointer-events: auto; }
+        #minimap-container { position: absolute; bottom: 25px; right: 25px; width: 130px; height: 130px; border: 2px solid rgba(255, 0, 0, 0.25); background: rgba(4, 1, 1, 0.85); backdrop-filter: blur(4px); border-radius: 6px; z-index: 15; pointer-events: auto; }
         #minimap { width: 100%; height: 100%; }
 
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #120505 0%, #020101 100%); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #e0e0e0; text-align: center; padding: 20px; }
@@ -66,12 +66,12 @@
     <canvas id="game-canvas"></canvas>
 
     <div id="minimap-container" class="hidden">
-        <canvas id="minimap" width="120" height="120"></canvas>
+        <canvas id="minimap" width="130" height="130"></canvas>
     </div>
 
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>[PROSEDURAL HYDRO-EROSION ENGINE V5.0] Generasi peta gua organik berbasis simulasi aliran air alami, pengikisan dinding, pembentukan ruang kubah acak, dilengkapi efek cipratan lantai air dinamis, partikel debu melayang, dan inersia senter.</p>
+        <p>[PROSEDURAL HYDRO-EROSION ENGINE V5.5] Peta raksasa (51x51) berbasis simulasi erosi air alami. Area labirin gua organik kini jauh lebih luas, tersebar 15 ruang kubah acak, dilengkapi kabut tebal, partikel debu mengambang, serta radar pendeteksi entitas bawah tanah.</p>
         <div class="btn-group">
             <button class="menu-btn" onclick="startGame(false)">EKSPEDISI BARU</button>
             <button class="menu-btn" id="resume-btn" onclick="startGame(true)" disabled>LANJUTKAN</button>
@@ -84,7 +84,7 @@
                 <div class="bar-container"><div class="bar-label">Sanity</div><div class="bar-bg"><div id="sanity-fill" class="bar-fill"></div></div></div>
                 <div class="bar-container"><div class="bar-label">Stamina</div><div class="bar-bg"><div id="stamina-fill" class="bar-fill"></div></div></div>
             </div>
-            <div id="objective-txt">RUNE: 0 / 3</div>
+            <div id="objective-txt">RUNE: 0 / 5</div>
             <div class="bar-group">
                 <div class="bar-container"><div class="bar-label">Senter</div><div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div></div>
                 <button id="settings-trigger" onclick="toggleSettingsModal(true)">OPSI</button>
@@ -136,27 +136,26 @@
         
         let diffTexGlobal = null, bumpTexGlobal = null;
         let wallMat = null, floorMat = null;
-
         let wallInstMesh = null, floorInstMesh = null, ceilingInstMesh = null;
 
         let audioCtx, masterGain, lastHeartbeat = 0, lastFootstep = 0, monsterGrowlOsc = null, monsterGrowlGain = null;
 
         let dustParticles, dropInstMesh, drops = [], ripples = [];
-        const MAX_DROPS = 25, MAX_RIPPLES = 25;
+        const MAX_DROPS = 35, MAX_RIPPLES = 35;
         let nextRippleIdx = 0;
 
-        // Skala diperbesar menjadi 21x21 untuk memberikan ruang struktur gua alami yang lebih lapang
-        const MAZE_W = 21, MAZE_H = 21, GRID_SIZE = 4;
+        // UKURAN MAP DI-SCALE UP MENJADI MASSIVE (51x51)
+        const MAZE_W = 51, MAZE_H = 51, GRID_SIZE = 4;
         let MAP_GRID = [];
         let runesArray = [];
         let batteriesArray = [];
         let secretArtifact = null;
         let exitGateMesh = null;
 
-        let crawlerMesh, crawlerArms = [], crawlerState = { x: 0, z: 0, gridR: 0, gridC: 0, speed: 0.026, phase: 0, currentPath: [] };
-        let wraithMesh, wraithState = { x: 0, z: 0, speed: 0.016, active: false };
+        let crawlerMesh, crawlerArms = [], crawlerState = { x: 0, z: 0, gridR: 0, gridC: 0, speed: 0.028, phase: 0, currentPath: [] };
+        let wraithMesh, wraithState = { x: 0, z: 0, speed: 0.018, active: false };
 
-        let state = { sanity: 100, battery: 100, stamina: 100, runesCollected: 0, hasSecret: false, flashlightOn: true, gfx: 'high' };
+        let state = { sanity: 100, battery: 100, stamina: 100, runesCollected: 0, totalRunesToWin: 5, hasSecret: false, flashlightOn: true, gfx: 'high' };
         const keys = { w: false, a: false, s: false, d: false, shift: false };
         let targetCamRotationX = 0, targetCamRotationY = 0, lastTouchX = 0, lastTouchY = 0, bobTimer = 0;
 
@@ -164,19 +163,15 @@
             if (localStorage.getItem('cold_cave_v5_save')) document.getElementById('resume-btn').disabled = false;
         }
 
-        // ========================================================
-        // ALGORITMA BARU: SIMULASI ENJIN GUA ALAMI (HYDRO-ORGANIC)
-        // ========================================================
         function generateProceduralMaze() {
-            // Isi peta dengan batuan padat terlebih dahulu (1 = Dinding)
             MAP_GRID = Array(MAZE_H).fill().map(() => Array(MAZE_W).fill(1));
             
             let startR = 1, startC = 1;
             let exitR = MAZE_H - 2, exitC = MAZE_W - 2;
             
-            // 1. Simulasi Erosi Aliran Air Utama (Drunkard's Hydro-Carving Walk) dari Hulu ke Hilir
+            // 1. Aliran Erosi Utama
             let cr = startR, cc = startC;
-            MAP_GRID[cr][cc] = 0; // Lubang terbuka
+            MAP_GRID[cr][cc] = 0;
             
             while (cr !== exitR || cc !== exitC) {
                 if (Math.random() < 0.5 && cr < exitR) cr++;
@@ -184,22 +179,20 @@
                 else if (cr < exitR) cr++;
                 
                 MAP_GRID[cr][cc] = 0;
-                // Kikis batuan kiri-kanan aliran air secara acak untuk membentuk kelebaran lorong yang variatif
-                if(cr + 1 < MAZE_H - 1 && Math.random() < 0.4) MAP_GRID[cr + 1][cc] = 0;
-                if(cc + 1 < MAZE_W - 1 && Math.random() < 0.4) MAP_GRID[cr][cc + 1] = 0;
+                if(cr + 1 < MAZE_H - 1 && Math.random() < 0.45) MAP_GRID[cr + 1][cc] = 0;
+                if(cc + 1 < MAZE_W - 1 && Math.random() < 0.45) MAP_GRID[cr][cc + 1] = 0;
             }
             
-            // 2. Pembentukan Cavern Chambers (Kantung Kubah Ruangan Gua Luas Akibat Pusaran Air Kuno)
-            for (let i = 0; i < 5; i++) {
-                let centerR = Math.floor(Math.random() * (MAZE_H - 5)) + 2;
-                let centerC = Math.floor(Math.random() * (MAZE_W - 5)) + 2;
-                let roomRadius = Math.floor(Math.random() * 2) + 2; // Radius 2-3 blok grid
+            // 2. Ditambah jadi 15 Kamar Gua Besar karena wilayah bertambah luas
+            for (let i = 0; i < 15; i++) {
+                let centerR = Math.floor(Math.random() * (MAZE_H - 6)) + 3;
+                let centerC = Math.floor(Math.random() * (MAZE_W - 6)) + 3;
+                let roomRadius = Math.floor(Math.random() * 2) + 2; 
                 
                 for (let r = centerR - roomRadius; r <= centerR + roomRadius; r++) {
                     for (let c = centerC - roomRadius; c <= centerC + roomRadius; c++) {
                         if (r > 0 && r < MAZE_H - 1 && c > 0 && c < MAZE_W - 1) {
-                            // Kalkulasi jarak Euclidean agar berbentuk elips/lingkaran erosi alami
-                            if (Math.sqrt((r - centerR)**2 + (c - centerC)**2) <= roomRadius + 0.4) {
+                            if (Math.sqrt((r - centerR)**2 + (c - centerC)**2) <= roomRadius + 0.5) {
                                 MAP_GRID[r][c] = 0;
                             }
                         }
@@ -207,7 +200,7 @@
                 }
             }
 
-            // 3. Sistem Pemulusan Struktur Batuan menggunakan Metode Matematika Cellular Automata
+            // 3. Pemulusan Batuan (Cellular Automata)
             let smoothedGrid = Array(MAZE_H).fill().map(() => Array(MAZE_W).fill(1));
             for (let r = 1; r < MAZE_H - 1; r++) {
                 for (let c = 1; c < MAZE_W - 1; c++) {
@@ -226,16 +219,14 @@
             }
             MAP_GRID = smoothedGrid;
             
-            // Re-enforce rute jalan utama untuk menjamin peta tidak terisolasi/buntu akibat pemulusan batuan
-            cr = startR; cc = startC; MAP_GRID[cr][cc] = 2; // Titik Awal Player
+            cr = startR; cc = startC; MAP_GRID[cr][cc] = 2; 
             while (cr !== exitR || cc !== exitC) {
                 if (cr < exitR) cr++;
                 if (cc < exitC) cc++;
                 if(MAP_GRID[cr][cc] === 1) MAP_GRID[cr][cc] = 0;
             }
-            MAP_GRID[exitR][exitC] = 4; // Gerbang Keluar
+            MAP_GRID[exitR][exitC] = 4; 
 
-            // 4. Penempatan Komponen Item secara Logis pada Kantung Cavern Kosong
             let validOpenSpaces = [];
             for (let r = 1; r < MAZE_H - 1; r++) {
                 for (let c = 1; c < MAZE_W - 1; c++) {
@@ -246,12 +237,16 @@
             }
             validOpenSpaces.sort(() => Math.random() - 0.5);
 
-            if (validOpenSpaces.length > 0) MAP_GRID[validOpenSpaces[0].r][validOpenSpaces[0].c] = 6; // Artefak Emas
-            for (let i = 1; i <= 3 && i < validOpenSpaces.length; i++) {
-                MAP_GRID[validOpenSpaces[i].r][validOpenSpaces[i].c] = 3; // Item Rune
+            // Sebar Artefak Emas Rahasia
+            if (validOpenSpaces.length > 0) MAP_GRID[validOpenSpaces[0].r][validOpenSpaces[0].c] = 6; 
+            
+            // Sebar 5 Buah Rune Utama
+            for (let i = 1; i <= 5 && i < validOpenSpaces.length; i++) {
+                MAP_GRID[validOpenSpaces[i].r][validOpenSpaces[i].c] = 3; 
             }
-            for (let i = 4; i <= 8 && i < validOpenSpaces.length; i++) {
-                MAP_GRID[validOpenSpaces[i].r][validOpenSpaces[i].c] = 5; // Baterai Senter
+            // Sebar 15 Suplai Baterai Senter biar ga gampang mati kegelapan
+            for (let i = 6; i <= 20 && i < validOpenSpaces.length; i++) {
+                MAP_GRID[validOpenSpaces[i].r][validOpenSpaces[i].c] = 5; 
             }
         }
 
@@ -524,9 +519,9 @@
             flashBeam.geometry.translate(0, -9, 0); flashBeam.geometry.rotateX(Math.PI / 2); scene.add(flashBeam);
             scene.add(new THREE.AmbientLight(0x010000));
 
-            // JUICE: Atmospheric Dust Particles
+            // DIGANDAKAN JADI 800 PARTIKEL AGAR ATMOSFER KABUT TETAP TEBAL DI MAP LUAS
             let dustGeo = new THREE.BufferGeometry();
-            let dustCount = 250;
+            let dustCount = 800;
             let dustPositions = new Float32Array(dustCount * 3);
             for(let i=0; i<dustCount*3; i+=3) {
                 dustPositions[i] = Math.random() * MAZE_W * GRID_SIZE;
@@ -537,7 +532,6 @@
             dustParticles = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0x99ccff, size: 0.035, transparent: true, opacity: 0.3, depthWrite: false }));
             scene.add(dustParticles);
 
-            // JUICE: Ceiling Water Drops Pooling
             let dropGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.12, 4);
             let dropMat = new THREE.MeshBasicMaterial({ color: 0x66aacc, transparent: true, opacity: 0.4 });
             dropInstMesh = new THREE.InstancedMesh(dropGeo, dropMat, MAX_DROPS);
@@ -551,7 +545,6 @@
             }
             dropInstMesh.instanceMatrix.needsUpdate = true;
 
-            // JUICE: Floor Water Splashes Ring
             let rippleGeo = new THREE.RingGeometry(0.01, 0.12, 8);
             for(let i=0; i<MAX_RIPPLES; i++) {
                 let rMesh = new THREE.Mesh(rippleGeo, new THREE.MeshBasicMaterial({ color: 0x5599bb, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
@@ -598,7 +591,7 @@
                     }
                 }
             }
-            if (exitGateMesh && state.runesCollected < 3) {
+            if (exitGateMesh && state.runesCollected < state.totalRunesToWin) {
                 if (Math.abs(x - exitGateMesh.position.x) < (GRID_SIZE / 2 + buffer) && Math.abs(z - exitGateMesh.position.z) < (0.2 + buffer)) return true;
             }
             return false;
@@ -706,7 +699,6 @@
             camera.rotation.y += (targetCamRotationY - camera.rotation.y) * 0.2;
             camera.rotation.x += (targetCamRotationX - camera.rotation.x) * 0.2;
 
-            // JUICE: Camera Organic Strafe Roll
             let targetRoll = 0;
             if (keys.a) targetRoll = 0.012;
             if (keys.d) targetRoll = -0.012;
@@ -744,11 +736,9 @@
             let camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             let targetLookAt = camera.position.clone().add(camDir.clone().multiplyScalar(5));
             
-            // JUICE: Smooth Flashlight Sway
             flashlight.target.position.lerp(targetLookAt, 0.12);
             flashBeam.lookAt(flashlight.target.position);
 
-            // JUICE: Sanity-Based Micro-Flicker
             if (state.flashlightOn && state.battery > 0) {
                 let currentInt = 6.0;
                 if (state.sanity < 45 && Math.random() < 0.05) {
@@ -765,7 +755,6 @@
             if (!state.flashlightOn) state.sanity -= 0.04; else state.sanity -= 0.004;
             state.sanity = Math.max(0, state.sanity);
 
-            // JUICE: Animated Dust Particles
             if (dustParticles) {
                 let dustPos = dustParticles.geometry.attributes.position.array;
                 for (let i = 0; i < dustPos.length; i += 3) {
@@ -779,7 +768,6 @@
                 dustParticles.geometry.attributes.position.needsUpdate = true;
             }
 
-            // JUICE: Natural Cave Water Ceiling Drips
             if (dropInstMesh) {
                 let dummyD = new THREE.Object3D();
                 if (Math.random() < 0.25) { 
@@ -800,7 +788,6 @@
                         if (d.y <= -1.49) {
                             d.active = false; dummyD.position.set(0, -100, 0);
                             
-                            // JUICE: Trigger Water Ripples Expanding on Collision Floor
                             let rip = ripples[nextRippleIdx];
                             rip.mesh.position.set(d.x, -1.49, d.z);
                             rip.scale = 0.1; rip.opacity = 0.8; rip.active = true;
@@ -855,7 +842,7 @@
 
             let distToWraith = 999;
             if (state.sanity < 50) {
-                if(!wraithState.active) { wraithState.active = true; wraithState.x = camera.position.x + 10; wraithState.z = camera.position.z + 10; }
+                if(!wraithState.active) { wraithState.active = true; wraithState.x = camera.position.x + 15; wraithState.z = camera.position.z + 15; }
                 wraithMesh.position.set(wraithState.x, Math.sin(Date.now()*0.003)*0.2, wraithState.z);
                 let wDir = new THREE.Vector3().subVectors(camera.position, wraithMesh.position).normalize();
                 wraithState.x += wDir.x * wraithState.speed; wraithState.z += wDir.z * wraithState.speed;
@@ -868,15 +855,15 @@
             playHeartbeatSynth(hbTempo);
 
             if (monsterGrowlGain && monsterGrowlOsc) {
-                let vol = Math.max(0, 1.0 - (closestDist / 16));
+                let vol = Math.max(0, 1.0 - (closestDist / 20));
                 monsterGrowlGain.gain.setValueAtTime(vol * 0.45, audioCtx.currentTime);
                 monsterGrowlOsc.frequency.setValueAtTime(25 + (vol*35), audioCtx.currentTime);
             }
 
             if (distToCrawler < 1.2 || distToWraith < 1.2) { executeJumpscare(); return; }
 
-            if (closestDist < 7) {
-                let shake = (7 - closestDist) * 0.005;
+            if (closestDist < 8) {
+                let shake = (8 - closestDist) * 0.005;
                 camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake;
                 document.getElementById('warning-indicator').style.visibility = 'visible';
                 document.getElementById('warning-indicator').innerText = "ENTITAS MENDETEKSI PRESENSIMU!";
@@ -915,13 +902,13 @@
             }
 
             if (exitGateMesh) {
-                if (state.runesCollected >= 3 && exitGateMesh.position.y < 4.0) exitGateMesh.position.y += 0.02;
-                if (state.runesCollected >= 3 && camera.position.distanceTo(exitGateMesh.position) < 1.4) {
+                if (state.runesCollected >= state.totalRunesToWin && exitGateMesh.position.y < 4.0) exitGateMesh.position.y += 0.02;
+                if (state.runesCollected >= state.totalRunesToWin && camera.position.distanceTo(exitGateMesh.position) < 1.4) {
                     gameActive = false; try { localStorage.removeItem('cold_cave_v5_save'); } catch(e){}
                     if (state.hasSecret) {
-                        endGame("SECRET ENDING: COSMIC OVERLORD", "Luar biasa! Relik Emas Kuno menyatu dengan jiwamu. Labirin gua runtuh dan jiwamu berevolusi melampaui batas manusia, menjadi penguasa absolut dimensi kosmologi gua es.");
+                        endGame("SECRET ENDING: COSMIC OVERLORD", "Luar biasa! Relik Emas Kuno menyatu dengan jiwamu. Labirin gua runtuh dan jiwamu berevolusi melampaui batas manusia, menjadi penguasa absolut dimensi kosmologi gua es raksasa.");
                     } else {
-                        endGame("NORMAL ENDING: ESCAPE", "Selamat! Kamu berhasil menembus gua organik alami ini dengan konvergensi energi 3 rune dan kembali ke permukaan bumi.");
+                        endGame("NORMAL ENDING: ESCAPE", "Selamat! Kamu berhasil menembus gua organik masif ini dengan konvergensi energi 5 rune dan kembali ke permukaan bumi.");
                     }
                     return;
                 }
@@ -933,17 +920,18 @@
             renderer.render(scene, camera);
         }
 
+        // Radar Sistem otomatis meng-crop area sekitar posisi koordinat player secara dinamis
         function renderMinimapRadar() {
-            mapCtx.clearRect(0,0,120,120);
+            mapCtx.clearRect(0,0,130,130);
             let pGridX = camera.position.x / GRID_SIZE; let pGridZ = camera.position.z / GRID_SIZE;
-            let center = 60; let scale = 5.5;
+            let center = 65; let scale = 6.0;
 
             mapCtx.fillStyle = "rgba(180, 0, 0, 0.25)";
             for(let r=0; r<MAZE_H; r++){
                 for(let c=0; c<MAZE_W; c++){
                     if(MAP_GRID[r][c] === 1) {
                         let dX = center + (c - pGridX)*scale; let dZ = center + (r - pGridZ)*scale;
-                        if(dX>=0 && dX<=120 && dZ>=0 && dZ<=120) mapCtx.fillRect(dX, dZ, scale-0.5, scale-0.5);
+                        if(dX>=0 && dX<=130 && dZ>=0 && dZ<=130) mapCtx.fillRect(dX, dZ, scale-0.5, scale-0.5);
                     }
                 }
             }
@@ -971,7 +959,7 @@
             document.getElementById('sanity-fill').style.width = state.sanity + '%';
             document.getElementById('stamina-fill').style.width = state.stamina + '%';
             document.getElementById('battery-fill').style.width = state.battery + '%';
-            document.getElementById('objective-txt').innerText = `RUNE: ${state.runesCollected} / 3` + (state.hasSecret ? " 🌟" : "");
+            document.getElementById('objective-txt').innerText = `RUNE: ${state.runesCollected} / ${state.totalRunesToWin}` + (state.hasSecret ? " 🌟" : "");
         }
 
         function executeJumpscare() {
