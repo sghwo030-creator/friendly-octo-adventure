@@ -3,362 +3,491 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REKAMAN EVALUASI MEDIS: KASUS #1998</title>
+    <title>DEPKES ANOMALI DETEKTOR 1998</title>
     <style>
-        /* Estetika Retro CRT & Monitor Analog */
+        /* ========================================================
+           1. RETRO CRT CSS STYLING (Gaya Tampilan Monitor Jadul)
+           ======================================================== */
         body, html {
-            margin: 0; padding: 0; background-color: #050805; color: #33ff33;
-            font-family: 'Courier New', Courier, monospace; overflow: hidden;
+            margin: 0;
+            padding: 0;
+            background-color: #030703;
+            color: #33ff33;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
             user-select: none;
         }
 
-        /* Filter Tabung Kaca CRT Monitor */
-        #monitor {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0,  blue, 0.06));
-            background-size: 100% 3px, 3px 100%; z-index: 10; pointer-events: none;
+        /* Filter Efek Kaca Monitor Cembung */
+        #layar-crt {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
+            background-size: 100% 4px, 4px 100%;
+            z-index: 10;
+            pointer-events: none;
         }
 
-        #vhs-glitch {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(0,0,0,0.8) 100%);
-            pointer-events: none; z-index: 9; opacity: 0.8;
+        /* Garis Scanline yang Berjalan Turun */
+        .garis-scan {
+            width: 100%;
+            height: 5px;
+            background: rgba(51, 255, 51, 0.08);
+            position: absolute;
+            animation: turun 8s linear infinite;
+            z-index: 11;
+            pointer-events: none;
         }
 
-        /* Tata Letak Antarmuka Dokter */
-        #app-container {
-            display: flex; flex-direction: column; width: 100vw; height: 100vh;
-            box-sizing: border-box; padding: 30px; justify-content: space-between;
+        @keyframes turun {
+            from { top: 0px; }
+            to { top: 100%; }
+        }
+
+        /* Pembungkus Aplikasi Utama */
+        #game-box {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+            box-sizing: border-box;
+            padding: 25px;
+            justify-content: space-between;
         }
 
         header {
-            border-bottom: 2px dashed #33ff33; padding-bottom: 10px; letter-spacing: 2px;
+            border-bottom: 2px dashed #33ff33;
+            padding-bottom: 10px;
         }
 
-        #main-desk {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 65vh; margin: 20px 0;
+        /* Meja Kerja Dokter (Bagi Dua Panel Kiri & Kanan) */
+        #meja-kerja {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            height: 65vh;
+            margin: 15px 0;
         }
 
-        /* Panel Berkas Dokumen Pasien */
-        .panel {
-            border: 1px solid #33ff33; background: rgba(5, 15, 5, 0.8);
-            padding: 20px; box-sizing: border-box; overflow-y: auto;
-            position: relative; box-shadow: inset 0 0 15px rgba(0,255,0,0.1);
+        .kotak-panel {
+            border: 1px solid #33ff33;
+            background: rgba(4, 12, 4, 0.9);
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            box-shadow: inset 0 0 15px rgba(0,255,0,0.15);
         }
 
-        h2 { font-size: 1.1rem; margin-top: 0; background: #33ff33; color: #000; padding: 3px 8px; display: inline-block; }
+        h2 {
+            font-size: 1rem;
+            margin-top: 0;
+            background: #33ff33;
+            color: #000;
+            padding: 2px 6px;
+            display: inline-block;
+        }
 
-        .patient-info { line-height: 1.8; font-size: 0.85rem; margin-bottom: 20px; color: #88ff88; }
-
-        /* Gaya Khusus Foto CCTV Pasien */
-        #patient-photo-container {
+        /* Kotak Foto Pasien */
+        #bingkai-foto {
             width: 100%;
             display: flex;
             justify-content: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
-        #patient-photo {
-            width: 150px;
-            height: 150px;
-            border: 3px solid #33ff33;
-            background: 
-                repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 2px, transparent 3px),
-                rgba(5, 20, 5, 0.9);
-            background-size: 100% 3px, 100% 100%;
-            image-rendering: pixelated; 
-            box-shadow: 0 0 10px rgba(0,255,0,0.2);
+        #foto-pasien {
+            width: 120px;
+            height: 120px;
+            border: 2px solid #33ff33;
+            image-rendering: pixelated;
+            background-color: #000;
         }
 
-        /* Log Percakapan Wawancara */
-        #dialogue-box {
-            display: flex; flex-direction: column; gap: 15px; font-size: 0.9rem;
-        }
-        .line { line-height: 1.4; }
-        .doc { color: #ffffff; font-weight: bold; }
-        .patient { color: #33ff33; }
-        .anomalous-glitch { color: #ff3333; animation: blink 0.1s infinite alternate; }
-
-        /* Tombol Eksekusi Keputusan */
-        #action-bar {
-            display: flex; justify-content: center; gap: 40px; border-top: 2px dashed #33ff33; padding-top: 20px;
+        /* Log Teks Obrolan */
+        #log-dialog {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 0.9rem;
         }
 
-        .btn {
-            background: transparent; color: #33ff33; border: 2px solid #33ff33;
-            padding: 15px 40px; font-family: 'Courier New', monospace; font-size: 1rem;
-            font-weight: bold; cursor: pointer; letter-spacing: 3px; transition: all 0.2s;
-        }
-        .btn:hover { background: #33ff33; color: #000; box-shadow: 0 0 15px #33ff33; }
-        .btn-danger:hover { background: #ff3333; color: #000; border-color: #ff3333; box-shadow: 0 0 15px #ff3333; }
+        .teks-dokter { color: #ffffff; font-weight: bold; }
+        .teks-pasien { color: #33ff33; }
+        .teks-error { color: #ff3333; animation: kedip 0.1s infinite alternate; }
 
-        #score-board { font-size: 0.8rem; color: #88ff88; text-align: right; }
-
-        #start-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #020502; z-index: 20; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; text-align: center;
+        @keyframes kedip {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
         }
 
-        @keyframes blink { 0% { opacity: 0.2; } 100% { opacity: 1; } }
-        .scanline {
-            width: 100%; height: 4px; background: rgba(51, 255, 51, 0.06);
-            position: absolute; animation: moveScan 6s linear infinite;
+        /* Tombol Pilihan Menu */
+        #tombol-area {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            border-top: 2px dashed #33ff33;
+            padding-top: 15px;
         }
-        @keyframes moveScan { from { top: 0px; } to { top: 100%; } }
+
+        .tombol-aksi {
+            background: transparent;
+            color: #33ff33;
+            border: 2px solid #33ff33;
+            padding: 12px 35px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .tombol-aksi:hover {
+            background: #33ff33;
+            color: #000;
+        }
+
+        .tombol-bahaya:hover {
+            background: #ff3333;
+            color: #000;
+            border-color: #ff3333;
+        }
+
+        /* Layar Pembuka Peringatan */
+        #layar-mulai {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #010401;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
 
-    <div id="monitor"></div>
-    <div id="vhs-glitch"></div>
-    <div class="scanline"></div>
+    <div id="layar-crt"></div>
+    <div class="garis-scan"></div>
 
-    <div id="start-screen">
-        <h1 style="letter-spacing: 6px; font-size: 1.8rem;">KEMENTERIAN KESEHATAN MENTAL MASYARAKAT</h1>
-        <p style="color: #66af66; font-size: 0.8rem; margin-top: 0; letter-spacing: 3px;">SISTEM KLASIFIKASI SUBJEK JALUR DEPARTEMEN IV</p>
-        <p style="width: 500px; font-size: 0.75rem; line-height: 1.8; color: #558855; margin: 40px 0; border: 1px dashed #558855; padding: 15px;">
-            PERINGATAN: Beberapa entitas organik non-manusia ("Alternatif") mencoba menyusup ke fasilitas medis dengan meniru gejala gangguan jiwa biasa.<br>
-            Analisis dokumen latar belakang mereka dan dengarkan transkrip wawancara dengan teliti sebelum mengambil tindakan.
-        </p>
-        <button class="btn" onclick="startGame()">MASUKKAN KREDENSIAL DOKTER</button>
+    <div id="layar-mulai">
+        <h1 style="letter-spacing: 4px;">SISTEM KLASIFIKASI PASIEN: RSJ DEPARTEMEN IV</h1>
+        <p style="color: #66af66; font-size: 0.85rem; margin-bottom: 30px;">ARSIP KLINIS RAHASIA TAHUN 1998</p>
+        <div style="border: 1px dashed #33ff33; padding: 20px; width: 550px; font-size: 0.8rem; line-height: 1.6; margin-bottom: 30px;">
+            PETUNJUK TUGAS DOKTER:<br>
+            Periksa berkas data di sebelah kiri dan perhatikan transkrip wawancara di sebelah kanan.<br>
+            Pisahkan manusia biasa yang mengalami gangguan jiwa dari makhluk penyamar (Anomali).
+        </div>
+        <button class="tombol-aksi" onclick="mulaiGame()">MULAI INTEGRASI SISTEM</button>
     </div>
 
-    <div id="app-container">
-        <header style="display: flex; justify-content: space-between; align-items: center;">
+    <div id="game-box">
+        <header style="display: flex; justify-content: space-between;">
             <div>
-                <strong>DEPKES_OS V.1.9.9.2</strong><br>
-                <span style="font-size: 0.75rem; color: #66af66;">LOGGED IN: DR. ARYA WICAKSONO (KAPASITAS EVALUASI)</span>
+                <strong>DEPKES_MONITOR_V1.0</strong><br>
+                <span style="font-size: 0.75rem; color: #66af66;">USER: DR. ARYA WICAKSONO</span>
             </div>
-            <div id="score-board">
-                MANUSIA TERSALURKAN: <span id="txt-saved">0</span>/3<br>
-                ANOMALI DIISOLASI: <span id="txt-caught">0</span>/3
+            <div style="text-align: right; font-size: 0.85rem;">
+                MANUSIA TERSELAMATKAN: <span id="skor-manusia">0</span><br>
+                ANOMALI DIISOLASI: <span id="skor-anomali">0</span>
             </div>
         </header>
 
-        <div id="main-desk">
-            <div class="panel">
-                <h2>BERKAS_MEDIS_PASIEN</h2>
-                <div class="patient-info" id="file-content"></div>
+        <div id="meja-kerja">
+            <div class="kotak-panel">
+                <h2>BERKAS_REKAM_MEDIS</h2>
+                <div id="data-pasien-text" class="patient-info"></div>
             </div>
 
-            <div class="panel">
-                <h2>REKAMAN_TRANSKRIP_SUARA</h2>
-                <div id="dialogue-box"></div>
+            <div class="kotak-panel">
+                <h2>TRANSKRIP_LOG_SUARA</h2>
+                <div id="log-dialog"></div>
             </div>
         </div>
 
-        <div id="action-bar">
-            <button class="btn" style="border-color: #55ff55;" onclick="makeDecision('HUMAN')">✔ BEBASKAN KE MASYARAKAT</button>
-            <button class="btn btn-danger" style="border-color: #ff3333; color: #ff3333;" onclick="makeDecision('ANOMALY')">✘ ISOLASI KE LANTAI BAWAH TANAH</button>
+        <div id="tombol-area">
+            <button class="tombol-aksi" onclick="prosesKeputusan('HUMAN')">✔ AMAN (MANUSIA)</button>
+            <button class="tombol-aksi tombol-bahaya" onclick="prosesKeputusan('ANOMALY')">✘ BAHAYA (ANOMALI)</button>
         </div>
     </div>
 
     <script>
-        let audioCtx;
-        let currentPatientIndex = 0;
-        let savedCount = 0;
-        let caughtCount = 0;
+        let konteksAudio;
+        let indeksPasien = 0;
+        let manusiaBenar = 0;
+        let anomaliBenar = 0;
 
-        // DATABASE PASIEN
-        const patientDatabase = [
+        // Kode Gambar Piksel Wajah Anomali (Base64)
+        const gambarWajahPixel = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAVmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAH1SURBVGhD7dnNTsMwDAXggLsh7sh78O7Ie/AewHtwO+KOSDtiIBAFqZ36U5p2Tds7uUlbp36Upu2XtrVp87Rd7+1h6y0hZ5N5b7zM7yBnl6AHzC4xXhD3FncR8wYxb4iXiHmDmC/YV5iXiFnC9jXmJWIeYL8f8wBfD4iXiHmM5iFvD8RDPB5iXiDmZRgf8vhInEXYV9iXmC9gWGFfYb4A7hXiJeIz2G4RrxGfgv5fPEXMY0RvETMHeId4jZhHMH7S5wXmD7DdIua5WHeI54h5AOMlfV6Qv8D2B+IlYp4H8wH7L0XMIxh/0OcF+QuwH+X5wHyC8f/0eYH9AtuH8nwgz8He78bzgf4S/4/W5wV9C/wN9N7472A8C9mH4/lAfgN7/zbOD+QNzN46zwX5C2zfO84F/BvYvSveC/hX2L6rzwX5C9j9rXku4N+YPYfO64V4N5vLMD5A/XF+FvA56K2x3mZfFvA52P2beVnQ56H7735Z0OeBf4/Vf1vIWTB+V4zP4v+18A58PqK/xP9rzAnIWRhvEPfW5zPkO9huCfl9xNxFzBvEPPZ7ZncQW0LOfw62Tf0oTdsvaWsLOf852Dbt/7fwtm9bAtufAAAAAElFTkSuQmCC";
+        
+        // Piksel Kosong untuk Transparansi
+        const gambarKosong = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+        // DATA UTAMA: 10 PASIEN DENGAN DIALOG PENUH
+        const databasePasien = [
             {
-                name: "Bambang Sutrisno",
-                age: "42 Tahun",
-                intakeDate: "12 Mei 1996",
-                symptoms: "Pasien dibawa oleh keluarga karena mengunci diri di kamar selama 4 hari berturut-turut. Mengaku ketakutan melihat bayangan tinggi di jendela kamarnya.",
-                notes: "Pekerjaan akuntan publik, riwayat kelelahan kerja ekstrem dan kurang tidur kronis.",
-                type: "HUMAN",
-                dialogue: [
-                    { speaker: "DOKTER", text: "Bisa Anda ceritakan mengapa Anda menolak keluar kamar, Pak Bambang?" },
-                    { speaker: "PASIEN", text: "Saya lelah sekali, Dok... Di luar jendela kantor, di luar rumah, saya seperti melihat orang yang sama terus berdiri menatap saya tanpa berkedip." },
-                    { speaker: "DOKTER", text: "Apakah orang tersebut mencoba berbicara atau menyakiti Anda?" },
-                    { speaker: "PASIEN", text: "Tidak, dia hanya berdiri... Tapi kemarin malam saya sadar, kamar saya ada di lantai empat. Bagaimana mungkin ada orang berdiri di luar jendela lantai empat?!" }
+                nama: "Bambang Sutrisno",
+                usia: "42 Tahun",
+                gejala: "Mengunci diri di kamar selama 4 hari. Mengaku melihat bayangan tinggi di luar jendela.",
+                catatan: "Bekerja lembur konstan, mengalami depresi dan delusi akibat kurang tidur kronis.",
+                tipe: "HUMAN",
+                dialog: [
+                    { pembicara: "DOKTER", teks: "Bisa ceritakan kenapa Anda takut dengan jendela Anda?" },
+                    { pembicara: "PASIEN", teks: "Dia berdiri di sana, Dok... menatap saya sepanjang malam tanpa berkedip sedikit pun." },
+                    { pembicara: "DOKTER", teks: "Apakah Anda tahu kamar Anda berada di lantai berapa?" },
+                    { pembicara: "PASIEN", teks: "Lantai empat... Itu yang membuat saya sadar ada yang salah. Bagaimana dia bisa berdiri di sana?" }
                 ]
             },
             {
-                name: "SUBJEK #042 (Tanpa Nama)",
-                age: "Diperkirakan 25 Tahun",
-                intakeDate: "03 Juni 1996",
-                symptoms: "Ditemukan berjalan di jalan tol tanpa busana pada jam 3 pagi. Tidak memiliki kartu identitas. Pupil mata tidak bereaksi terhadap cahaya senter medis.",
-                notes: "Suhu tubuh terukur 24 derajat Celcius (Sangat mustahil untuk manusia hidup namun subjek tetap bernapas secara teratur).",
-                type: "ANOMALY",
-                dialogue: [
-                    { speaker: "DOKTER", text: "Bisa Anda sebutkan nama lengkap atau alamat rumah Anda?" },
-                    { speaker: "PASIEN", text: "Rumah... di mana ada fondasi daging, di sana saya tinggal. Saya punya banyak nama di dalam laci kepala saya." },
-                    { speaker: "DOKTER", text: "Jawaban Anda tidak logis. Apakah Anda tahu ini tahun berapa?" },
-                    { speaker: "PASIEN", text: "Tahun di mana kulit yang saya pinjam ini mulai terasa kekecilan, Dokter. Apakah Anda mau bertukar kulit dengan saya? Kulit Anda pas sekali.", glitch: true }
+                nama: "SUBJEK #042",
+                usia: "Tidak Diketahui",
+                gejala: "Ditemukan berjalan di tol tanpa busana jam 3 pagi. Pupil mata tidak merespons cahaya sama sekali.",
+                catatan: "Suhu tubuh subjek konstan di angka 24 derajat Celcius, tetapi jantungnya berdetak cepat.",
+                tipe: "ANOMALY",
+                dialog: [
+                    { pembicara: "DOKTER", teks: "Bisa sebutkan nama asli Anda atau tempat tinggal Anda?" },
+                    { pembicara: "PASIEN", teks: "Saya tinggal di sela-sela dinding kayu tempat serangga bertelur. Nama saya banyak." },
+                    { pembicara: "DOKTER", teks: "Jawaban Anda aneh. Apakah Anda tahu ini instansi apa?" },
+                    { pembicara: "PASIEN", teks: "Tempat penampungan kulit manusia. Kulit Anda terlihat sangat nyaman jika saya pakai.", error: true }
                 ]
             },
             {
-                name: "Siti Rahma",
-                age: "29 Tahun",
-                intakeDate: "18 Juni 1996",
-                symptoms: "Mengalami histeria massal di pasar. Mengklaim bahwa bayinya digantikan oleh boneka kayu oleh tetangganya.",
-                notes: "Mengalami trauma pasca-melahirkan (Postpartum Depression) yang sangat berat menurut rekam medis puskesmas setempat.",
-                type: "HUMAN",
-                dialogue: [
-                    { speaker: "DOKTER", text: "Ibu Siti, silakan minum airnya dulu. Di mana bayi Ibu sekarang?" },
-                    { speaker: "PASIEN", text: "(Menangis) Mereka tidak percaya saya, Dok! Waktu saya bangun menyusui jam 2 malam, anak saya tidak menangis, badannya kaku seperti kayu pinus! Itu bukan anak saya!" },
-                    { speaker: "DOKTER", text: "Apakah Ibu mendapat bantuan pengasuhan dari suami?" },
-                    { speaker: "PASIEN", text: "Suami saya berlayar berbulan-bulan... Saya sendirian di rumah, saya tidak kuat mendengar suara tangisan bayi itu tiap malam, kepala saya mau pecah." }
+                nama: "Siti Rahma",
+                usia: "29 Tahun",
+                gejala: "Histeria akut di pasar. Berteriak bahwa bayinya diganti menjadi boneka kayu tiruan.",
+                catatan: "Mengalami sindrom psikosis postpartum berat setelah ditinggal suami berlayar.",
+                tipe: "HUMAN",
+                dialog: [
+                    { pembicara: "DOKTER", teks: "Ibu Siti, tenang dulu. Di mana bayi Ibu sekarang berada?" },
+                    { pembicara: "PASIEN", teks: "(Menangis) Di rumah sakit ini! Mereka menyembunyikan anak saya dan menggantinya dengan kayu!" },
+                    { pembicara: "DOKTER", teks: "Kami hanya ingin merawat Ibu di sini agar bisa beristirahat." },
+                    { pembicara: "PASIEN", teks: "Saya tidak gila... saya cuma ingin menggendong anak saya yang hangat, bukan kayu kaku itu." }
                 ]
             },
             {
                 name: "Eko Prasetyo",
-                age: "35 Tahun",
-                intakeDate: "29 Juni 1996",
-                symptoms: "Dibawa oleh petugas polisi militer setelah ditemukan di dalam gudang amunisi terlarang. Rahang bawah terlihat bergeser berulang kali secara tidak wajar saat diam.",
-                notes: "Hasil rontgen X-Ray menunjukkan susunan tulang rusuk subjek terbalik ke arah dalam menusuk organ jantung, namun tidak ada pendarahan internal.",
-                type: "ANOMALY",
-                dialogue: [
-                    { speaker: "DOKTER", text: "Saudara Eko, apa tujuan Anda menyusup ke area gudang militer?" },
-                    { speaker: "PASIEN", text: "Mencari... sumber frekuensi getaran rendah. Logam panas rasanya enak di tenggorokan kami." },
-                    { speaker: "DOKTER", text: "Buka mulut Anda lebar-lebar, saya perlu memeriksa amandel Anda." },
-                    { speaker: "PASIEN", text: "Jangan diintip, Dokter. Di dalam mulut ini tidak ada lidah, hanya ada lorong kosong yang terus berteriak memanggil nama Anda.", glitch: true }
+                usia: "35 Tahun",
+                gejala: "Menyusup ke gudang senjata militer. Rahang bawahnya bergeser patah berulang kali saat berbicara.",
+                catatan: "X-Ray dada menunjukkan susunan tulang rusuknya melengkung ke dalam, bukan ke luar.",
+                tipe: "ANOMALY",
+                dialog: [
+                    { pembicara: "DOKTER", teks: "Eko, apa yang Anda cari di gudang amunisi tentara?" },
+                    { pembicara: "PASIEN", teks: "Mencari frekuensi radio bawah tanah. Kami lapar akan gelombang besi panas." },
+                    { pembicara: "DOKTER", teks: "Buka mulut Anda, saya ingin memeriksa kondisi tenggorokan Anda." },
+                    { pembicara: "PASIEN", teks: "Jangan lihat ke dalam, Dokter. Di dalam sini hanya ada kegelapan yang siap menelan kepalamu.", error: true }
                 ]
             },
             {
-                name: "Rudi Hartono",
-                age: "50 Tahun",
-                intakeDate: "05 Juli 1996",
-                symptoms: "Pasien mengklaim bisa mendengar siaran radio lokal langsung di dalam kepalanya tanpa alat bantu.",
-                notes: "Ditemukan serpihan logam bekas implan kecelakaan kerja pabrik tertanam di dekat tulang rahang belakangnya yang bertindak sebagai konduktor gelombang radio AM.",
-                type: "HUMAN",
-                dialogue: [
-                    { speaker: "DOKTER", text: "Rudi, suara apa yang paling jelas Anda dengar saat ini?" },
-                    { speaker: "PASIEN", text: "Suara berita Radio RRI jam 12 siang, Dok. Sumpah demi Tuhan saya tidak gila! Kalau volume pemancar di kota dinaikkan, telinga saya langsung berdengung berdarah." },
-                    { speaker: "DOKTER", text: "Kami sudah melihat hasil rontgen Anda, ada sisa kawat tembaga kecelakaan kerja tahun lalu di rahang Anda." },
-                    { speaker: "PASIEN", text: "Ya Allah... Jadi saya tidak gila, Dok? Tolong cabut besi ini, saya mau tidur dengan tenang tanpa mendengar suara lagu lawas tiap malam." }
+                nama: "Rudi Hartono",
+                usia: "50 Tahun",
+                gejala: "Mengaku bisa mendengar transmisi radio lokal langsung di dalam gendang telinganya.",
+                catatan: "Ada serpihan kawat logam sisa kecelakaan pabrik tertanam di dekat rahangnya, berfungsi jadi antena alami.",
+                tipe: "HUMAN",
+                dialog: [
+                    { pembicara: "DOKTER", teks: "Rudi, suara radio apa saja yang Anda dengar sekarang?" },
+                    { pembicara: "PASIEN", teks: "Lagu-lagu lawas RRI Jakarta, Dok. Kadang suara pembaca berita jam 12 malam." },
+                    { pembicara: "DOKTER", teks: "Itu karena kawat implan di rahang Anda menangkap gelombang frekuensi AM." },
+                    { pembicara: "PASIEN", teks: "Ya Tuhan, jadi saya benar-benar tidak gila? Tolong operasi pembedahan dan cabut besi ini, Dok." }
                 ]
             },
             {
-                name: "PASIEN ISOLASI #000",
-                age: "Tidak Diketahui",
-                intakeDate: "?? ?? ????",
-                symptoms: "Ditemukan di ruang bawah tanah bungker tua peninggalan kolonial. Wajahnya tidak memiliki fitur mata, hidung, atau mulut (rata sempurna) namun mampu meniru suara dokter dengan presisi 100%.",
-                notes: "Jangan menatap wajah subjek secara langsung lebih dari 10 detik.",
-                type: "ANOMALY",
-                dialogue: [
-                    { speaker: "DOKTER", text: "Siapa Anda sebenarnya? Mengapa Anda meniru penampilan fisik staf perawat kami?" },
-                    { speaker: "PASIEN", text: "Siapa Anda sebenarnya? Mengapa Anda meniru penampilan fisik staf perawat kami?" },
-                    { speaker: "DOKTER", text: "Jangan mengulangi pertanyaan saya!" },
-                    { speaker: "PASIEN", text: "Arya... Aku adalah wajah yang kamu lihat di cermin kamar mandimu ketika lampu rumahmu mati petang kemarin.", glitch: true }
+                nama: "Dewi Lestari",
+                usia: "21 Tahun",
+                gejala: "Berjalan sambil tidur (sleepwalking) ekstrem dan selalu mencakar dinding kamarnya sampai berdarah.",
+                catatan: "Mengalami gangguan tidur parasomnia akut akibat tekanan ujian universitas tingkat akhir.",
+                tipe: "HUMAN",
+                dialog: [
+                    { pembicara: "DOKTER", teks: "Dewi, apa yang Anda rasakan atau impikan sebelum terbangun?" },
+                    { pembicara: "PASIEN", teks: "Saya selalu bermimpi terperangkap di dalam labirin sempit yang runtuh, Dok." },
+                    { pembicara: "DOKTER", teks: "Apakah Anda sadar telah melukai jari-jari tangan Anda sendiri?" },
+                    { pembicara: "PASIEN", teks: "Tidak sadar... saya baru merasakan perih yang luar biasa saat terbangun pagi hari." }
+                ]
+            },
+            {
+                nama: "SUBJEK #099",
+                usia: "Tidak Diketahui",
+                gejala: "Ditemukan duduk diam di dalam sumur tua kering. Hanya mengeluarkan suara desis statis.",
+                catatan: "Seluruh sidik jarinya mulus polos tanpa ulir garis kulit manusia normal.",
+                tipe: "ANOMALY",
+                dialog: [
+                    { pembicara: "DOKTER", teks: "Bisa dengar suara saya? Tolong respon dengan kata-kata." },
+                    { pembicara: "PASIEN", teks: "Kzzzt... bzzzt... Kami mendengar instruksi Anda, Dr. Arya Wicaksono." },
+                    { pembicara: "DOKTER", teks: "Bagaimana bisa Anda mengetahui nama lengkap saya?" },
+                    { pembicara: "PASIEN", teks: "Karena kami mengingat suara detak jantung semua orang yang akan mati besok.", error: true }
+                ]
+            },
+            {
+                nama: "Agus Sutiono",
+                usia: "31 Tahun",
+                gejala: "Berbicara dengan intonasi kaku patah-patah dan menolak makan makanan organik.",
+                catatan: "Mengalami trauma hebat (PTSD) setelah selamat dari kecelakaan mesin giling pabrik.",
+                tipe: "HUMAN",
+                dialog: [
+                    { pembicara: "DOKTER", teks: "Agus, kenapa Anda menganggap diri Anda sebuah mesin logam?" },
+                    { pembicara: "PASIEN", teks: "Sistem... organik... saya... rusak. Saya harus diisi ulang menggunakan oli." },
+                    { pembicara: "DOKTER", teks: "Anda manusia, tubuh Anda terluka tapi berhasil dijahit sembuh oleh dokter bedah." },
+                    { pembicara: "PASIEN", teks: "(Menangis) Tapi teman saya hancur di mesin itu, Dok! Kenapa cuma saya yang utuh?" }
+                ]
+            },
+            {
+                nama: "SUBJEK #666",
+                usia: "Identik 30 Tahun",
+                gejala: "Memiliki wajah, postur, rambut, dan tanda lahir yang 100% mirip dengan Dr. Arya (Diri Anda).",
+                catatan: "Ditemukan terkunci di ruang arsip dokumen bawah tanah yang sudah lama disegel.",
+                tipe: "ANOMALY",
+                dialog: [
+                    { pembicara: "DOKTER", teks: "Lelucon macam apa ini? Mengapa Anda meniru struktur wajah saya?" },
+                    { pembicara: "PASIEN", teks: "Lelucon? Aku adalah Arya yang asli. Kamu yang kabur dari cermin kamar mandi tahun lalu." },
+                    { pembicara: "DOKTER", teks: "Petugas perawat! Tolong siapkan suntikan penenang dosis tinggi!" },
+                    { pembicara: "PASIEN", teks: "Panggil saja mereka. Mereka tidak akan tahu mana Arya yang harus disuntik mati.", error: true }
+                ]
+            },
+            {
+                nama: "PASIEN ISOLASI #000",
+                usia: "Tidak Tercatat",
+                gejala: "Subjek tidak memiliki mata, hidung, atau mulut. Wajahnya rata total namun suara keluar dari dada.",
+                catatan: "Entitas analog utama. Tingkat bahaya tinggi. Segera kunci pintu sel.",
+                tipe: "ANOMALY",
+                dialog: [
+                    { pembicara: "DOKTER", teks: "Ini evaluasi terakhir. Katakan apa tujuan kelompok Anda menyusup?" },
+                    { pembicara: "PASIEN", teks: "Dunia luar sangat indah. Kami hanya ingin bertukar tempat dengan ras Anda." },
+                    { pembicara: "DOKTER", teks: "Saya tidak akan membiarkan satu pun dari kalian lolos keluar dari rumah sakit ini." },
+                    { pembicara: "PASIEN", teks: "Sudah terlambat, Arya. Pasien pertama yang kamu bebaskan tadi... adalah kami.", error: true }
                 ]
             }
         ];
 
-        function initAudio() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // FUNGSI 1: MENGINISIALISASI AUDIO CHIP (BEEP GENERATOR)
+        function siapkanAudio() {
+            konteksAudio = new (window.AudioContext || window.webkitAudioContext)();
         }
 
-        function playBeep(freq, duration, type="sine") {
-            if(!audioCtx) return;
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        // FUNGSI 2: MEMBUAT EFEK SUARA RETRO ANALOG
+        function bunyikanBeep(frekuensi, durasi, jenis波 = "sine") {
+            if (!konteksAudio) return;
+            let osilator = konteksAudio.createOscillator();
+            let penguat = konteksAudio.createGain();
+            
+            osilator.type = jenis波;
+            osilator.frequency.value = frekuensi;
+            penguat.gain.setValueAtTime(0.08, konteksAudio.currentTime);
+            penguat.gain.exponentialRampToValueAtTime(0.001, konteksAudio.currentTime + durasi);
+            
+            osilator.connect(penguat);
+            penguat.connect(konteksAudio.destination);
+            
+            osilator.start();
+            osilator.stop(konteksAudio.currentTime + durasi);
         }
 
-        function startGame() {
-            try { initAudio(); } catch(e){}
-            document.getElementById('start-screen').style.display = 'none';
-            loadPatient(0);
+        // FUNGSI 3: MEMULAI GAME DARI TOMBOL UTAMA
+        function mulaiGame() {
+            try { siapkanAudio(); } catch (error) {}
+            document.getElementById('layar-mulai').style.display = 'none';
+            tampilkanPasien(0);
         }
 
-        function loadPatient(index) {
-            if (index >= patientDatabase.length) {
-                alert(`EVALUASI SELESAI.\nManusia yang selamat: ${savedCount}\nAnomali tertangkap: ${caughtCount}\nSistem Keamanan Aman.`);
+        // FUNGSI 4: MERENDER BERKAS DAN DIALOG KE LAYAR CRT
+        function tampilkanPasien(index) {
+            // Jika data pasien sudah habis (Tamat)
+            if (index >= databasePasien.length) {
+                alert(`EVALUASI TOTAL SELESAI!\nManusia Selamat: ${manusiaBenar}\nAnomali Terkurung: ${anomaliBenar}\nFasilitas Medis Aman.`);
                 location.reload();
                 return;
             }
 
-            const p = patientDatabase[index];
+            const data = databasePasien[index];
             
-            // Masukkan layout berkas beserta wadah foto keamanan
-            document.getElementById('file-content').innerHTML = `
-                <div id="patient-photo-container">
-                    <img id="patient-photo" src="" alt="FOTO KEAMANAN">
+            // Render Berkas Teks & Wadah Bingkai Foto Kiri
+            document.getElementById('data-pasien-text').innerHTML = `
+                <div id="bingkai-foto">
+                    <img id="foto-pasien" src="" alt="DOKUMEN CCTV">
                 </div>
-                <strong>NAMA:</strong> ${p.name}<br>
-                <strong>USIA:</strong> ${p.age}<br>
-                <strong>TANGGAL MASUK:</strong> ${p.intakeDate}<br>
-                <hr style="border: 1px dashed #33ff33; margin: 15px 0;">
-                <strong>GEJALA KLINIS:</strong><br>${p.symptoms}<br><br>
-                <strong>CATATAN PETUGAS:</strong><br>${p.notes}
+                <strong>IDENTITAS NYATA:</strong> ${data.nama}<br>
+                <strong>KLASIFIKASI USIA:</strong> ${data.usia}<br>
+                <hr style="border: 1px dashed #33ff33; margin: 12px 0;">
+                <strong>GEJALA UTAMA:</strong><br>${data.gejala}<br><br>
+                <strong>CATATAN DIAGNOSA:</strong><br>${data.catatan}
             `;
 
-            // Data Base64 gambar wajah pixel art untuk Anomali Utama #000
-            const pixelFaceBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAVmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAH1SURBVGhD7dnNTsMwDAXggLsh7sh78O7Ie/AewHtwO+KOSDtiIBAFqZ36U5p2Tds7uUlbp36Upu2XtrVp87Rd7+1h6y0hZ5N5b7zM7yBnl6AHzC4xXhD3FncR8wYxb4iXiHmDmC/YV5iXiFnC9jXmJWIeYL8f8wBfD4iXiHmM5iFvD8RDPB5iXiDmZRgf8vhInEXYV9iXmC9gWGFfYb4A7hXiJeIz2G4RrxGfgv5fPEXMY0RvETMHeId4jZhHMH7S5wXmD7DdIua5WHeI54h5AOMlfV6Qv8D2B+IlYp4H8wH7L0XMIxh/0OcF+QuwH+X5wHyC8f/0eYH9AtuH8nwgz8He78bzgf4S/4/W5wV9C/wN9N7472A8C9mH4/lAfgN7/zbOD+QNzN46zwX5C2zfO84F/BvYvSveC/hX2L6rzwX5C9j9rXku4N+YPYfO64V4N5vLMD5A/XF+FvA56K2x3mZfFvA52P2beVnQ56H7735Z0OeBf4/Vf1vIWTB+V4zP4v+18A58PqK/xP9rzAnIWRhvEPfW5zPkO9huCfl9xNxFzBvEPPZ7ZncQW0LOfw62Tf0oTdsvaWsLOf852Dbt/7fwtm9bAtufAAAAAElFTkSuQmCC";
-
-            const photoImg = document.getElementById('patient-photo');
-            if (p.name === "PASIEN ISOLASI #000") {
-                photoImg.src = pixelFaceBase64;
-                photoImg.style.borderStyle = "solid";
+            // Atur Foto Wajah Pixel Art Berdasarkan Jenis Pasien
+            const komponenFoto = document.getElementById('foto-pasien');
+            if (data.tipe === "ANOMALY") {
+                komponenFoto.src = gambarWajahPixel;
+                komponenFoto.style.borderStyle = "solid";
             } else {
-                // Gunakan piksel transparan untuk pasien tanpa foto dokumen berkas resmi
-                photoImg.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-                photoImg.style.borderStyle = "dashed"; 
+                komponenFoto.src = gambarKosong;
+                komponenFoto.style.borderStyle = "dashed";
             }
 
-            // Transkrip dialog teks berjalan
-            const diagBox = document.getElementById('dialogue-box');
-            diagBox.innerHTML = '';
+            // Reset Dan Jalankan Transkrip Dialog Berjalan Kanan
+            const kotakDialog = document.getElementById('log-dialog');
+            kotakDialog.innerHTML = '';
             
-            p.dialogue.forEach((d, i) => {
+            data.dialog.forEach((baris, i) => {
                 setTimeout(() => {
-                    let className = d.speaker === "DOKTER" ? "doc" : "patient";
-                    if(d.glitch) className += " anomalous-glitch";
+                    let gayaTeks = baris.pembicara === "DOKTER" ? "teks-dokter" : "teks-pasien";
+                    if (baris.error) gayaTeks += " teks-error";
                     
-                    diagBox.innerHTML += `
-                        <div class="line">
-                            <span class="${className}">[${d.speaker}]:</span> ${d.text}
+                    kotakDialog.innerHTML += `
+                        <div>
+                            <span class="${gayaTeks}">[${baris.pembicara}]:</span> ${baris.teks}
                         </div>
                     `;
-                    diagBox.scrollTop = diagBox.scrollHeight;
+                    // Otomatis scroll box dialog ke bagian paling bawah
+                    kotakDialog.scrollTop = kotakDialog.scrollHeight;
                     
-                    if(d.glitch) {
-                        playBeep(80, 0.3, 'sawtooth');
+                    // Trigger efek audio ketikan mesin komputer jadul
+                    if (baris.error) {
+                        bunyikanBeep(75, 0.4, 'sawtooth');
                     } else {
-                        playBeep(600, 0.03, 'sine');
+                        bunyikanBeep(550, 0.03, 'sine');
                     }
-                }, i * 1500); 
+                }, i * 1600); // Interval jeda antar kalimat dialog muncul
             });
         }
 
-        function makeDecision(choice) {
-            const currentPatient = patientDatabase[currentPatientIndex];
+        // FUNGSI 5: PROSES PILIHAN DOKTER (SISTEM SKORING)
+        function prosesKeputusan(pilihanUser) {
+            const dataSekarang = databasePasien[indeksPasien];
             
-            if (choice === 'HUMAN') {
-                if (currentPatient.type === 'HUMAN') {
-                    savedCount++;
-                    playBeep(880, 0.2, 'sine');
-                    alert("KEPUTUSAN BENAR: Pasien dikembalikan ke keluarga setelah perawatan dasar.");
+            if (pilihanUser === 'HUMAN') {
+                if (dataSekarang.type === 'HUMAN' || dataSekarang.tipe === 'HUMAN') {
+                    manusiaBenar++;
+                    bunyikanBeep(900, 0.15, 'sine');
+                    alert("KEPUTUSAN DIAMBIL: Subjek diklasifikasikan sebagai Manusia. Berkas dipindahkan.");
                 } else {
-                    alert("⚠️ KESALAHAN FATAL: Anda melepaskan ANOMALI ke pemukiman warga! Tingkat bahaya meningkat.");
-                    playBeep(150, 0.6, 'sawtooth');
+                    bunyikanBeep(120, 0.5, 'sawtooth');
+                    alert("⚠️ ALARM BAHAYA: Anda melepaskan rupa ANOMALI ke kota! Keamanan bocor.");
                 }
-            } else if (choice === 'ANOMALY') {
-                if (currentPatient.type === 'ANOMALY') {
-                    caughtCount++;
-                    playBeep(440, 0.1, 'triangle');
-                    alert("KEPUTUSAN BENAR: Subjek berhasil dikarantina di kurungan sel magnetik bawah tanah.");
+            } else if (pilihanUser === 'ANOMALY') {
+                if (dataSekarang.type === 'ANOMALY' || dataSekarang.tipe === 'ANOMALY') {
+                    anomaliBenar++;
+                    bunyikanBeep(400, 0.2, 'triangle');
+                    alert("KEPUTUSAN DIAMBIL: Subjek dikunci di dalam sel baja bawah tanah.");
                 } else {
-                    alert("⚠️ KESALAHAN ADMINISTRASI: Anda mengurung manusia tak bersalah di ruang isolasi selamanya!");
-                    playBeep(150, 0.6, 'sawtooth');
+                    bunyikanBeep(120, 0.5, 'sawtooth');
+                    alert("⚠️ KESALAHAN MEDIS: Anda mengurung manusia normal yang sakit jiwa ke ruang isolasi!");
                 }
             }
 
-            document.getElementById('txt-saved').innerText = savedCount;
-            document.getElementById('txt-caught').innerText = caughtCount;
+            // Sinkronisasi data skor ke papan informasi atas
+            document.getElementById('skor-manusia').innerText = manusiaBenar;
+            document.getElementById('skor-anomali').innerText = anomaliBenar;
 
-            currentPatientIndex++;
-            loadPatient(currentPatientIndex);
+            // Naikkan indeks untuk memuat pasien berikutnya
+            indeksPasien++;
+            tampilkanPasien(indeksPasien);
         }
+        
+        // Selesai. Seluruh instruksi sistem pemrosesan analog horor ditutup.
     </script>
 </body>
 </html>
