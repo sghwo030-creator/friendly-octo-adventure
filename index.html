@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Cold Cave: Cinematic Overhaul</title>
+    <title>The Cold Cave: Escape Through The Door</title>
     <style>
         * {
             box-sizing: border-box;
@@ -200,7 +200,7 @@
 
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>Gunakan MOUSE atau USAP LAYAR untuk melihat sekeliling 360°. Perhatikan pilar batu gua, monster mengintai merangkak berkelok di balik kegelapan pilar.</p>
+        <p>[UPDATE] Cari Pintu Besar di ujung lorong gua tergelap (160m) untuk lolos! Awas, sosok Humanoid jangkung mengintai pergerakanmu dari balik pilar.</p>
         <button class="menu-btn" onclick="startGame()">MASUK GUA</button>
     </div>
 
@@ -210,7 +210,7 @@
             <div class="bar-container">Senter <div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div></div>
             <div id="distance-txt">Progress: 0m</div>
         </div>
-        <div id="warning-indicator">MENDENGAR GEMERUTUK DI BELAKANG...</div>
+        <div id="warning-indicator">MENDENGAR LANGKAH KAKI TEGAK...</div>
         <div class="pc-hint" id="device-hint">[Mouse] Kamera | [W/S/A/D] Gerak | [SHIFT] Lari | [SPACE] Senter | [E] Cari Bat</div>
     </div>
 
@@ -244,7 +244,11 @@
         let gameActive = false;
         let isMobile = false;
         
-        let monsterMesh, monsterLegs = [];
+        // Humanoid Monster Bones references
+        let monsterMesh;
+        let monsterArms = { left: null, right: null };
+        let monsterLegs = { left: null, right: null };
+        
         let monsterState = { 
             xPos: 0, zPos: 0, 
             active: false, 
@@ -254,6 +258,11 @@
             wobble: 0
         };
 
+        // Pintu & Animasi state
+        let doorGroup, doorHinge;
+        let doorOpening = false;
+        const doorZPosition = -175; // Letak pintu di ujung petualangan (sekitar 160 meter dari start)
+
         let state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
         const keys = { w: false, a: false, s: false, d: false, shift: false };
 
@@ -262,10 +271,8 @@
         const speedSprint = 0.115; 
         const mouseSensitivity = 0.0022;
 
-        // Variables Juice: Bobbing & Flashlight Sway
         let bobTimer = 0;
-        let targetCamRotationX = 0;
-        let targetCamRotationY = 0;
+        let targetCamRotationX = 0; let targetCamRotationY = 0;
         let flashSwayX = 0, flashSwayY = 0;
         let lastTouchX = 0, lastTouchY = 0;
 
@@ -287,13 +294,13 @@
             renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
 
-            // 1. Lorong Gua Tekstur HD Procedural
+            // Lorong Gua Purba
             const caveGeo = new THREE.BoxGeometry(5.4, 4.5, caveLength, 10, 10, 140);
             const pos = caveGeo.attributes.position;
             for (let i = 0; i < pos.count; i++) {
                 let x = pos.getX(i); let y = pos.getY(i); let z = pos.getZ(i);
                 let noise = Math.sin(z * 0.6) * 0.35 + Math.cos(x * 1.5) * 0.2;
-                if (!(y < -2.1 && Math.abs(x) < 1.4)) { // Amankan area lantai jalur lari
+                if (!(y < -2.1 && Math.abs(x) < 1.4)) { 
                     pos.setX(i, x + noise * (x > 0 ? 1 : -1) * 0.4);
                     pos.setY(i, y + noise * (y > 0 ? 1 : -1) * 0.4);
                 }
@@ -312,23 +319,18 @@
             rockTex.wrapS = THREE.RepeatWrapping; rockTex.wrapT = THREE.RepeatWrapping;
             rockTex.repeat.set(4, 45);
 
-            const caveMat = new THREE.MeshStandardMaterial({ map: rockTex, roughness: 0.92, side: THREE.BackSide });
-            const caveMesh = new THREE.Mesh(caveGeo, caveMat);
+            const caveMesh = new THREE.Mesh(caveGeo, new THREE.MeshStandardMaterial({ map: rockTex, roughness: 0.92, side: THREE.BackSide }));
             caveMesh.position.set(0, 1.6, -caveLength / 2);
             scene.add(caveMesh);
 
-            // 2. GENERASI PILAR GUA (Stalaktit & Stalagmit Pengadang Pandangan)
             generateCavePillars(rockTex);
-
-            // 3. Bangun Monster
             buildProceduralMonster();
+            buildEscapeDoor(); // Spawn Pintu Akhir
 
-            // 4. Sistem Senter dengan Dudukan Object (Sway Support)
+            // Flashlight Senter
             flashlight = new THREE.SpotLight(0xfff1cc, 4.0, 26, Math.PI / 4.0, 0.6, 1.1);
-            // Senter ditempel di scene, tapi posisinya di-update smooth manual di loop animasi
             scene.add(flashlight);
-            const target = new THREE.Object3D();
-            scene.add(target); flashlight.target = target;
+            const target = new THREE.Object3D(); scene.add(target); flashlight.target = target;
 
             ambientLight = new THREE.AmbientLight(0x020101);
             scene.add(ambientLight);
@@ -339,71 +341,103 @@
 
         function generateCavePillars(texture) {
             const pillarMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.95 });
-            // Buat pilar secara acak dari kedalaman Z=-30 sampai Z=-230 tiap kelipatan 15 meter
-            for (let z = -30; z > -caveLength + 20; z -= 14 + Math.random() * 8) {
-                let sideX = Math.random() > 0.5 ? 1.3 : -1.3; // Taruh agak ke kiri atau kanan jalan
+            for (let z = -30; z > -caveLength + 30; z -= 14 + Math.random() * 8) {
+                let sideX = Math.random() > 0.5 ? 1.3 : -1.3; 
                 let height = 2.5 + Math.random() * 1.5;
-                
                 const geo = new THREE.CylinderGeometry(0.1, 0.45, height, 5, 4);
-                // Bikin tekstur pilar agak kasar bergelombang
-                const p = geo.attributes.position;
-                for(let i=0; i<p.count; i++) { p.setX(i, p.getX(i) + Math.sin(p.getZ(i)*5)*0.06); }
-                geo.computeVertexNormals();
-
                 const pillar = new THREE.Mesh(geo, pillarMat);
-                // Menentukan apakah pilar tumbuh dari bawah (stalagmit) atau menggantung atas (stalaktit)
-                if (Math.random() > 0.5) {
-                    pillar.position.set(sideX, -0.4 + height/2, z);
-                } else {
-                    pillar.position.set(sideX, 3.8 - height/2, z);
-                    pillar.rotation.z = Math.PI;
-                }
+                if (Math.random() > 0.5) pillar.position.set(sideX, -0.4 + height/2, z);
+                else { pillar.position.set(sideX, 3.8 - height/2, z); pillar.rotation.z = Math.PI; }
                 scene.add(pillar);
             }
         }
 
+        // MONSTER BARU: 100% HUMANOID CRYPTID STYLE
         function buildProceduralMonster() {
             monsterMesh = new THREE.Group();
-            const skinMat = new THREE.MeshStandardMaterial({ color: 0x383532, roughness: 0.95 });
-            const spikeMat = new THREE.MeshStandardMaterial({ color: 0x1a1817, roughness: 0.98 });
-            const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); 
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0x1f1d1c, roughness: 0.98 });
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Mata putih menyala gelap
 
-            const body = new THREE.Mesh(new THREE.SphereGeometry(0.44, 8, 8), skinMat);
-            body.scale.set(1, 0.65, 1.3); body.position.y = 0.3;
-            monsterMesh.add(body);
+            // 1. Badan Tegak Jangkung (Torso)
+            const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.12, 1.4, 6), skinMat);
+            torso.position.y = 1.1; 
+            monsterMesh.add(torso);
 
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 8), skinMat);
-            head.scale.set(1, 0.75, 1.1); head.position.set(0, 0.32, -0.65);
+            // 2. Kepala Humanoid Oval
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), skinMat);
+            head.scale.set(1, 1.2, 1);
+            head.position.set(0, 1.9, 0);
             monsterMesh.add(head);
 
-            const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), eyeMat); eyeL.position.set(-0.12, 0.38, -0.85);
-            const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), eyeMat); eyeR.position.set(0.12, 0.38, -0.85);
+            // Mata Menyala Depan
+            const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.03, 4, 4), eyeMat); eyeL.position.set(-0.07, 1.95, -0.16);
+            const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.03, 4, 4), eyeMat); eyeR.position.set(0.07, 1.95, -0.16);
             monsterMesh.add(eyeL, eyeR);
 
-            for (let i = 0; i < 11; i++) {
-                const spike = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.26, 4), spikeMat);
-                spike.position.set((Math.random()*0.04 - 0.02), 0.62, -0.4 + (i * 0.11));
-                spike.rotation.x = Math.PI / 5;
-                monsterMesh.add(spike);
-            }
+            // 3. Tangan Panjang (Pivot di atas bahu agar bisa diayun)
+            const armGeo = new THREE.CylinderGeometry(0.04, 0.03, 1.1, 4);
+            armGeo.translate(0, -0.55, 0); // Geser origin geometry ke bahu
 
-            // Kaki untuk dianimasikan jalan merangkak
-            const legGeo = new THREE.BoxGeometry(0.1, 0.45, 0.12);
-            const fl = new THREE.Mesh(legGeo, skinMat); fl.position.set(-0.45, 0.15, -0.3); monsterMesh.add(fl); monsterLegs.push(fl);
-            const fr = new THREE.Mesh(legGeo, skinMat); fr.position.set(0.45, 0.15, -0.3); monsterMesh.add(fr); monsterLegs.push(fr);
-            const bl = new THREE.Mesh(legGeo, skinMat); bl.position.set(-0.4, 0.15, 0.3); monsterMesh.add(bl); monsterLegs.push(bl);
-            const br = new THREE.Mesh(legGeo, skinMat); br.position.set(0.4, 0.15, 0.3); monsterMesh.add(br); monsterLegs.push(br);
+            monsterArms.left = new THREE.Mesh(armGeo, skinMat);
+            monsterArms.left.position.set(-0.24, 1.7, 0);
+            monsterMesh.add(monsterArms.left);
+
+            monsterArms.right = new THREE.Mesh(armGeo, skinMat);
+            monsterArms.right.position.set(0.24, 1.7, 0);
+            monsterMesh.add(monsterArms.right);
+
+            // 4. Kaki Panjang (Pivot di pangkal paha)
+            const legGeo = new THREE.CylinderGeometry(0.05, 0.035, 1.1, 4);
+            legGeo.translate(0, -0.55, 0); // Geser origin geometry ke paha
+
+            monsterLegs.left = new THREE.Mesh(legGeo, skinMat);
+            monsterLegs.left.position.set(-0.1, 0.9, 0);
+            monsterMesh.add(monsterLegs.left);
+
+            monsterLegs.right = new THREE.Mesh(legGeo, skinMat);
+            monsterLegs.right.position.set(0.1, 0.9, 0);
+            monsterMesh.add(monsterLegs.right);
 
             scene.add(monsterMesh);
         }
 
+        // IMPLEMENTASI STRUKTUR PINTU ESCAPE KUNO
+        function buildEscapeDoor() {
+            doorGroup = new THREE.Group();
+            doorGroup.position.set(0, -0.4, doorZPosition);
+
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x2b1a0d, roughness: 0.9 });
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x42220f, roughness: 0.85, metalness: 0.1 });
+            const ironMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.4 });
+
+            // Kusen Pintu Kiri, Kanan, Atas
+            const fL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.2, 0.2), frameMat); fL.position.set(-1.1, 1.6, 0);
+            const fR = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.2, 0.2), frameMat); fR.position.set(1.1, 1.6, 0);
+            const fT = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.2, 0.2), frameMat); fT.position.set(0, 3.2, 0);
+            doorGroup.add(fL, fR, fT);
+
+            // Hinge Group (Engsel) ditaruh di sisi Kiri Kusen untuk rotasi buka pintu
+            doorHinge = new THREE.Group();
+            doorHinge.position.set(-1.0, 1.6, 0); 
+
+            // Daun Pintu Kayu Besar (Digeser 1 meter ke kanan dari engselnya)
+            const doorPanel = new THREE.Mesh(new THREE.BoxGeometry(2.0, 3.0, 0.12), doorMat);
+            doorPanel.position.set(1.0, 0, 0); 
+            doorHinge.add(doorPanel);
+
+            // Handle Pintu Besi Bulat
+            const handle = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8), ironMat);
+            handle.position.set(1.8, 0, 0.1);
+            doorHinge.add(handle);
+
+            doorGroup.add(doorHinge);
+            scene.add(doorGroup);
+        }
+
         function setupControls() {
             canvas.addEventListener('click', () => {
-                if (gameActive && !isMobile && document.pointerLockElement !== canvas) {
-                    canvas.requestPointerLock();
-                }
+                if (gameActive && !isMobile && document.pointerLockElement !== canvas) canvas.requestPointerLock();
             });
-
             document.addEventListener('mousemove', (e) => {
                 if (gameActive && document.pointerLockElement === canvas) {
                     targetCamRotationY -= e.movementX * mouseSensitivity;
@@ -411,21 +445,15 @@
                     targetCamRotationX = Math.max(-1.3, Math.min(1.3, targetCamRotationX));
                 }
             });
-
             canvas.addEventListener('touchstart', (e) => {
                 if (!gameActive) return;
                 lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY;
             }, {passive: true});
-
             canvas.addEventListener('touchmove', (e) => {
                 if (!gameActive) return;
-                let dX = e.touches[0].clientX - lastTouchX;
-                let dY = e.touches[0].clientY - lastTouchY;
-                
-                targetCamRotationY -= dX * 0.0035;
-                targetCamRotationX -= dY * 0.0035;
+                let dX = e.touches[0].clientX - lastTouchX; let dY = e.touches[0].clientY - lastTouchY;
+                targetCamRotationY -= dX * 0.0035; targetCamRotationX -= dY * 0.0035;
                 targetCamRotationX = Math.max(-1.2, Math.min(1.2, targetCamRotationX));
-
                 lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY;
             }, {passive: true});
 
@@ -440,7 +468,6 @@
                 if (e.key === 'Shift') { keys.shift = false; return; }
                 keys[e.key.toLowerCase()] = false;
             });
-
             setupMobileButtons();
         }
 
@@ -470,10 +497,8 @@
         }
 
         function searchFloor() {
-            if(Math.random() < 0.45) {
-                state.battery = Math.min(100, state.battery + 30);
-                state.sanity -= 4;
-            } else { state.sanity -= 12; }
+            if(Math.random() < 0.45) { state.battery = Math.min(100, state.battery + 30); state.sanity -= 4; } 
+            else { state.sanity -= 12; }
             updateHUD();
         }
 
@@ -488,10 +513,14 @@
             targetCamRotationX = 0; targetCamRotationY = 0;
             camera.rotation.set(0, 0, 0);
 
+            // Reset Pintu
+            doorOpening = false;
+            doorHinge.rotation.y = 0;
+
             monsterState.zPos = 5; monsterState.xPos = 0;
             monsterState.state = 'stalking'; monsterState.active = true;
-
             monsterMesh.position.set(0, -0.1, monsterState.zPos);
+            
             flashlight.intensity = 4.0;
             gameActive = true;
             
@@ -503,124 +532,143 @@
             if (!gameActive) return;
             requestAnimationFrame(animate);
 
-            // Smooth Interpolation Camera Rotasi (Bikin gerakan nengok smooth anti patah-patah)
             camera.rotation.y += (targetCamRotationY - camera.rotation.y) * 0.22;
             camera.rotation.x += (targetCamRotationX - camera.rotation.x) * 0.22;
 
             let isMoving = keys.w || keys.s || keys.a || keys.d;
-            let currentSpeed = keys.shift && isMoving ? speedSprint : speedWalk;
             
-            if (keys.shift && isMoving) state.sanity -= 0.016; 
+            // JALAN HANYA BISA JIKA PINTU BELUM DISENTUH
+            if (!doorOpening) {
+                let currentSpeed = keys.shift && isMoving ? speedSprint : speedWalk;
+                if (keys.shift && isMoving) state.sanity -= 0.016; 
 
-            // Handle Pergerakan Kamera FPS
-            if (keys.w) camera.translateZ(-currentSpeed);
-            if (keys.s) camera.translateZ(currentSpeed);
-            if (keys.a) camera.translateX(-currentSpeed);
-            if (keys.d) camera.translateX(currentSpeed);
+                if (keys.w) camera.translateZ(-currentSpeed);
+                if (keys.s) camera.translateZ(currentSpeed);
+                if (keys.a) camera.translateX(-currentSpeed);
+                if (keys.d) camera.translateX(currentSpeed);
+            }
 
-            // JUICE 1: Head Bobbing Engine (Kamera bergoyang pas jalan/lari)
-            if (isMoving) {
+            // Head Bobbing Effect
+            if (isMoving && !doorOpening) {
                 bobTimer += keys.shift ? 0.26 : 0.14;
-                let bobAmount = keys.shift ? 0.07 : 0.035;
-                camera.position.y = 1.6 + Math.sin(bobTimer) * bobAmount;
-                // Sedikit rotasi Z buat efek goyangan bahu kanan kiri
+                camera.position.y = 1.6 + Math.sin(bobTimer) * (keys.shift ? 0.07 : 0.035);
                 camera.rotation.z = Math.cos(bobTimer) * (keys.shift ? 0.02 : 0.008);
             } else {
-                // Bernafas pelan saat diam
                 bobTimer += 0.02;
                 camera.position.y = 1.6 + Math.sin(bobTimer) * 0.008;
                 camera.rotation.z *= 0.9;
             }
+
+            // Batasi dinding gua & cegah tembus pintu sebelum terbuka
             camera.position.x = Math.max(-1.4, Math.min(1.4, camera.position.x));
-            camera.position.z = Math.max(-caveLength + 6, Math.min(-5, camera.position.z));
+            camera.position.z = Math.max(doorZPosition + 1.2, Math.min(-5, camera.position.z));
 
             state.distance = Math.floor(-15 - camera.position.z);
 
-            // JUICE 2: Flashlight Inertia Sway System (Senter mengayun dinamis telat ngikutin kamera)
+            // Flashlight Sway Damping
             flashlight.position.copy(camera.position);
-            let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            
-            // Hitung delta rotasi untuk efek menyeret senter
             flashSwayX += (camera.rotation.x - flashSwayX) * 0.12;
             flashSwayY += (camera.rotation.y - flashSwayY) * 0.12;
-            
             let targetDir = new THREE.Vector3(0, 0, -1);
-            targetDir.applyAxisAngle(new THREE.Vector3(1, 0, 0), flashSwayX);
-            targetDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), flashSwayY);
-            
+            targetDir.applyAxisAngle(new THREE.Vector3(1, 0, 0), flashSwayX).applyAxisAngle(new THREE.Vector3(0, 1, 0), flashSwayY);
             flashlight.target.position.copy(camera.position).add(targetDir.multiplyScalar(5));
 
-            // SISTEM KECERDASAN AI MONSTER
+            // DETEKSI SENTUH PINTU (COLLISION INTERACTION)
+            let distToDoor = camera.position.distanceTo(new THREE.Vector3(0, 1.6, doorZPosition));
+            if (distToDoor < 2.4 && !doorOpening) {
+                doorOpening = true;
+                monsterState.active = false; // Matikan AI agar monster berhenti mengejar pas cutscene buka pintu
+                document.getElementById('warning-indicator').innerText = "MEMBUKA PINTU KUNO...";
+                document.getElementById('warning-indicator').style.visibility = 'visible';
+            }
+
+            // ANIMASI PINTU KEBUKA & WIN TRIGGER
+            if (doorOpening) {
+                if (doorHinge.rotation.y > -Math.PI / 1.8) {
+                    doorHinge.rotation.y -= 0.015; // Berputar terbuka pelan-pelan ke dalam
+                    camera.position.z -= 0.01;    // Kamera otomatis maju pelan masuk ke ambang pintu
+                } else {
+                    // Animasi beres -> Picu kemenangan murni!
+                    gameActive = false;
+                    endGame("SELAMAT (WIN)", "Gokil Jae! Kamu berhasil membuka pintu kuno tepat waktu dan lolos dari cengkeraman humanoid!");
+                    return;
+                }
+            }
+
+            // SISTEM KECERDASAN AI HUMANOID MONSTER
             if (monsterState.active) {
                 let distToPlayer = camera.position.distanceTo(monsterMesh.position);
-
                 let camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
                 let pToM = new THREE.Vector3().subVectors(monsterMesh.position, camera.position).normalize();
                 let isLooking = camDir.dot(pToM) > 0.76;
 
-                // FSM AI Logic State
                 if (state.flashlightOn && isLooking && distToPlayer < 26) {
-                    monsterState.state = 'chasing';
-                    monsterState.speed = 0.082; // Kecepatan lari proporsional (Jae bisa kabur kalau pakai Shift)
+                    monsterState.state = 'chasing'; monsterState.speed = 0.084;
                 } else if (!state.flashlightOn) {
-                    monsterState.state = 'searching';
-                    monsterState.speed = 0.02;
+                    monsterState.state = 'searching'; monsterState.speed = 0.02;
                 } else {
-                    monsterState.state = 'stalking';
-                    monsterState.speed = keys.shift ? 0.07 : 0.042;
+                    monsterState.state = 'stalking'; monsterState.speed = keys.shift ? 0.07 : 0.042;
                 }
 
                 monsterState.wobble += 0.06;
                 
-                // Animasikan kaki monster merangkak berdasarkan wobble
-                monsterLegs[0].rotation.x = Math.sin(monsterState.wobble * 3) * 0.5;
-                monsterLegs[1].rotation.x = -Math.sin(monsterState.wobble * 3) * 0.5;
-                monsterLegs[2].rotation.x = -Math.sin(monsterState.wobble * 3) * 0.5;
-                monsterLegs[3].rotation.x = Math.sin(monsterState.wobble * 3) * 0.5;
-
+                // ANIMASI GELOMBANG GERAKAN HUMANOID (Ayun Kaki & Tangan Alternating)
+                let limbSwing = Math.sin(monsterState.wobble * (monsterState.state === 'chasing' ? 4 : 2.5));
+                
                 if (monsterState.state === 'chasing') {
-                    monsterState.targetX = camera.position.x;
-                    document.getElementById('warning-indicator').innerText = "KAU MENYOROTNYA! DIA MERANGKAK CEPAT!";
-                    document.getElementById('warning-indicator').style.visibility = 'visible';
+                    // Jika mengejar, tangan diangkat lurus ke depan menggapai/menerkam mangsa
+                    monsterArms.left.rotation.x = -Math.PI / 2.2 + limbSwing * 0.15;
+                    monsterArms.right.rotation.x = -Math.PI / 2.2 - limbSwing * 0.15;
+                    // Kaki melangkah cepat lebar
+                    monsterLegs.left.rotation.x = limbSwing * 0.6;
+                    monsterLegs.right.rotation.x = -limbSwing * 0.6;
                     
-                    // JUICE 3: Layar bergoyang gemetar saat dikejar dekat + Vignette Darah pekat
+                    document.getElementById('warning-indicator').innerText = "SOSOK HUMANOID MELIHAT CAHAYA! DIA MENGEJAR KENCANG!";
+                    document.getElementById('warning-indicator').style.visibility = 'visible';
+
                     let shake = (15 - Math.min(15, distToPlayer)) * 0.003;
                     camera.position.x += (Math.random() - 0.5) * shake;
                     camera.position.y += (Math.random() - 0.5) * shake;
-                } else if (monsterState.state === 'searching') {
-                    monsterState.targetX = Math.sin(monsterState.wobble * 0.8) * 1.3;
-                    document.getElementById('warning-indicator').innerText = "SENTER MATI. DIA BINGUNG MENCARI JEJAK...";
-                    document.getElementById('warning-indicator').style.visibility = 'visible';
                 } else {
-                    monsterState.targetX = Math.sin(monsterState.wobble * 0.4) * 0.8; // Jalur merangkak kelok zigzag di balik pilar
-                    if (distToPlayer < 15) {
-                        document.getElementById('warning-indicator').innerText = "TERDENGAR SUARA MERANGKAK MENDEKAT DI BELAKANG...";
+                    // Animasi jalan santai membuntut atau kebingungan (Tangan melenggang normal)
+                    monsterArms.left.rotation.x = limbSwing * 0.3;
+                    monsterArms.right.rotation.x = -limbSwing * 0.3;
+                    monsterLegs.left.rotation.x = -limbSwing * 0.3;
+                    monsterLegs.right.rotation.x = limbSwing * 0.3;
+
+                    if (monsterState.state === 'searching') {
+                        document.getElementById('warning-indicator').innerText = "SENTER PADAM. DIA KEHILANGAN ARAH, CELINGUKAN...";
+                        document.getElementById('warning-indicator').style.visibility = 'visible';
+                    } else if (distToPlayer < 15) {
+                        document.getElementById('warning-indicator').innerText = "TERDENGAR LANGKAH KAKI TEGAK MENDEKATI BELAKANGMU...";
                         document.getElementById('warning-indicator').style.visibility = 'visible';
                     } else {
                         document.getElementById('warning-indicator').style.visibility = 'hidden';
                     }
                 }
 
+                // AI Pathing Interpolation
+                if (monsterState.state === 'chasing') monsterState.targetX = camera.position.x;
+                else if (monsterState.state === 'searching') monsterState.targetX = Math.sin(monsterState.wobble * 0.8) * 1.3;
+                else monsterState.targetX = Math.sin(monsterState.wobble * 0.4) * 0.8;
+
                 monsterState.xPos += (monsterState.targetX - monsterState.xPos) * 0.04;
                 monsterState.zPos -= monsterState.speed;
-
-                monsterMesh.position.set(monsterState.xPos, -0.1 + Math.sin(monsterState.wobble*1.5)*0.02, monsterState.zPos);
+                monsterMesh.position.set(monsterState.xPos, -0.3, monsterState.zPos);
 
                 if (distToPlayer < 2.1) { executeMonsterJumpscare(); return; }
 
-                // JUICE 4: Efek Denyut Horror Dinamis pada Vignette berdasarkan Jarak Monster & Sanity
+                // Efek Denyut Horror Kamera Merah
                 let panicIntensity = (monsterState.state === 'chasing') ? 0.95 : (1 - (state.sanity / 100)) * 0.8;
                 let redPulse = Math.abs(Math.sin(Date.now() * 0.004)) * panicIntensity;
                 document.getElementById('vignette').style.boxShadow = `inset 0 0 160px rgba(${Math.floor(redPulse * 160)}, 0, 0, ${0.96 + (redPulse*0.04)})`;
             }
 
-            // Senter Baterai Drain
+            // Baterai & Sanity Drainer
             if (state.flashlightOn) {
                 state.battery -= 0.032; state.sanity -= 0.003;
                 if (state.battery < 25 && Math.random() < 0.1) flashlight.intensity = Math.random() > 0.5 ? 4.0 : 0.3;
-            } else {
-                state.sanity -= 0.08;
-            }
+            } else { state.sanity -= 0.08; }
 
             if (state.battery <= 0 && state.flashlightOn) { state.battery = 0; toggleFlashlight(); }
 
@@ -633,19 +681,19 @@
             state.sanity = Math.max(0, state.sanity); state.battery = Math.max(0, state.battery);
             document.getElementById('sanity-fill').style.width = state.sanity + '%';
             document.getElementById('battery-fill').style.width = state.battery + '%';
-            document.getElementById('distance-txt').innerText = `Progress: ${state.distance}m / 160m`;
+            document.getElementById('distance-txt').innerText = `Pintu Gua: ${Math.max(0, Math.floor(Math.abs(camera.position.z - doorZPosition)))}m lagi`;
         }
 
         function checkMentalCollapse() {
-            if (state.sanity <= 0) endGame("HILANG WARAS", "Jae menyerah pada ketakutan kegelapan total.");
-            if (state.distance >= 160) endGame("SELAMAT", "Gokil Jae! Lu berhasil lari menembus rintangan pilar dan lolos dari gua!");
+            if (state.sanity <= 0) endGame("HILANG WARAS", "Jae menyerah pada kegelapan total sebelum sempat menyentuh pintu.");
         }
 
         function executeMonsterJumpscare() {
             gameActive = false; bgm.pause();
             if(!isMobile) document.exitPointerLock();
 
-            camera.lookAt(monsterMesh.position);
+            // Paksa kamera natap wajah monster humanoid dari bawah (seram karena jangkung)
+            camera.lookAt(new THREE.Vector3(monsterMesh.position.x, 1.8, monsterMesh.position.z));
             renderer.render(scene, camera);
 
             const js = document.getElementById('jumpscare');
@@ -653,7 +701,7 @@
 
             setTimeout(() => {
                 js.style.visibility = 'hidden';
-                endGame("MATI", "Makhluk purba bermata putih menyergapmu dari bayangan pilar batu gua.");
+                endGame("MATI DICERIK", "Langkah jangkung makhluk bermata putih itu berhasil menyergap lehermu.");
             }, 1250);
         }
 
