@@ -71,7 +71,7 @@
 
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>[PROSEDURAL ENGINE V4] Setiap gua yang kamu masuki sekarang unik. Monster Crawler dibekali algoritma cerdas untuk mengejarmu lewat jalur terpendek tanpa menembus dinding. Atur stamina berlarimu, awasi radar minimap, dan temukan Relik Emas Rahasia untuk membuka takdir tertinggi.</p>
+        <p>[PROSEDURAL ENGINE V4.1] Setiap gua yang kamu masuki sekarang unik. Monster Crawler dibekali algoritma cerdas untuk mengejarmu lewat jalur terpendek tanpa menembus dinding. Atur stamina berlarimu, awasi radar minimap, dan temukan Relik Emas Rahasia untuk membuka takdir tertinggi.</p>
         <div class="btn-group">
             <button class="menu-btn" onclick="startGame(false)">EKSPEDISI BARU</button>
             <button class="menu-btn" id="resume-btn" onclick="startGame(true)" disabled>LANJUTKAN</button>
@@ -134,6 +134,9 @@
         let gameActive = false, isMobile = false, settingsOpen = false;
         let mapCanvas, mapCtx;
         
+        // Caching tekstur secara global untuk mencegah overhead alokasi memori berkali-kali
+        let diffTexGlobal = null, bumpTexGlobal = null;
+
         // 🎛️ SYSTEM SYNTH AUDIO PROSEDURAL ADVANCED
         let audioCtx, masterGain, lastHeartbeat = 0, lastFootstep = 0, monsterGrowlOsc = null, monsterGrowlGain = null;
         let ambientWindNode = null;
@@ -340,6 +343,10 @@
 
             mapCanvas = document.getElementById('minimap'); mapCtx = mapCanvas.getContext('2d');
 
+            // Bangun/Inisialisasi tekstur hanya sekali di awal daur hidup engine
+            if (!diffTexGlobal) diffTexGlobal = generateProceduralRockTexture(false);
+            if (!bumpTexGlobal) bumpTexGlobal = generateProceduralRockTexture(true);
+
             build3DWorld();
             setupControls();
         }
@@ -351,11 +358,11 @@
             if(secretArtifact) scene.remove(secretArtifact);
             if(exitGateMesh) scene.remove(exitGateMesh);
 
-            let diffTex = generateProceduralRockTexture(false);
-            let bumpTex = generateProceduralRockTexture(true);
+            // Tentukan konfigurasi bump mapping berdasarkan setting aktif
+            const activeBumpMap = (state.gfx === 'high') ? bumpTexGlobal : null;
 
-            let wallMat = new THREE.MeshStandardMaterial({ map: diffTex, bumpMap: bumpTex, bumpScale: 0.06, roughness: 0.85 });
-            let floorMat = new THREE.MeshStandardMaterial({ map: diffTex, bumpMap: bumpTex, bumpScale: 0.04, roughness: 0.2, metalness: 0.2 });
+            let wallMat = new THREE.MeshStandardMaterial({ map: diffTexGlobal, bumpMap: activeBumpMap, bumpScale: 0.06, roughness: 0.85 });
+            let floorMat = new THREE.MeshStandardMaterial({ map: diffTexGlobal, bumpMap: activeBumpMap, bumpScale: 0.04, roughness: 0.2, metalness: 0.2 });
 
             let wallGeo = new THREE.BoxGeometry(GRID_SIZE, 4.0, GRID_SIZE);
             let floorGeo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
@@ -436,7 +443,8 @@
         }
 
         function setupControls() {
-            canvas = document.getElementById('game-canvas');
+            // FIX 1: Ditambahkan deklarasi variabel lokal penampung canvas yang aman secara sintaksis
+            const canvas = document.getElementById('game-canvas');
             canvas.addEventListener('click', () => { if (gameActive && !isMobile && !settingsOpen && document.pointerLockElement !== canvas) canvas.requestPointerLock(); });
             document.addEventListener('mousemove', (e) => {
                 if (gameActive && document.pointerLockElement === canvas && !settingsOpen) {
@@ -477,18 +485,26 @@
                 try { document.exitPointerLock(); } catch(e){}
             } else {
                 document.getElementById('settings-modal').classList.add('hidden');
-                if(!isMobile && gameActive) canvas.requestPointerLock();
+                if(!isMobile && gameActive) document.getElementById('game-canvas').requestPointerLock();
             }
         }
         function adjustVolume(val) { if(masterGain) masterGain.gain.setValueAtTime(val, audioCtx.currentTime); }
+        
+        // FIX 2: Optimalisasi penuh! Ganti grafis langsung melakukan hot-swap texture tanpa merusak data dunia
         function adjustGraphics(type) {
             state.gfx = type;
             if(type === 'low') {
                 scene.fog = null;
-                wallsArray.forEach(w => { w.material.bumpMap = null; w.material.needsUpdate = true; });
+                wallsArray.forEach(w => { 
+                    w.material.bumpMap = null; 
+                    w.material.needsUpdate = true; 
+                });
             } else {
                 scene.fog = new THREE.FogExp2(0x010000, 0.25);
-                build3DWorld(); // Rebuild untuk pasang kembali bump map
+                wallsArray.forEach(w => { 
+                    w.material.bumpMap = bumpTexGlobal; 
+                    w.material.needsUpdate = true; 
+                });
             }
         }
 
@@ -497,7 +513,7 @@
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('ui-layer').classList.remove('hidden');
             document.getElementById('minimap-container').classList.remove('hidden');
-            if (!isMobile) canvas.requestPointerLock();
+            if (!isMobile) document.getElementById('game-canvas').requestPointerLock();
 
             state.sanity = 100; state.battery = 100; state.stamina = 100; state.flashlightOn = true; state.hasSecret = false;
             
@@ -600,7 +616,6 @@
                     
                     crawlerState.x += mDir.x * mSpeed; crawlerState.z += mDir.z * mSpeed;
                 } else {
-                    // Masuk ke node selanjutnya
                     crawlerState.currentPath.shift();
                 }
             }
@@ -712,13 +727,11 @@
                     }
                 }
             }
-            // Item Rune (Merah) & Baterai (Hijau Neon) di minimap
             mapCtx.fillStyle = "#ff0000";
             runesArray.forEach(r => { if(!r.picked) mapCtx.fillRect(center+(r.gridC-pGridX)*scale, center+(r.gridR-pGridZ)*scale, 3, 3); });
             mapCtx.fillStyle = "#00ff66";
             batteriesArray.forEach(b => { if(!b.picked) mapCtx.fillRect(center+(b.gridC-pGridX)*scale, center+(b.gridR-pGridZ)*scale, 3, 3); });
 
-            // Player Dot Indicator + Kompas Sight Line
             mapCtx.fillStyle = "#ffffff"; mapCtx.beginPath(); mapCtx.arc(center, center, 3.5, 0, Math.PI*2); mapCtx.fill();
             mapCtx.strokeStyle = "rgba(0, 255, 255, 0.7)"; mapCtx.lineWidth = 1.5; mapCtx.beginPath(); mapCtx.moveTo(center, center);
             mapCtx.lineTo(center + Math.sin(camera.rotation.y + Math.PI)*10, center + Math.cos(camera.rotation.y + Math.PI)*10); mapCtx.stroke();
