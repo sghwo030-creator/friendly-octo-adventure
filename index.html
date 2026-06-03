@@ -71,7 +71,7 @@
 
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>[PROSEDURAL ENGINE V4.2 - OPTIMIZED] Engine performa tinggi dengan fitur InstancedMesh, Manajemen Memori Anti-Leak, dan navigasi AI pintar berbasis algoritma A* (A-Star). Kumpulkan rune kuno dan amankan relik kosmik tanpa kendala lag.</p>
+        <p>[PROSEDURAL ENGINE V4.2 - PATCHED] Engine performa tinggi dengan fitur InstancedMesh, Manajemen Memori Anti-Leak, dan navigasi AI pintar berbasis rute linier sel A*. Kumpulkan rune kuno dan amankan relik kosmik tanpa kendala lag.</p>
         <div class="btn-group">
             <button class="menu-btn" onclick="startGame(false)">EKSPEDISI BARU</button>
             <button class="menu-btn" id="resume-btn" onclick="startGame(true)" disabled>LANJUTKAN</button>
@@ -135,9 +135,8 @@
         let mapCanvas, mapCtx;
         
         let diffTexGlobal = null, bumpTexGlobal = null;
-        let wallMat = null, floorMat = null; // Akses material global untuk sinkronisasi grafis penuh
+        let wallMat = null, floorMat = null;
 
-        // Referensi InstancedMesh penampung seluruh dunia 3D
         let wallInstMesh = null, floorInstMesh = null, ceilingInstMesh = null;
 
         let audioCtx, masterGain, lastHeartbeat = 0, lastFootstep = 0, monsterGrowlOsc = null, monsterGrowlGain = null;
@@ -149,9 +148,9 @@
         let secretArtifact = null;
         let exitGateMesh = null;
 
-        let crawlerMesh, crawlerArms = [], crawlerState = { x: 0, z: 0, speed: 0.026, phase: 0, currentPath: [] };
+        // Struktur State Monster dengan tracker Grid Sel Jangkar untuk mencegah tembus dinding
+        let crawlerMesh, crawlerArms = [], crawlerState = { x: 0, z: 0, gridR: 0, gridC: 0, speed: 0.026, phase: 0, currentPath: [] };
         let wraithMesh, wraithState = { x: 0, z: 0, speed: 0.016, active: false };
-        let pathUpdateTimer = 0;
 
         let state = { sanity: 100, battery: 100, stamina: 100, runesCollected: 0, hasSecret: false, flashlightOn: true, gfx: 'high' };
         const keys = { w: false, a: false, s: false, d: false, shift: false };
@@ -197,7 +196,6 @@
             if(deadEnds.length >= 8) MAP_GRID[deadEnds[7].r][deadEnds[7].c] = 6; 
         }
 
-        // 🧠 ALGORITMA PATHFINDING A* (A-STAR) SUPER RINGAN
         function findShortestPathAStar(start, end) {
             let openList = [];
             let closedSet = new Set();
@@ -238,7 +236,6 @@
             return [];
         }
 
-        // 👾 SISTEM VALIDASI SPAWN MONSTER ANTI-TEMBUS DINDING
         function findEmptyCell() {
             for(let r = MAZE_H-2; r > 0; r--) {
                 for(let c = MAZE_W-2; c > 0; c--) {
@@ -281,12 +278,28 @@
                 setTimeout(triggerDrip, 1500 + Math.random() * 3500);
             }
             triggerDrip();
+        }
 
-            monsterGrowlOsc = audioCtx.createOscillator(); monsterGrowlGain = audioCtx.createGain();
-            monsterGrowlOsc.type = 'sawtooth'; monsterGrowlOsc.frequency.setValueAtTime(26, audioCtx.currentTime);
-            let mFilter = audioCtx.createBiquadFilter(); mFilter.type = 'lowpass'; mFilter.frequency.setValueAtTime(120, audioCtx.currentTime);
-            monsterGrowlOsc.connect(mFilter); mFilter.connect(monsterGrowlGain); monsterGrowlGain.connect(masterGain);
-            monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime); monsterGrowlOsc.start();
+        // CONTROL AUDIO MONSTER: Siklus hidup dinamis, dimatikan total saat menu utama / kalah
+        function startMonsterAudio() {
+            if(!audioCtx) return;
+            if(monsterGrowlOsc) { try { monsterGrowlOsc.stop(); } catch(e){} }
+            
+            monsterGrowlOsc = audioCtx.createOscillator();
+            monsterGrowlGain = audioCtx.createGain();
+            monsterGrowlOsc.type = 'sawtooth';
+            monsterGrowlOsc.frequency.setValueAtTime(26, audioCtx.currentTime);
+            
+            let mFilter = audioCtx.createBiquadFilter();
+            mFilter.type = 'lowpass';
+            mFilter.frequency.setValueAtTime(120, audioCtx.currentTime);
+            
+            monsterGrowlOsc.connect(mFilter);
+            mFilter.connect(monsterGrowlGain);
+            monsterGrowlGain.connect(masterGain);
+            
+            monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            monsterGrowlOsc.start();
         }
 
         function playRuneSFX() {
@@ -363,16 +376,14 @@
             if (!diffTexGlobal) diffTexGlobal = generateProceduralRockTexture(false);
             if (!bumpTexGlobal) bumpTexGlobal = generateProceduralRockTexture(true);
 
-            // Inisialisasi Material Global Tunggal
             wallMat = new THREE.MeshStandardMaterial({ map: diffTexGlobal, bumpMap: bumpTexGlobal, bumpScale: 0.06, roughness: 0.85 });
             floorMat = new THREE.MeshStandardMaterial({ map: diffTexGlobal, bumpMap: bumpTexGlobal, bumpScale: 0.04, roughness: 0.2, metalness: 0.2 });
 
-            build3DWorld();
+            // CRITICAL BUG FIX: build3DWorld() dicopot dari sini agar tidak dipanggil paksa sebelum labirin di-generate.
             setupControls();
         }
 
         function build3DWorld() {
-            // FIX HARDWARE MEMORY LEAK: Hancurkan seluruh geometry & material lama sebelum di-remove
             if(wallInstMesh) { scene.remove(wallInstMesh); wallInstMesh.geometry.dispose(); }
             if(floorInstMesh) { scene.remove(floorInstMesh); floorInstMesh.geometry.dispose(); }
             if(ceilingInstMesh) { scene.remove(ceilingInstMesh); ceilingInstMesh.geometry.dispose(); }
@@ -386,7 +397,6 @@
             if(secretArtifact) { scene.remove(secretArtifact); secretArtifact.geometry.dispose(); secretArtifact.material.dispose(); secretArtifact = null; }
             if(exitGateMesh) { scene.remove(exitGateMesh); exitGateMesh.geometry.dispose(); exitGateMesh.material.dispose(); exitGateMesh = null; }
 
-            // Hitung total alokasi objek untuk InstancedMesh
             let wallCount = 0, floorCount = 0;
             for (let r = 0; r < MAZE_H; r++) {
                 for (let c = 0; c < MAZE_W; c++) {
@@ -397,7 +407,6 @@
             let wallGeo = new THREE.BoxGeometry(GRID_SIZE, 4.0, GRID_SIZE);
             let floorGeo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
 
-            // FIX DRAW CALLS: Inisialisasi Instanced Mesh Tunggal
             wallInstMesh = new THREE.InstancedMesh(wallGeo, wallMat, wallCount);
             floorInstMesh = new THREE.InstancedMesh(floorGeo, floorMat, floorCount);
             ceilingInstMesh = new THREE.InstancedMesh(floorGeo, wallMat, floorCount);
@@ -411,11 +420,9 @@
                     let type = MAP_GRID[r][c];
 
                     if (type !== 1) {
-                        // Daftarkan matriks transformasi lantai
                         dummy.position.set(x, -1.5, z); dummy.rotation.set(-Math.PI/2, 0, 0); dummy.updateMatrix();
                         floorInstMesh.setMatrixAt(fIdx, dummy.matrix);
 
-                        // Daftarkan matriks transformasi langit-langit
                         dummy.position.set(x, 2.5, z); dummy.rotation.set(Math.PI/2, 0, 0); dummy.updateMatrix();
                         ceilingInstMesh.setMatrixAt(fIdx, dummy.matrix);
                         fIdx++;
@@ -477,7 +484,6 @@
             scene.add(wraithMesh); wraithMesh.position.set(0,-100,0);
         }
 
-        // FIX COLLISION OPTIMIZATION: Deteksi super cepat berdasarkan matriks grid lokal 3x3 di sekitar posisi pemain
         function checkCollision(x, z) {
             let buffer = 0.45;
             let currentC = Math.round(x / GRID_SIZE);
@@ -546,7 +552,6 @@
         
         function adjustVolume(val) { if(masterGain) masterGain.gain.setValueAtTime(val, audioCtx.currentTime); }
         
-        // FIX GRAPHICS BUG: Dinding, Lantai, dan Langit-langit sekarang ter-update serentak via material global
         function adjustGraphics(type) {
             state.gfx = type;
             const activeBump = (type === 'high') ? bumpTexGlobal : null;
@@ -578,19 +583,22 @@
                 build3DWorld();
             }
 
-            // FIX MONSTER SPAWN: Pemilihan sel kosong terenkripsi agar tidak spawn di dalam dinding
+            // CRITICAL BUG FIX: Registrasi jangkar koordinat sel awal monster secara mutlak
             let safeSpawn = findEmptyCell();
-            crawlerState.x = safeSpawn.c * GRID_SIZE; crawlerState.z = safeSpawn.r * GRID_SIZE;
+            crawlerState.gridR = safeSpawn.r;
+            crawlerState.gridC = safeSpawn.c;
+            crawlerState.x = safeSpawn.c * GRID_SIZE; 
+            crawlerState.z = safeSpawn.r * GRID_SIZE;
             crawlerMesh.position.set(crawlerState.x, -0.5, crawlerState.z);
             crawlerState.currentPath = [];
 
             wraithState.active = false; wraithMesh.position.set(0,-100,0);
 
+            startMonsterAudio(); // Nyalakan audio monster hanya ketika game aktif
             gameActive = true; updateHUD(); animate();
         }
 
         function animate() {
-            // FIX FLASHLIGHT PAUSE VALVE: Bekukan permainan total saat pause menu dibuka, tapi pertahankan render frame
             if (settingsOpen) {
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
@@ -647,28 +655,45 @@
 
             let pGridC = Math.round(camera.position.x / GRID_SIZE);
             let pGridR = Math.round(camera.position.z / GRID_SIZE);
-            let cGridC = Math.round(crawlerState.x / GRID_SIZE);
-            let cGridR = Math.round(crawlerState.z / GRID_SIZE);
 
-            // FIX AI PERFORMANCE: Kalkulasi rute super kilat via algoritma A* (A-Star) Pathfinding
-            pathUpdateTimer++;
-            if (pathUpdateTimer % 30 === 0 || crawlerState.currentPath.length === 0) {
-                crawlerState.currentPath = findShortestPathAStar({r: cGridR, c: cGridC}, {r: pGridR, c: pGridC});
+            // CRITICAL BUG FIX: Sistem Navigasi AI Linier Waypoint (Anti-Tembus Dinding)
+            if (crawlerState.currentPath.length === 0) {
+                crawlerState.currentPath = findShortestPathAStar(
+                    {r: crawlerState.gridR, c: crawlerState.gridC}, 
+                    {r: pGridR, c: pGridC}
+                );
+                if(crawlerState.currentPath.length > 0) crawlerState.currentPath.shift(); 
             }
 
-            if (crawlerState.currentPath.length > 1) {
-                let nextTargetNode = crawlerState.currentPath[1];
-                let targetX = nextTargetNode.c * GRID_SIZE; let targetZ = nextTargetNode.r * GRID_SIZE;
+            if (crawlerState.currentPath.length > 0) {
+                let nextNode = crawlerState.currentPath[0];
+                let targetX = nextNode.c * GRID_SIZE; 
+                let targetZ = nextNode.r * GRID_SIZE;
                 
                 let mDir = new THREE.Vector3(targetX - crawlerState.x, 0, targetZ - crawlerState.z);
-                if (mDir.length() > 0.05) {
+                let distToTarget = mDir.length();
+                
+                let currentDistToPlayer = camera.position.distanceTo(crawlerMesh.position);
+                let mSpeed = currentDistToPlayer < 6 ? crawlerState.speed * 1.5 : crawlerState.speed;
+                
+                if (distToTarget > mSpeed) {
                     mDir.normalize();
-                    let currentDistToPlayer = camera.position.distanceTo(crawlerMesh.position);
-                    let mSpeed = currentDistToPlayer < 6 ? crawlerState.speed * 1.5 : crawlerState.speed;
-                    
-                    crawlerState.x += mDir.x * mSpeed; crawlerState.z += mDir.z * mSpeed;
+                    crawlerState.x += mDir.x * mSpeed; 
+                    crawlerState.z += mDir.z * mSpeed;
                 } else {
+                    // Kunci posisi pas di tengah sel jangkauan sebelum beralih node
+                    crawlerState.x = targetX;
+                    crawlerState.z = targetZ;
+                    crawlerState.gridR = nextNode.r;
+                    crawlerState.gridC = nextNode.c;
                     crawlerState.currentPath.shift();
+                    
+                    // Kalkulasi ulang instan rute terbaru berdasarkan target sel baru
+                    crawlerState.currentPath = findShortestPathAStar(
+                        {r: crawlerState.gridR, c: crawlerState.gridC}, 
+                        {r: pGridR, c: pGridC}
+                    );
+                    if(crawlerState.currentPath.length > 0) crawlerState.currentPath.shift();
                 }
             }
             crawlerMesh.position.set(crawlerState.x, -0.5, crawlerState.z);
@@ -691,7 +716,7 @@
             let hbTempo = (closestDist < 5) ? 0.20 : (closestDist < 12) ? 0.45 : 0.8;
             playHeartbeatSynth(hbTempo);
 
-            if (monsterGrowlGain) {
+            if (monsterGrowlGain && monsterGrowlOsc) {
                 let vol = Math.max(0, 1.0 - (closestDist / 16));
                 monsterGrowlGain.gain.setValueAtTime(vol * 0.45, audioCtx.currentTime);
                 monsterGrowlOsc.frequency.setValueAtTime(25 + (vol*35), audioCtx.currentTime);
@@ -781,7 +806,6 @@
             mapCtx.lineTo(center + Math.sin(camera.rotation.y + Math.PI)*10, center + Math.cos(camera.rotation.y + Math.PI)*10); mapCtx.stroke();
         }
 
-        // FIX STORAGE FAULT CHECKPOINT: Penyelamatan data progres dibungkus try-catch aman
         function saveGameProgress() {
             let pickedRunes = []; runesArray.forEach((r, i) => { if(r.picked) pickedRunes.push(i); });
             let pickedBats = []; batteriesArray.forEach((b, i) => { if(b.picked) pickedBats.push(i); });
@@ -802,7 +826,11 @@
         }
 
         function executeJumpscare() {
-            gameActive = false; if(monsterGrowlGain) monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gameActive = false; 
+            // CRITICAL AUDIO CLEANUP: Matikan total node oscillator agar tidak membeku & berdengung
+            if(monsterGrowlGain) monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            if(monsterGrowlOsc) { try { monsterGrowlOsc.stop(); monsterGrowlOsc = null; } catch(e){} }
+            
             if(!isMobile) try{document.exitPointerLock();}catch(e){}
             document.getElementById('jumpscare').style.visibility = 'visible';
             setTimeout(() => {
@@ -812,7 +840,11 @@
         }
 
         function endGame(title, reason) {
-            gameActive = false; document.getElementById('ui-layer').classList.add('hidden');
+            gameActive = false; 
+            if(monsterGrowlGain) monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            if(monsterGrowlOsc) { try { monsterGrowlOsc.stop(); monsterGrowlOsc = null; } catch(e){} }
+
+            document.getElementById('ui-layer').classList.add('hidden');
             document.getElementById('mobile-hud').style.display = 'none'; document.getElementById('minimap-container').classList.add('hidden');
             document.getElementById('end-title').innerText = title; document.getElementById('end-reason').innerText = reason;
             document.getElementById('gameover-screen').classList.remove('hidden');
