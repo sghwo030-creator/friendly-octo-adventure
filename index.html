@@ -71,7 +71,7 @@
 
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>[PROSEDURAL HYDRO-EROSION ENGINE V5.5] Peta raksasa (51x51) berbasis simulasi erosi air alami. Area labirin gua organik kini jauh lebih luas, tersebar 15 ruang kubah acak, dilengkapi kabut tebal, partikel debu mengambang, serta radar pendeteksi entitas bawah tanah.</p>
+        <p>[PROSEDURAL HYDRO-EROSION ENGINE V5.6] Peta raksasa (51x51) berbasis simulasi erosi air alami. Area labirin gua organik kini jauh lebih luas, dilengkapi kabut tebal, partikel debu mengambang, serta <span style="color:#0ff;">RADAR PERSPEKTIF ROTASI</span> untuk melacak entitas bawah tanah.</p>
         <div class="btn-group">
             <button class="menu-btn" onclick="startGame(false)">EKSPEDISI BARU</button>
             <button class="menu-btn" id="resume-btn" onclick="startGame(true)" disabled>LANJUTKAN</button>
@@ -144,7 +144,6 @@
         const MAX_DROPS = 35, MAX_RIPPLES = 35;
         let nextRippleIdx = 0;
 
-        // UKURAN MAP DI-SCALE UP MENJADI MASSIVE (51x51)
         const MAZE_W = 51, MAZE_H = 51, GRID_SIZE = 4;
         let MAP_GRID = [];
         let runesArray = [];
@@ -169,7 +168,6 @@
             let startR = 1, startC = 1;
             let exitR = MAZE_H - 2, exitC = MAZE_W - 2;
             
-            // 1. Aliran Erosi Utama
             let cr = startR, cc = startC;
             MAP_GRID[cr][cc] = 0;
             
@@ -183,7 +181,6 @@
                 if(cc + 1 < MAZE_W - 1 && Math.random() < 0.45) MAP_GRID[cr][cc + 1] = 0;
             }
             
-            // 2. Ditambah jadi 15 Kamar Gua Besar karena wilayah bertambah luas
             for (let i = 0; i < 15; i++) {
                 let centerR = Math.floor(Math.random() * (MAZE_H - 6)) + 3;
                 let centerC = Math.floor(Math.random() * (MAZE_W - 6)) + 3;
@@ -200,7 +197,6 @@
                 }
             }
 
-            // 3. Pemulusan Batuan (Cellular Automata)
             let smoothedGrid = Array(MAZE_H).fill().map(() => Array(MAZE_W).fill(1));
             for (let r = 1; r < MAZE_H - 1; r++) {
                 for (let c = 1; c < MAZE_W - 1; c++) {
@@ -237,14 +233,11 @@
             }
             validOpenSpaces.sort(() => Math.random() - 0.5);
 
-            // Sebar Artefak Emas Rahasia
             if (validOpenSpaces.length > 0) MAP_GRID[validOpenSpaces[0].r][validOpenSpaces[0].c] = 6; 
             
-            // Sebar 5 Buah Rune Utama
             for (let i = 1; i <= 5 && i < validOpenSpaces.length; i++) {
                 MAP_GRID[validOpenSpaces[i].r][validOpenSpaces[i].c] = 3; 
             }
-            // Sebar 15 Suplai Baterai Senter biar ga gampang mati kegelapan
             for (let i = 6; i <= 20 && i < validOpenSpaces.length; i++) {
                 MAP_GRID[validOpenSpaces[i].r][validOpenSpaces[i].c] = 5; 
             }
@@ -519,7 +512,6 @@
             flashBeam.geometry.translate(0, -9, 0); flashBeam.geometry.rotateX(Math.PI / 2); scene.add(flashBeam);
             scene.add(new THREE.AmbientLight(0x010000));
 
-            // DIGANDAKAN JADI 800 PARTIKEL AGAR ATMOSFER KABUT TETAP TEBAL DI MAP LUAS
             let dustGeo = new THREE.BufferGeometry();
             let dustCount = 800;
             let dustPositions = new Float32Array(dustCount * 3);
@@ -920,29 +912,76 @@
             renderer.render(scene, camera);
         }
 
-        // Radar Sistem otomatis meng-crop area sekitar posisi koordinat player secara dinamis
+        // ========================================================
+        // BUG FIX: ROTASI PERSPEKTIF MINIMAP & CULLING RENDERER
+        // ========================================================
         function renderMinimapRadar() {
-            mapCtx.clearRect(0,0,130,130);
-            let pGridX = camera.position.x / GRID_SIZE; let pGridZ = camera.position.z / GRID_SIZE;
-            let center = 65; let scale = 6.0;
+            mapCtx.clearRect(0, 0, 130, 130);
+            let pGridX = camera.position.x / GRID_SIZE; 
+            let pGridZ = camera.position.z / GRID_SIZE;
+            let center = 65; 
+            let scale = 6.0;
 
+            mapCtx.save();
+            mapCtx.translate(center, center);
+            mapCtx.rotate(camera.rotation.y); 
+
+            // Culling System: Gambar Dinding yang cuma masuk radius radar
             mapCtx.fillStyle = "rgba(180, 0, 0, 0.25)";
-            for(let r=0; r<MAZE_H; r++){
-                for(let c=0; c<MAZE_W; c++){
-                    if(MAP_GRID[r][c] === 1) {
-                        let dX = center + (c - pGridX)*scale; let dZ = center + (r - pGridZ)*scale;
-                        if(dX>=0 && dX<=130 && dZ>=0 && dZ<=130) mapCtx.fillRect(dX, dZ, scale-0.5, scale-0.5);
+            for (let r = 0; r < MAZE_H; r++) {
+                for (let c = 0; c < MAZE_W; c++) {
+                    if (MAP_GRID[r][c] === 1) {
+                        let dX = (c - pGridX) * scale; 
+                        let dZ = (r - pGridZ) * scale;
+                        if (Math.abs(dX) <= 90 && Math.abs(dZ) <= 90) { 
+                            mapCtx.fillRect(dX, dZ, scale - 0.5, scale - 0.5);
+                        }
                     }
                 }
             }
-            mapCtx.fillStyle = "#ff0000";
-            runesArray.forEach(r => { if(!r.picked) mapCtx.fillRect(center+(r.gridC-pGridX)*scale, center+(r.gridR-pGridZ)*scale, 3, 3); });
-            mapCtx.fillStyle = "#00ff66";
-            batteriesArray.forEach(b => { if(!b.picked) mapCtx.fillRect(center+(b.gridC-pGridX)*scale, center+(b.gridR-pGridZ)*scale, 3, 3); });
 
-            mapCtx.fillStyle = "#ffffff"; mapCtx.beginPath(); mapCtx.arc(center, center, 3.5, 0, Math.PI*2); mapCtx.fill();
-            mapCtx.strokeStyle = "rgba(0, 255, 255, 0.7)"; mapCtx.lineWidth = 1.5; mapCtx.beginPath(); mapCtx.moveTo(center, center);
-            mapCtx.lineTo(center + Math.sin(camera.rotation.y + Math.PI)*10, center + Math.cos(camera.rotation.y + Math.PI)*10); mapCtx.stroke();
+            // Gambar Rune (Merah)
+            mapCtx.fillStyle = "#ff0000";
+            runesArray.forEach(r => { 
+                if (!r.picked) {
+                    let rX = (r.gridC - pGridX) * scale;
+                    let rZ = (r.gridR - pGridZ) * scale;
+                    if (Math.abs(rX) <= 90 && Math.abs(rZ) <= 90) mapCtx.fillRect(rX, rZ, 3, 3); 
+                }
+            });
+
+            // Gambar Baterai (Hijau)
+            mapCtx.fillStyle = "#00ff66";
+            batteriesArray.forEach(b => { 
+                if (!b.picked) {
+                    let bX = (b.gridC - pGridX) * scale;
+                    let bZ = (b.gridR - pGridZ) * scale;
+                    if (Math.abs(bX) <= 90 && Math.abs(bZ) <= 90) mapCtx.fillRect(bX, bZ, 3, 3); 
+                }
+            });
+
+            // Gambar Gerbang Keluar
+            if (exitGateMesh && state.runesCollected >= state.totalRunesToWin) {
+                mapCtx.fillStyle = "#ff00ff";
+                let gX = (exitGateMesh.position.x / GRID_SIZE - pGridX) * scale;
+                let gZ = (exitGateMesh.position.z / GRID_SIZE - pGridZ) * scale;
+                if (Math.abs(gX) <= 90 && Math.abs(gZ) <= 90) mapCtx.fillRect(gX, gZ, 6, 6);
+            }
+
+            mapCtx.restore();
+
+            // Player Marker Posisi Selalu Lurus Fix (Forward = Up)
+            mapCtx.fillStyle = "#ffffff"; 
+            mapCtx.beginPath(); 
+            mapCtx.arc(center, center, 3.5, 0, Math.PI * 2); 
+            mapCtx.fill();
+            
+            mapCtx.strokeStyle = "rgba(0, 255, 255, 0.8)"; 
+            mapCtx.lineWidth = 1.5; 
+            mapCtx.beginPath(); 
+            mapCtx.moveTo(center, center);
+            mapCtx.lineTo(center, center - 12); 
+            mapCtx.stroke();
         }
 
         function saveGameProgress() {
