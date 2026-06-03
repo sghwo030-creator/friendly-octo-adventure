@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Cold Cave: True First Person Mouse</title>
+    <title>The Cold Cave: Stalked From Behind</title>
     <style>
         * {
             box-sizing: border-box;
@@ -34,7 +34,7 @@
             box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.98);
             pointer-events: none;
             z-index: 5;
-            transition: box-shadow 0.3s ease;
+            transition: box-shadow 0.2s ease;
         }
 
         .ui-overlay {
@@ -131,25 +131,18 @@
             border-top: 1px solid #551a1a;
         }
 
-        #pointer-lock-notice {
-            color: #aaa;
-            font-size: 0.9rem;
-            margin-top: 5px;
-            display: none;
-        }
-
         #warning-indicator {
             color: #ff0000;
             font-weight: bold;
             text-shadow: 0 0 8px #ff0000;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             visibility: hidden;
-            animation: pulse 0.5s infinite alternate;
+            animation: pulse 0.4s infinite alternate;
             text-align: center;
         }
 
         @keyframes pulse {
-            0% { opacity: 0.2; }
+            0% { opacity: 0.3; }
             100% { opacity: 1; }
         }
 
@@ -177,9 +170,8 @@
     <!-- MENU UTAMA -->
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>Gua purba ini menyimpan predator purba berdarah dingin. Gerakkan kursor mouse kamu untuk mengarahkan pandangan mata dan senter.</p>
+        <p>Sesuatu merayap di belakangmu... Tahan SHIFT untuk lari, gerakkan MOUSE untuk menengok ke belakang. Jangan senter matanya kalau kamu tidak mau dia mengejarmu!</p>
         <button onclick="startGame()">Masuk & Kunci Mouse</button>
-        <div id="pointer-lock-notice">Tekan ESC kapan saja untuk membebaskan kursor mouse.</div>
     </div>
 
     <!-- UI HUD GAMEPLAY -->
@@ -189,9 +181,9 @@
             <div>Senter <div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div></div>
             <div id="distance-txt">Jarak: 0m</div>
         </div>
-        <div id="warning-indicator">MATA PUTIH MENGINTIP: MATIKAN SENTER!</div>
+        <div id="warning-indicator">ADA SUARA LANGKAH DI BELAKANGMU!</div>
         <div class="controls-hint">
-            [Gerakkan Mouse] Liat Sekeliling | [W/S] Maju/Mundur | [A/D] Geser Kiri/Kanan | [SPACE] Senter | [E] Cari Baterai
+            [Mouse] Liat Sekeliling | [W/S/A/D] Gerak | [SHIFT] Lari Kencang | [SPACE] Senter | [E] Cari Baterai
         </div>
     </div>
 
@@ -204,7 +196,7 @@
 
     <!-- JUMPSCARE FLASH -->
     <div id="jumpscare">
-        <div id="jumpscare-text">TERTANGKAP!</div>
+        <div id="jumpscare-text">DIBELAKANGMU!</div>
     </div>
 
     <script>
@@ -214,29 +206,29 @@
         let gameActive = false;
         
         let monsterMesh;
-        let monsterState = { zPos: -50, active: false, speed: 0.03, bobbingTimer: 0 };
+        // Sistem AI Baru: Mengintai dari belakang (Z Posisi positif terhadap player)
+        let monsterState = { zPos: 0, active: false, speed: 0.04, bobbingTimer: 0 };
 
         let state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
-        const keys = { w: false, a: false, s: false, d: false };
+        const keys = { w: false, a: false, s: false, d: false, shift: false };
 
-        const caveLength = 160;
-        const playerSpeed = 0.065;
-        const mouseSensitivity = 0.0022; // Sensitivitas kursor gerak kamera
+        const caveLength = 220;
+        const playerNormalSpeed = 0.06;
+        const playerSprintSpeed = 0.12; // Kecepatan lari pakai Shift
+        const mouseSensitivity = 0.0022;
 
         function init3D() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x020101, 0.2); 
+            scene.fog = new THREE.FogExp2(0x020101, 0.18); 
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            
-            // PENTING: Set urutan rotasi YXZ agar gerak rotasi FPS via mouse tidak patah/miring tak beraturan
             camera.rotation.order = 'YXZ'; 
 
             renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
 
-            // Generator Struktur Gua batu
-            const caveGeo = new THREE.BoxGeometry(4.8, 4, caveLength, 8, 8, 100);
+            // Membuat lorong gua panjang
+            const caveGeo = new THREE.BoxGeometry(4.8, 4, caveLength, 8, 8, 120);
             const pos = caveGeo.attributes.position;
             for (let i = 0; i < pos.count; i++) {
                 let x = pos.getX(i); let y = pos.getY(i); let z = pos.getZ(i);
@@ -260,18 +252,18 @@
             }
             const rockTex = new THREE.CanvasTexture(canvasTex);
             rockTex.wrapS = THREE.RepeatWrapping; rockTex.wrapT = THREE.RepeatWrapping;
-            rockTex.repeat.set(3, 25);
+            rockTex.repeat.set(3, 35);
 
             const caveMat = new THREE.MeshStandardMaterial({ map: rockTex, roughness: 0.95, side: THREE.BackSide });
             const caveMesh = new THREE.Mesh(caveGeo, caveMat);
             caveMesh.position.set(0, 1.6, -caveLength / 2);
             scene.add(caveMesh);
 
-            // Bangun Monster Duri Sesuai Gambar Gemini_Generated_Image_sged93sged93sged.png
+            // Membangun Monster Duri (Sesuai gambar Gemini_Generated_Image_sged93sged93sged.png)
             buildProceduralMonster();
 
-            // Senter Dynamic (Menempel mati mengikuti ke mana arah kamera/kursor memandang)
-            flashlight = new THREE.SpotLight(0xfff3d1, 3.5, 22, Math.PI / 4.5, 0.5, 1);
+            // Senter
+            flashlight = new THREE.SpotLight(0xfff3d1, 3.5, 24, Math.PI / 4.5, 0.5, 1);
             camera.add(flashlight);
             const target = new THREE.Object3D(); target.position.set(0, 0, -1);
             camera.add(target); flashlight.target = target;
@@ -280,7 +272,6 @@
             scene.add(ambientLight);
             scene.add(camera);
 
-            // SETUP MOUSE POINTER LOCK LISTENER
             setupPointerLock();
         }
 
@@ -302,23 +293,23 @@
             head.position.set(0, 0.35, -0.7);
             monsterMesh.add(head);
 
-            // Mata Putih Bersinar Terang murni tanpa pupil
+            // Mata Putih Pucat Menyala Tanpa Pupil
             const eyeLeft = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), eyeMat);
             eyeLeft.position.set(-0.13, 0.42, -0.92);
             const eyeRight = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), eyeMat);
             eyeRight.position.set(0.13, 0.42, -0.92);
             monsterMesh.add(eyeLeft, eyeRight);
 
-            // Duri Punggung Tajam
-            for (let i = 0; i < 9; i++) {
-                const spikeGeo = new THREE.ConeGeometry(0.05, 0.22, 4);
+            // Banyak Duri Tajam di Punggung Belakang
+            for (let i = 0; i < 11; i++) {
+                const spikeGeo = new THREE.ConeGeometry(0.05, 0.25, 4);
                 const spike = new THREE.Mesh(spikeGeo, spikeMat);
-                spike.position.set((Math.random()*0.04 - 0.02), 0.65, -0.5 + (i * 0.14));
-                spike.rotation.x = Math.PI / 6; 
+                spike.position.set((Math.random()*0.04 - 0.02), 0.65, -0.5 + (i * 0.12));
+                spike.rotation.x = Math.PI / 5; 
                 monsterMesh.add(spike);
             }
 
-            // Kaki Merangkak Rendah
+            // Kaki Merangkak Kekar
             const legGeo = new THREE.BoxGeometry(0.12, 0.5, 0.15);
             const frontLeft = new THREE.Mesh(legGeo, skinMat); frontLeft.position.set(-0.45, 0.15, -0.4); frontLeft.rotation.z = 0.3;
             const frontRight = new THREE.Mesh(legGeo, skinMat); frontRight.position.set(0.45, 0.15, -0.4); frontRight.rotation.z = -0.3;
@@ -326,11 +317,9 @@
             const backRight = new THREE.Mesh(legGeo, skinMat); backRight.position.set(0.4, 0.15, 0.4); backRight.rotation.z = -0.2;
             monsterMesh.add(frontLeft, frontRight, backLeft, backRight);
 
-            monsterMesh.position.set(0, -0.1, monsterState.zPos);
             scene.add(monsterMesh);
         }
 
-        // Pointer Lock API: Mengunci Kursor demi Kebebasan Gerak Kamera FPS 3D
         function setupPointerLock() {
             canvas.addEventListener('click', () => {
                 if (gameActive && document.pointerLockElement !== canvas) {
@@ -339,25 +328,27 @@
             });
 
             document.addEventListener('mousemove', (e) => {
-                // Kamera hanya berputar jika status kursor sedang terkunci di dalam canvas game
                 if (gameActive && document.pointerLockElement === canvas) {
-                    camera.rotation.y -= e.movementX * mouseSensitivity; // Geser horizontal
-                    camera.rotation.x -= e.movementY * mouseSensitivity; // Geser vertikal (atas bawah)
-
-                    // Batasi sudut pandang vertikal (Biar kepala ga muter terbalik ke belakang 180 derajat)
+                    camera.rotation.y -= e.movementX * mouseSensitivity; 
+                    camera.rotation.x -= e.movementY * mouseSensitivity; 
                     camera.rotation.x = Math.max(-1.3, Math.min(1.3, camera.rotation.x));
                 }
             });
         }
 
-        // Keyboard System (A & D sekarang berfungsi menjadi tombol bergeser kiri/kanan samping)
+        // Input Keyboard Handler (Mendukung tombol Shift)
         window.addEventListener('keydown', (e) => {
+            if (e.key === 'Shift') { keys.shift = true; return; }
             const key = e.key.toLowerCase();
             if (keys.hasOwnProperty(key)) keys[key] = true;
             if (e.code === 'Space' && gameActive) { e.preventDefault(); toggleFlashlight(); }
             if (key === 'e' && gameActive) searchFloor();
         });
-        window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+        
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'Shift') { keys.shift = false; return; }
+            keys[e.key.toLowerCase()] = false;
+        });
 
         function toggleFlashlight() {
             if (state.battery <= 0 && !state.flashlightOn) return;
@@ -367,27 +358,31 @@
 
         function searchFloor() {
             if(Math.random() < 0.4) {
-                state.battery = Math.min(100, state.battery + 20);
-                state.sanity -= 5;
-            } else { state.sanity -= 10; }
+                state.battery = Math.min(100, state.battery + 25);
+                state.sanity -= 4;
+            } else { state.sanity -= 12; }
             updateHUD();
         }
 
         function startGame() {
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('ui-layer').classList.remove('hidden');
-            bgm.play().catch(e => console.log("Audio node awake..."));
-            
-            // Kunci kursor langsung saat menekan tombol start game
+            bgm.play().catch(e => console.log("Audio ready."));
             canvas.requestPointerLock();
 
             state = { sanity: 100, battery: 100, distance: 0, flashlightOn: true };
-            monsterState.zPos = -50; 
-            monsterState.active = true;
-            monsterState.speed = 0.035;
-
-            camera.position.set(0, 1.6, 0); 
+            
+            // Player mulai agak maju di koordinat Z = -25
+            camera.position.set(0, 1.6, -25); 
             camera.rotation.set(0, 0, 0);
+
+            // MONSTER POSISI AWAL: Spawns tepat di belakang player (Z = -2, jarak selisih 23 meter di belakang)
+            monsterState.zPos = -2;
+            monsterMesh.position.set(0, -0.1, monsterState.zPos);
+            monsterMesh.rotation.set(0, 0, 0); // Menghadap ke arah jalan player (Z Negatif)
+            
+            monsterState.active = true;
+            monsterState.speed = 0.045;
             flashlight.intensity = 3.5;
             gameActive = true;
             
@@ -399,61 +394,82 @@
             if (!gameActive) return;
             requestAnimationFrame(animate);
 
-            // Pergerakan Vector Real-Time: Mengikuti Arah Pandangan Kursor Mouse Anda
-            if (keys.w) camera.translateZ(-playerSpeed);
-            if (keys.s) camera.translateZ(playerSpeed);
-            if (keys.a) camera.translateX(-playerSpeed); // Strafe kiri murni
-            if (keys.d) camera.translateX(playerSpeed);  // Strafe kanan murni
+            // Logika Kecepatan Lari (Shift)
+            let currentSpeed = keys.shift && (keys.w || keys.s || keys.a || keys.d) ? playerSprintSpeed : playerNormalSpeed;
+            
+            // Efek lelah/stres mental jika lari terus-menerus
+            if (keys.shift && (keys.w || keys.s || keys.a || keys.d)) {
+                state.sanity -= 0.018; 
+            }
 
-            // Kunci paksa koordinat tinggi mata konstan (agar saat mendongak ke atas, menekan W tidak membuat melayang terbang)
+            // Eksekusi Pergerakan Player
+            if (keys.w) camera.translateZ(-currentSpeed);
+            if (keys.s) camera.translateZ(currentSpeed);
+            if (keys.a) camera.translateX(-currentSpeed); 
+            if (keys.d) camera.translateX(currentSpeed);  
+
             camera.position.y = 1.6; 
             camera.position.x = Math.max(-1.3, Math.min(1.3, camera.position.x));
-            camera.position.z = Math.max(-caveLength + 3, Math.min(1, camera.position.z));
+            camera.position.z = Math.max(-caveLength + 5, Math.min(-10, camera.position.z));
 
-            state.distance = Math.floor(Math.abs(camera.position.z));
+            // Jarak hitung dari titik awal start (-25m)
+            state.distance = Math.floor(-25 - camera.position.z);
 
-            // Perhitungan AI monster pemburu berduri
+            // ENGINE LOGIKA AI MONSTER PENGINTAI BELAKANG
             if (monsterState.active) {
-                monsterState.bobbingTimer += 0.15;
+                monsterState.bobbingTimer += keys.shift ? 0.3 : 0.15;
                 monsterMesh.position.y = -0.1 + Math.sin(monsterState.bobbingTimer) * 0.04;
 
-                let distToMonster = Math.abs(camera.position.z - monsterMesh.position.z);
+                // Jarak real-time 3D antara player dengan monster
+                let distToMonster = camera.position.distanceTo(monsterMesh.position);
 
-                // Jika Senter ON, Monster agresif menyerang kilat!
-                if (state.flashlightOn && distToMonster < 28) {
-                    monsterState.speed = 0.12; 
+                // MATEMATIKA LOOK-AT (Cek apakah player menengok ke arah monster di belakang)
+                let camDirection = new THREE.Vector3();
+                camera.getWorldDirection(camDirection); // Arah mata memandang
+                
+                let playerToMonster = new THREE.Vector3().subVectors(monsterMesh.position, camera.position).normalize();
+                let dotProduct = camDirection.dot(playerToMonster);
+
+                // AGGRO TRIGGER: Jika senter menyala DAN player nengok ke belakang menatap langsung wajah monster (dot > 0.75)
+                if (state.flashlightOn && distToMonster < 32 && dotProduct > 0.75) {
+                    monsterState.speed = 0.15; // Monster lari kesetanan menerkam!
+                    document.getElementById('warning-indicator').innerText = "KAU MELIHATNYA! DIA BERLARI KENCANG!";
                     document.getElementById('warning-indicator').style.visibility = 'visible';
-                    document.getElementById('vignette').style.boxShadow = `inset 0 0 150px rgba(139, 0, 0, 0.95)`;
-                    bgm.playbackRate = 1.65; 
+                    document.getElementById('vignette').style.boxShadow = `inset 0 0 160px rgba(150, 0, 0, 0.98)`;
+                    bgm.playbackRate = 1.8; // Musik Cold_Linoleum_Floor dipercepat ekstrim
                 } else {
-                    // Senter Mati (Stealth Mode), monster kehilangan koordinat akurat dan melambat kembali
-                    monsterState.speed = 0.025; 
-                    document.getElementById('warning-indicator').style.visibility = 'hidden';
-                    bgm.playbackRate = state.sanity < 45 ? 0.75 : 1.0;
+                    // Mode normal: Membuntuti diam-diam dari belakang
+                    // Jika player lari (Shift), monster otomatis ikut sedikit mempercepat langkahnya agar konstan meneror
+                    monsterState.speed = keys.shift ? 0.08 : 0.045; 
+                    
+                    if (distToMonster < 15) {
+                        document.getElementById('warning-indicator').innerText = "ADA SUARA LANGKAH MERANGKAK DI BELAKANGMU...";
+                        document.getElementById('warning-indicator').style.visibility = 'visible';
+                    } else {
+                        document.getElementById('warning-indicator').style.visibility = 'hidden';
+                    }
+                    bgm.playbackRate = state.sanity < 45 ? 0.72 : 1.0;
                 }
 
-                monsterMesh.position.z += monsterState.speed;
+                // Monster bergerak mengejar koordinat Z player (Z makin lama makin minus masuk ke gua)
+                monsterMesh.position.z -= monsterState.speed;
 
-                if (monsterMesh.position.z > camera.position.z + 5) {
-                    monsterMesh.position.z = camera.position.z - (Math.random() * 20 + 40);
-                }
-
-                // Terkam Jumpscare jika jarak terlalu dekat
-                if (distToMonster < 2.1) {
+                // JUMPSCARE TRIGGER: Jika monster berhasil menyentuh punggung/wajahmu
+                if (distToMonster < 2.2) {
                     executeMonsterJumpscare();
                     return;
                 }
             }
 
-            // Konsumsi Resource Mental & Baterai
+            // Pengurasan Energi Senter & Sanity
             if (state.flashlightOn) {
-                state.battery -= 0.035; state.sanity -= 0.005;
+                state.battery -= 0.035; state.sanity -= 0.004;
                 if (state.battery < 30 && Math.random() < 0.1) {
                     flashlight.intensity = Math.random() > 0.5 ? 3.5 : 0.2;
                 }
             } else {
-                state.sanity -= 0.08; 
-                let pulseShadow = 80 + Math.sin(Date.now() * 0.005) * 20;
+                state.sanity -= 0.085; 
+                let pulseShadow = 85 + Math.sin(Date.now() * 0.006) * 15;
                 document.getElementById('vignette').style.boxShadow = `inset 0 0 ${pulseShadow}px rgba(0, 0, 0, 0.99)`;
             }
 
@@ -471,23 +487,24 @@
             state.battery = Math.max(0, state.battery);
             document.getElementById('sanity-fill').style.width = state.sanity + '%';
             document.getElementById('battery-fill').style.width = state.battery + '%';
-            document.getElementById('distance-txt').innerText = `Progress: ${state.distance}m / 110m`;
+            document.getElementById('distance-txt').innerText = `Progress: ${state.distance}m / 130m`;
         }
 
         function checkMentalCollapse() {
             if (state.sanity <= 0) {
-                endGame("HILANG WARAS", "Kegelapan absolut merusak fokusmu, kamu terjebak selamanya.");
+                endGame("HILANG WARAS", "Kepanikan hebat melumpuhkan kakimu. Jiwamu tertinggal di kegelapan gua batu purba.");
             }
-            if (state.distance >= 110) {
-                endGame("SELAMAT", "Kamu melihat pintu keluar gua dan berhasil meloloskan diri!");
+            if (state.distance >= 130) {
+                endGame("SELAMAT", "Kamu berhasil berlari mencapai ujung celah bebatuan gua dan selamat dari kejaran predator purba!");
             }
         }
 
         function executeMonsterJumpscare() {
             gameActive = false;
             bgm.pause();
-            document.exitPointerLock(); // Lepaskan kursor mouse saat mati
+            document.exitPointerLock(); 
 
+            // Paksa mata kamera berbalik menatap langsung ke arah monster saat tertangkap
             camera.lookAt(monsterMesh.position);
             renderer.render(scene, camera);
 
@@ -496,14 +513,14 @@
 
             let flickerCount = 0;
             const bloodFlash = setInterval(() => {
-                jsLayer.style.backgroundColor = flickerCount % 2 === 0 ? '#700' : '#000';
+                jsLayer.style.backgroundColor = flickerCount % 2 === 0 ? '#800' : '#000';
                 flickerCount++; if (flickerCount > 14) clearInterval(bloodFlash);
             }, 30);
 
             setTimeout(() => {
                 jsLayer.style.visibility = 'hidden';
-                endGame("KAMU DICABIK", "Makhluk purba dari kegelapan merobek lehermu tepat saat kamu lengah.");
-            }, 1300);
+                endGame("KAMU DICABIK", "Makhluk bermata putih dari foto Gemini_Generated_Image_sged93sged93sged.png melompat mematahkan tulang lehermu dari belakang.");
+            }, 1400);
         }
 
         function endGame(title, reason) {
