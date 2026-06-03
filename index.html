@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Cold Cave: Nightmare Maze</title>
+    <title>The Cold Cave: Cosmic Abyss</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #010101; font-family: monospace; }
@@ -11,7 +11,7 @@
         #vignette { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; box-shadow: inset 0 0 180px rgba(0, 0, 0, 1); pointer-events: none; z-index: 5; transition: box-shadow 0.1s ease; }
         
         .ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
-        .hud { display: flex; justify-content: space-between; align-items: center; color: #fff; font-size: 0.85rem; letter-spacing: 2px; background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%); padding: 15px; width: 100%; max-width: 900px; margin: 0 auto; border-bottom: 1px solid rgba(255, 0, 0, 0.1); pointer-events: auto; }
+        .hud { display: flex; justify-content: space-between; align-items: center; color: #fff; font-size: 0.85rem; letter-spacing: 2px; background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%); padding: 15px; width: 100%; max-width: 1000px; margin: 0 auto; border-bottom: 1px solid rgba(255, 0, 0, 0.1); pointer-events: auto; }
         
         .bar-container { display: flex; flex-direction: column; gap: 4px; width: 120px; }
         .bar-label { font-size: 0.6rem; color: #888; text-transform: uppercase; font-weight: bold; }
@@ -20,6 +20,10 @@
         #sanity-fill { background: #0077ff; box-shadow: 0 0 8px #0055ff; }
         #battery-fill { background: #ffaa00; box-shadow: 0 0 8px #cc8800; }
         #objective-txt { font-weight: bold; color: #ff3333; font-size: 0.9rem; text-shadow: 0 0 5px rgba(255,0,0,0.5); }
+
+        /* RADAR MINIMAP STYLE */
+        #minimap-container { position: absolute; bottom: 25px; right: 25px; width: 130px; height: 130px; border: 2px solid rgba(255, 0, 0, 0.2); background: rgba(5, 0, 0, 0.75); backdrop-filter: blur(4px); border-radius: 8px; z-index: 15; pointer-events: auto; padding: 5px; }
+        #minimap { width: 100%; height: 100%; border-radius: 4px; }
 
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #0f0505 0%, #020101 100%); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #e0e0e0; text-align: center; padding: 20px; }
         .hidden { display: none !important; }
@@ -43,8 +47,8 @@
         .act-btn.active-sprint { background: rgba(186,0,0,0.8); border-color: #ff5555; color: #fff; }
 
         #jumpscare { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; z-index: 999; display: flex; justify-content: center; align-items: center; visibility: hidden; }
-        #jumpscare-text { color: #ff0000; font-size: 5rem; font-weight: 900; letter-spacing: 15px; transform: scale(0.8); animation: shake 0.1s infinite; }
-        @keyframes shake { 0% { transform: translate(2px, 2px) scale(1); } 50% { transform: translate(-2px, -2px) scale(1.05); } 100% { transform: translate(1px, -1px) scale(1); } }
+        #jumpscare-text { color: #ff0000; font-size: 5rem; font-weight: 900; letter-spacing: 15px; animation: shake 0.1s infinite; }
+        @keyframes shake { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(1px, -1px); } }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -53,17 +57,19 @@
     <div id="vignette"></div>
     <canvas id="game-canvas"></canvas>
 
-    <!-- MENU UTAMA -->
+    <div id="minimap-container" class="hidden">
+        <canvas id="minimap" width="120" height="120"></canvas>
+    </div>
+
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>[NIGHTMARE MAZE UPDATE] Gua ini tidak lagi searah. Lorong-lorong bercabang menantimu. Temukan 3 Rune Energi Merah di ujung labirin untuk membuka Gerbang Batu Batu Purba. Hati-hati, bayangan itu bertangan banyak dan terus bergetar hebat.</p>
+        <p>[COSMIC ABYSS ENGINE v3] Jelajahi labirin kompleks berpenghuni dua entitas berbahaya. Cari 3 Rune Merah untuk membuka gerbang batu. Amankan Baterai fisik di tanah agar senter tetap menyala. Rumor mengatakan ada Relik Kosmik Emas tersembunyi bagi penjelajah bermental baja...</p>
         <div class="btn-group">
             <button class="menu-btn" onclick="startGame(false)">EKSPEDISI BARU</button>
             <button class="menu-btn" id="resume-btn" onclick="startGame(true)" disabled>LANJUTKAN (CHECKPOINT)</button>
         </div>
     </div>
 
-    <!-- UI GAMEPLAY -->
     <div id="ui-layer" class="ui-overlay hidden">
         <div class="hud">
             <div class="bar-container">
@@ -79,7 +85,6 @@
         <div id="warning-indicator">MENERIMA SINYAL ANOMALI DI SEKITAR...</div>
     </div>
 
-    <!-- KONTROL MOBILE -->
     <div id="mobile-hud">
         <div class="touch-pad-container">
             <div></div><div class="m-btn" id="btn-up">▲</div><div></div>
@@ -92,34 +97,34 @@
         </div>
     </div>
 
-    <!-- GAME OVER SCREEN -->
     <div id="gameover-screen" class="screen hidden">
         <h1 id="end-title">DIELIMINASI</h1>
         <p id="end-reason"></p>
         <button class="menu-btn" onclick="goToMenu()">KEMBALI KE MENU</button>
     </div>
 
-    <!-- JUMPSCARE LAYER -->
     <div id="jumpscare"><div id="jumpscare-text">TERKAPAR</div></div>
 
     <script>
         let scene, camera, renderer, flashlight, flashBeam;
         let gameActive = false, isMobile = false;
+        let mapCanvas, mapCtx;
         
-        // 🎛️ SYNTH AUDIO PROSEDURAL (No Audio Assets Needed)
+        // 🎛️ SYSTEM SYNTH AUDIO PROSEDURAL ADVANCED
         let audioCtx, lastHeartbeat = 0, lastFootstep = 0, monsterGrowlOsc = null, monsterGrowlGain = null;
 
-        // 🗺️ SYSTEM LABIRIN 2D GRID (0=Floor, 1=Wall, 2=Start, 3=Rune, 4=Exit Gate)
-        const GRID_SIZE = 4; // Ukuran lebar 1 blok di world coordinate Three.js
+        // 🗺️ MATRIKS STRUKTUR MAZE LABIRIN REVISI
+        // (0=Lantai, 1=Dinding, 2=Spawn Player, 3=Rune Merah, 4=Exit Gate, 5=Item Baterai, 6=Secret Artifact Emas)
+        const GRID_SIZE = 4; 
         const MAP_GRID = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,2,0,0,1,0,0,0,1,0,0,0,0,3,1],
+            [1,2,0,5,1,0,0,0,1,0,5,0,0,3,1],
             [1,1,1,0,1,0,1,0,1,0,1,1,1,1,1],
-            [1,0,0,0,0,0,1,0,0,0,1,0,0,0,1],
+            [1,0,0,0,0,0,1,0,0,5,1,0,0,0,1],
             [1,0,1,1,1,1,1,1,1,0,1,0,1,0,1],
-            [1,0,1,3,0,0,0,0,1,0,0,0,1,0,1],
+            [1,0,1,3,0,0,5,0,1,0,0,0,1,6,1],
             [1,0,1,1,1,1,1,0,1,1,1,1,1,0,1],
-            [1,0,0,0,0,0,1,0,1,3,0,0,1,0,1],
+            [1,5,0,0,0,0,1,0,1,3,0,0,1,0,1],
             [1,1,1,1,1,0,1,0,1,1,1,0,1,0,1],
             [1,4,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
@@ -127,22 +132,22 @@
 
         let wallsArray = [];
         let runesArray = [];
+        let batteriesArray = [];
+        let secretArtifact = null;
         let exitGateMesh = null;
 
-        // Monster State
-        let monsterMesh;
-        let monsterArms = [];
-        let monsterState = { x: 0, z: 0, active: false, speed: 0.02, phase: 0 };
+        // 👾 INDEPENDENT MONSTER BEHAVIORS
+        let crawlerMesh, crawlerArms = [], crawlerState = { x: 0, z: 0, speed: 0.024, phase: 0 };
+        let wraithMesh, wraithState = { x: 0, z: 0, speed: 0.018, active: false, phase: 0 };
 
-        // Player State
-        let state = { sanity: 100, battery: 100, runesCollected: 0 };
+        // 👤 PLAYER DATA
+        let state = { sanity: 100, battery: 100, runesCollected: 0, hasSecret: false, flashlightOn: true };
         const keys = { w: false, a: false, s: false, d: false, shift: false };
         let targetCamRotationX = 0, targetCamRotationY = 0;
         let lastTouchX = 0, lastTouchY = 0, bobTimer = 0;
 
         function checkSaveData() {
-            const saved = localStorage.getItem('cold_cave_checkpoint');
-            if (saved) {
+            if (localStorage.getItem('cold_cave_v3_checkpoint')) {
                 document.getElementById('resume-btn').disabled = false;
             }
         }
@@ -150,196 +155,182 @@
         function initAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (!monsterGrowlOsc) {
-                // Membuat synth growl monster berkelanjutan yang berjalan di background
                 monsterGrowlOsc = audioCtx.createOscillator();
                 monsterGrowlGain = audioCtx.createGain();
                 monsterGrowlOsc.type = 'sawtooth';
-                monsterGrowlOsc.frequency.setValueAtTime(30, audioCtx.currentTime);
+                monsterGrowlOsc.frequency.setValueAtTime(28, audioCtx.currentTime);
                 
-                // Tambahkan lowpass filter agar suaranya teredam seperti di dalam gua
                 let filter = audioCtx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(150, audioCtx.currentTime);
+                filter.type = 'lowpass'; filter.frequency.setValueAtTime(140, audioCtx.currentTime);
 
-                monsterGrowlOsc.connect(filter);
-                filter.connect(monsterGrowlGain);
+                monsterGrowlOsc.connect(filter); filter.connect(monsterGrowlGain);
                 monsterGrowlGain.connect(audioCtx.destination);
                 monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
                 monsterGrowlOsc.start();
             }
         }
 
-        // 👣 AUDIO PROSEDURAL: Efek suara langkah kaki berat di lantai gua basah
-        function playFootstepSynth(isSprinting) {
+        // 🔊 PROSEDURAL AUDIO SYNTHESIZERS (Rune, Baterai, & Wraith Burn)
+        function playRuneSFX() {
             let now = audioCtx.currentTime;
-            let rate = isSprinting ? 0.32 : 0.55;
-            if (now - lastFootstep < rate) return;
-            lastFootstep = now;
-
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(60, now);
-            osc.frequency.exponentialRampToValueAtTime(10, now + 0.1);
-            
-            gain.gain.setValueAtTime(0.4, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-            
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(now + 0.12);
+            let freqs = [261.63, 329.63, 392.00, 523.25]; // C major chord arpeggio
+            freqs.forEach((f, i) => {
+                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(f, now + i*0.08);
+                gain.gain.setValueAtTime(0.3, now + i*0.08); gain.gain.exponentialRampToValueAtTime(0.001, now + i*0.08 + 0.3);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now + i*0.08); osc.stop(now + i*0.08 + 0.35);
+            });
         }
 
-        // 💓 AUDIO PROSEDURAL: Suara Detak Jantung Dinamis
+        function playBatterySFX() {
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(587.33, now); osc.frequency.setValueAtTime(880, now + 0.05);
+            gain.gain.setValueAtTime(0.25, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(now + 0.22);
+        }
+
+        function playWraithVanishSFX() {
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(60, now + 0.4);
+            gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(now + 0.42);
+        }
+
+        function playFootstepSynth(isSprinting) {
+            let now = audioCtx.currentTime;
+            let rate = isSprinting ? 0.30 : 0.52;
+            if (now - lastFootstep < rate) return;
+            lastFootstep = now;
+            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(55, now); osc.frequency.exponentialRampToValueAtTime(5, now + 0.08);
+            gain.gain.setValueAtTime(0.35, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(now + 0.1);
+        }
+
         function playHeartbeatSynth(tempo) {
             let now = audioCtx.currentTime;
             if (now - lastHeartbeat < tempo) return;
             lastHeartbeat = now;
-
-            const triggerThud = (t) => {
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(50, t);
-                osc.frequency.exponentialRampToValueAtTime(1, t + 0.1);
-                gain.gain.setValueAtTime(0.8, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(t); osc.stop(t + 0.12);
+            const thud = (t) => {
+                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(45, t); osc.frequency.exponentialRampToValueAtTime(1, t + 0.09);
+                gain.gain.setValueAtTime(0.85, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.09);
+                osc.connect(gain); gain.connect(audioCtx.destination); osc.start(t); osc.stop(t + 0.1);
             };
-            triggerThud(now); triggerThud(now + 0.15);
+            thud(now); thud(now + 0.14);
         }
 
         function init3D() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x020101, 0.22);
+            scene.fog = new THREE.FogExp2(0x010000, 0.25);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
             camera.rotation.order = 'YXZ';
 
             renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
-            buildProceduralMaze();
-            buildEldritchMonster();
+            mapCanvas = document.getElementById('minimap'); mapCtx = mapCanvas.getContext('2d');
 
-            // Senter Prosedural
-            flashlight = new THREE.SpotLight(0xfff5e0, 6.0, 22, Math.PI / 4.5, 0.6, 1.2);
-            scene.add(flashlight);
-            let target = new THREE.Object3D(); scene.add(target); flashlight.target = target;
-
-            // Efek Batang Cahaya Senter Volumetrik
-            let beamGeo = new THREE.ConeGeometry(1.8, 18, 16, 1, true);
-            beamGeo.translate(0, -9, 0); beamGeo.rotateX(Math.PI / 2);
-            flashBeam = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color: 0xfff5e0, transparent: true, opacity: 0.025, side: THREE.DoubleSide, depthWrite: false }));
-            scene.add(flashBeam);
-
-            scene.add(new THREE.AmbientLight(0x020101));
+            buildProceduralEnvironment();
             setupControls();
         }
 
-        // 🗺️ GENERATOR LABIRIN PROSEDURAL DENGAN MAP REFLEKTIF BASAH
-        function buildProceduralMaze() {
-            // Membuat tekstur batuan basah via kanvas internal
-            let canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
-            let ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#141211'; ctx.fillRect(0,0,256,256);
-            for(let i=0; i<8000; i++) { ctx.fillStyle = Math.random() > 0.5 ? '#0b0a0a' : '#221e1c'; ctx.fillRect(Math.random()*256, Math.random()*256, 2, 2); }
+        function buildProceduralEnvironment() {
+            // Prosedural Kanvas Tekstur Gua
+            let canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+            let ctx = canvas.getContext('2d'); ctx.fillStyle = '#120f0e'; ctx.fillRect(0,0,128,128);
+            for(let i=0; i<3000; i++) { ctx.fillStyle = Math.random()>0.5 ? '#060505':'#1d1917'; ctx.fillRect(Math.random()*128, Math.random()*128, 2, 2); }
             
-            // Map Keasangan (Specular Roughness Wet Map)
-            let roughCanvas = document.createElement('canvas'); roughCanvas.width = 256; roughCanvas.height = 256;
-            let rCtx = roughCanvas.getContext('2d'); rCtx.fillStyle = '#ffffff'; rCtx.fillRect(0,0,256,256);
-            for(let i=0; i<15; i++) { rCtx.fillStyle = '#111111'; rCtx.beginPath(); rCtx.arc(Math.random()*256, Math.random()*256, 30+Math.random()*40, 0, Math.PI*2); rCtx.fill(); }
-
-            let wallTex = new THREE.CanvasTexture(canvas); wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping; wallTex.repeat.set(1, 1);
-            let roughTex = new THREE.CanvasTexture(roughCanvas); roughTex.wrapS = roughTex.wrapT = THREE.RepeatWrapping; roughTex.repeat.set(1, 1);
-
-            let wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughnessMap: roughTex, roughness: 0.85, metalness: 0.2 });
-            let floorMat = new THREE.MeshStandardMaterial({ map: wallTex, roughnessMap: roughTex, roughness: 0.2, metalness: 0.1 }); // Lantai dibuat mengkilap pantulkan cahaya
+            let wallTex = new THREE.CanvasTexture(canvas);
+            let wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.8 });
+            let floorMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.15, metalness: 0.1 }); // Lantai basah mengkilap
 
             let wallGeo = new THREE.BoxGeometry(GRID_SIZE, 4.0, GRID_SIZE);
             let floorGeo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
 
             for (let r = 0; r < MAP_GRID.length; r++) {
                 for (let c = 0; c < MAP_GRID[r].length; c++) {
-                    let x = c * GRID_SIZE;
-                    let z = r * GRID_SIZE;
+                    let x = c * GRID_SIZE; let z = r * GRID_SIZE;
                     let type = MAP_GRID[r][c];
 
-                    // Selalu buat Lantai & Atap di area non-dinding
                     if (type !== 1) {
-                        let floor = new THREE.Mesh(floorGeo, floorMat);
-                        floor.rotation.x = -Math.PI / 2; floor.position.set(x, -1.5, z); scene.add(floor);
-                        let ceiling = new THREE.Mesh(floorGeo, wallMat);
-                        ceiling.rotation.x = Math.PI / 2; ceiling.position.set(x, 2.5, z); scene.add(ceiling);
+                        let floor = new THREE.Mesh(floorGeo, floorMat); floor.rotation.x = -Math.PI/2; floor.position.set(x, -1.5, z); scene.add(floor);
+                        let ceiling = new THREE.Mesh(floorGeo, wallMat); ceiling.rotation.x = Math.PI/2; ceiling.position.set(x, 2.5, z); scene.add(ceiling);
                     }
 
                     if (type === 1) {
-                        // Tembok Labirin
-                        let wall = new THREE.Mesh(wallGeo, wallMat);
-                        wall.position.set(x, 0.5, z); scene.add(wall);
-                        wallsArray.push(wall);
+                        let wall = new THREE.Mesh(wallGeo, wallMat); wall.position.set(x, 0.5, z); scene.add(wall); wallsArray.push(wall);
                     } else if (type === 2) {
-                        // Spawn Point Player
                         camera.position.set(x, 0.1, z);
                     } else if (type === 3) {
-                        // Item Rune Koleksi Kuno
-                        let runeGeo = new THREE.OctahedronGeometry(0.25, 0);
-                        let runeMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x990000, roughness: 0.1 });
-                        let rune = new THREE.Mesh(runeGeo, runeMat);
-                        rune.position.set(x, -0.2, z);
-                        scene.add(rune);
-                        runesArray.push({ mesh: rune, gridR: r, gridC: c });
+                        let rune = new THREE.Mesh(new THREE.OctahedronGeometry(0.2,0), new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xaa0000 }));
+                        rune.position.set(x, -0.2, z); scene.add(rune); runesArray.push({ mesh: rune, gridR: r, gridC: c, picked: false });
                     } else if (type === 4) {
-                        // Pintu Keluar Utama
-                        let gateGeo = new THREE.BoxGeometry(GRID_SIZE, 4.0, 0.4);
-                        let gateMat = new THREE.MeshStandardMaterial({ color: 0x221111, roughness: 0.9 });
-                        exitGateMesh = new THREE.Mesh(gateGeo, gateMat);
-                        exitGateMesh.position.set(x, 0.5, z);
-                        scene.add(exitGateMesh);
+                        exitGateMesh = new THREE.Mesh(new THREE.BoxGeometry(GRID_SIZE, 4.0, 0.3), new THREE.MeshStandardMaterial({ color: 0x2f1515, roughness: 0.9 }));
+                        exitGateMesh.position.set(x, 0.5, z); scene.add(exitGateMesh);
+                    } else if (type === 5) {
+                        // 🔋 BATRE FISIK 3D
+                        let batGroup = new THREE.Group();
+                        let body = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.25,8), new THREE.MeshStandardMaterial({ color: 0xffff00, roughness: 0.3 }));
+                        let cap = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.05,8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+                        cap.position.y = 0.14; batGroup.add(body, cap); batGroup.position.set(x, -1.2, z);
+                        scene.add(batGroup); batteriesArray.push({ mesh: batGroup, gridR: r, gridC: c, picked: false });
+                    } else if (type === 6) {
+                        // 🌟 SECRET COSMIC ARTIFACT
+                        secretArtifact = new THREE.Mesh(new THREE.TorusKnotGeometry(0.18, 0.05, 32, 4), new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.1 }));
+                        secretArtifact.position.set(x, -0.1, z); scene.add(secretArtifact);
                     }
                 }
             }
+
+            buildMonsters3D();
+
+            flashlight = new THREE.SpotLight(0xfff5e2, 6.0, 24, Math.PI / 4.5, 0.6, 1.2); scene.add(flashlight);
+            let target = new THREE.Object3D(); scene.add(target); flashlight.target = target;
+            flashBeam = new THREE.Mesh(new THREE.ConeGeometry(1.9, 18, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff5e2, transparent: true, opacity: 0.02, side: THREE.DoubleSide, depthWrite: false }));
+            flashBeam.geometry.translate(0, -9, 0); flashBeam.geometry.rotateX(Math.PI / 2); scene.add(flashBeam);
+            scene.add(new THREE.AmbientLight(0x010000));
         }
 
-        // 👾 MONSTER MODEL: Makhluk Abstraksi Eldritch dengan Banyak Lengan
-        function buildEldritchMonster() {
-            monsterMesh = new THREE.Group();
-            let bodyMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.99 });
+        function buildMonsters3D() {
+            // 1. Crawler (Model Bertangan Banyak Mematuhi Collision Fisika)
+            crawlerMesh = new THREE.Group(); let bMat = new THREE.MeshStandardMaterial({ color: 0x030303, roughness: 0.9 });
+            crawlerMesh.add(new THREE.Mesh(new THREE.SphereGeometry(0.35,6,6), bMat)); // Torso
+            let head = new THREE.Mesh(new THREE.SphereGeometry(0.2,6,6), bMat); head.position.y = 0.6; crawlerMesh.add(head);
             let eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-
-            let core = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), bodyMat); core.position.y = 0.5; monsterMesh.add(core);
-            let head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 6), bodyMat); head.position.y = 1.1; monsterMesh.add(head);
-            
-            let eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), eyeMat); eye.position.set(0, 1.15, -0.15); monsterMesh.add(eye);
-
-            // Membuat 6 lengan kurus panjang merayap secara prosedural
+            let eL = new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4), eyeMat); eL.position.set(-0.08,0.65,-0.16);
+            let eR = new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4), eyeMat); eR.position.set(0.08,0.65,-0.16); crawlerMesh.add(eL, eR);
             for (let i = 0; i < 6; i++) {
-                let armGeo = new THREE.CylinderGeometry(0.015, 0.01, 1.5, 4);
-                armGeo.translate(0, -0.75, 0);
-                let arm = new THREE.Mesh(armGeo, bodyMat);
-                arm.position.set((i % 2 === 0 ? 0.3 : -0.3), 0.6, (i * 0.1 - 0.3));
-                monsterMesh.add(arm);
-                monsterArms.push(arm);
+                let arm = new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.01,1.4,4), bMat); arm.geometry.translate(0,-0.7,0);
+                arm.position.set(i%2===0?0.3:-0.3, 0.2, (i*0.12 - 0.3)); crawlerMesh.add(arm); crawlerArms.push(arm);
             }
+            scene.add(crawlerMesh);
 
-            monsterMesh.position.set(0, -100, 0); // Sembunyikan dulu sampai game mulai
-            scene.add(monsterMesh);
+            // 2. Screaming Wraith (Model Hantu Tembus Tembok - Counter via Cahaya)
+            wraithMesh = new THREE.Group();
+            let wMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, wireframe: true });
+            let wCore = new THREE.Mesh(new THREE.SphereGeometry(0.4,8,8), wMat); wCore.position.y = 0.5;
+            let wEyes = new THREE.Mesh(new THREE.SphereGeometry(0.05,4,4), new THREE.MeshBasicMaterial({ color: 0x00ffff }));
+            wEyes.position.set(0, 0.65, -0.3); wraithMesh.add(wCore, wEyes);
+            scene.add(wraithMesh); wraithMesh.position.set(0, -50, 0); // Disembunyikan awalnya
         }
 
-        // 🛑 WALL COLLISION ENGINE DETECTOR
-        function checkWallCollision(newX, newZ) {
-            let buffer = 0.45; // Jarak toleransi benturan dinding
+        // 🛑 ENGINE FISIKA DETEKSI TABRAKAN WALL COLLISION (Player & Crawler)
+        function checkCollision(x, z, buffer = 0.45) {
             for (let wall of wallsArray) {
-                if (Math.abs(newX - wall.position.x) < (GRID_SIZE / 2 + buffer) &&
-                    Math.abs(newZ - wall.position.z) < (GRID_SIZE / 2 + buffer)) {
-                    return true;
-                }
+                if (Math.abs(x - wall.position.x) < (GRID_SIZE / 2 + buffer) &&
+                    Math.abs(z - wall.position.z) < (GRID_SIZE / 2 + buffer)) return true;
             }
-            // Tabrakan dengan gerbang keluar (jika rune belum lengkap)
             if (exitGateMesh && state.runesCollected < 3) {
-                if (Math.abs(newX - exitGateMesh.position.x) < (GRID_SIZE / 2 + buffer) &&
-                    Math.abs(newZ - exitGateMesh.position.z) < (0.2 + buffer)) {
-                    return true;
-                }
+                if (Math.abs(x - exitGateMesh.position.x) < (GRID_SIZE / 2 + buffer) &&
+                    Math.abs(z - exitGateMesh.position.z) < (0.2 + buffer)) return true;
             }
             return false;
         }
@@ -347,14 +338,12 @@
         function setupControls() {
             canvas = document.getElementById('game-canvas');
             canvas.addEventListener('click', () => { if (gameActive && !isMobile && document.pointerLockElement !== canvas) canvas.requestPointerLock(); });
-            
             document.addEventListener('mousemove', (e) => {
                 if (gameActive && document.pointerLockElement === canvas) {
                     targetCamRotationY -= e.movementX * 0.0025; targetCamRotationX -= e.movementY * 0.0025;
                     targetCamRotationX = Math.max(-1.2, Math.min(1.2, targetCamRotationX));
                 }
             });
-
             canvas.addEventListener('touchstart', (e) => { if (!gameActive) return; initAudio(); lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY; }, {passive:true});
             canvas.addEventListener('touchmove', (e) => {
                 if (!gameActive) return;
@@ -371,7 +360,6 @@
             });
             window.addEventListener('keyup', (e) => { if (e.key === 'Shift') { keys.shift = false; return; } keys[e.key.toLowerCase()] = false; });
 
-            // Kontrol HUD Mobile terintegrasi
             const setTouch = (id, keyName) => {
                 document.getElementById(id).addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); keys[keyName] = true; });
                 document.getElementById(id).addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
@@ -385,213 +373,278 @@
             initAudio();
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('ui-layer').classList.remove('hidden');
+            document.getElementById('minimap-container').classList.remove('hidden');
             if (!isMobile) canvas.requestPointerLock();
 
-            state.sanity = 100; state.battery = 100; state.flashlightOn = true;
+            state.sanity = 100; state.battery = 100; state.flashlightOn = true; state.hasSecret = false;
             
             if (loadFromCheckpoint) {
-                const data = JSON.parse(localStorage.getItem('cold_cave_checkpoint'));
-                state.runesCollected = data.runes;
+                const data = JSON.parse(localStorage.getItem('cold_cave_v3_checkpoint'));
+                state.runesCollected = data.runes; state.hasSecret = data.hasSecret || false;
                 camera.position.set(data.pX, 0.1, data.pZ);
-                // Bersihkan rune yang sudah diambil sebelumnya di save data
-                runesArray.forEach(r => {
-                    if (data.pickedIndexes.includes(runesArray.indexOf(r))) {
-                        scene.remove(r.mesh); r.picked = true;
-                    }
-                });
+                runesArray.forEach((r, i) => { if (data.pickedRunes.includes(i)) { scene.remove(r.mesh); r.picked = true; } });
+                batteriesArray.forEach((b, i) => { if (data.pickedBats.includes(i)) { scene.remove(b.mesh); b.picked = true; } });
+                if (state.hasSecret && secretArtifact) scene.remove(secretArtifact);
             } else {
                 state.runesCollected = 0;
                 runesArray.forEach(r => { r.picked = false; scene.add(r.mesh); });
-                // Reset posisi player ke start grid (2)
+                batteriesArray.forEach(b => { b.picked = false; scene.add(b.mesh); });
+                if(secretArtifact) { secretArtifact.picked = false; scene.add(secretArtifact); }
                 for (let r=0; r<MAP_GRID.length; r++) {
-                    for (let c=0; c<MAP_GRID[r].length; c++) {
-                        if(MAP_GRID[r][c] === 2) camera.position.set(c*GRID_SIZE, 0.1, r*GRID_SIZE);
-                    }
+                    for (let c=0; c<MAP_GRID[r].length; c++) { if(MAP_GRID[r][c] === 2) camera.position.set(c*GRID_SIZE, 0.1, r*GRID_SIZE); }
                 }
             }
 
-            // Spawn Monster di titik aman terjauh dari player
-            monsterState.x = 12 * GRID_SIZE; monsterState.z = 1 * GRID_SIZE;
-            monsterMesh.position.set(monsterState.x, -0.5, monsterState.z);
-            monsterState.active = true;
+            crawlerState.x = 13 * GRID_SIZE; crawlerState.z = 1 * GRID_SIZE;
+            crawlerMesh.position.set(crawlerState.x, -0.6, crawlerState.z);
 
-            gameActive = true;
-            updateHUD(); animate();
+            wraithState.active = false; wraithMesh.position.set(0, -100, 0);
+
+            gameActive = true; updateHUD(); animate();
         }
 
         function animate() {
             if (!gameActive) return;
             requestAnimationFrame(animate);
 
-            // Interpolasi Rotasi Kamera Halus
             camera.rotation.y += (targetCamRotationY - camera.rotation.y) * 0.2;
             camera.rotation.x += (targetCamRotationX - camera.rotation.x) * 0.2;
 
-            // Hitung kalkulasi vektor pergerakan lokal
             let moveX = 0, moveZ = 0;
             if (keys.w) moveZ -= 1; if (keys.s) moveZ += 1;
             if (keys.a) moveX -= 1; if (keys.d) moveX += 1;
 
-            let isMoving = moveX !== 0 || moveZ !== 0;
-            if (isMoving) {
-                let currentSpeed = keys.shift ? 0.08 : 0.045;
+            if (moveX !== 0 || moveZ !== 0) {
+                let speed = keys.shift ? 0.08 : 0.045;
                 let dir = new THREE.Vector3(moveX, 0, moveZ).normalize().applyQuaternion(camera.quaternion);
-                
-                let nextX = camera.position.x + dir.x * currentSpeed;
-                let nextZ = camera.position.z + dir.z * currentSpeed;
+                let nextX = camera.position.x + dir.x * speed; let nextZ = camera.position.z + dir.z * speed;
 
-                // Cek benturan sebelum koordinat diterapkan (Collision Fix)
-                if (!checkWallCollision(nextX, camera.position.z)) camera.position.x = nextX;
-                if (!checkWallCollision(camera.position.x, nextZ)) camera.position.z = nextZ;
+                if (!checkCollision(nextX, camera.position.z)) camera.position.x = nextX;
+                if (!checkCollision(camera.position.x, nextZ)) camera.position.z = nextZ;
 
-                // Mainkan synth suara langkah kaki
                 playFootstepSynth(keys.shift);
-
-                // Kamera Bergoyang Dinamis
                 bobTimer += keys.shift ? 0.28 : 0.16;
                 camera.position.y = 0.1 + Math.sin(bobTimer) * (keys.shift ? 0.07 : 0.035);
             } else {
                 camera.position.y += (0.1 - camera.position.y) * 0.1;
             }
 
-            // Senter mengunci arah pandang kamera
-            flashlight.position.copy(camera.position);
-            flashBeam.position.copy(camera.position);
+            // Senter System Lock
+            flashlight.position.copy(camera.position); flashBeam.position.copy(camera.position);
             let camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             flashlight.target.position.copy(camera.position).add(camDir.clone().multiplyScalar(5));
             flashBeam.lookAt(flashlight.target.position);
 
-            // Kontrol Cahaya Senter
+            // Konsumsi Energi Baterai Senter
             if (state.flashlightOn && state.battery > 0) {
-                state.battery -= 0.025; flashlight.intensity = 6.0; flashBeam.visible = true;
-                // Kedipan senter sekarat
-                if(state.battery < 20 && Math.random() < 0.15) { flashlight.intensity = 0.2; flashBeam.visible = false; }
-            } else {
-                flashlight.intensity = 0; flashBeam.visible = false;
-            }
+                state.battery -= 0.03; flashlight.intensity = 6.0; flashBeam.visible = true;
+                if(state.battery < 20 && Math.random() < 0.15) { flashlight.intensity = 0.3; flashBeam.visible = false; }
+            } else { flashlight.intensity = 0; flashBeam.visible = false; }
             if (state.battery <= 0) state.flashlightOn = false;
 
-            // 👾 LOGIKA MONSTER INTELLIGENCE & EFECT JITTERY PROSEDURAL
-            let distToMonster = camera.position.distanceTo(monsterMesh.position);
-            if (monsterState.active) {
-                monsterState.phase += 0.05;
+            // Penurunan Kesadaran Mental (Sanity)
+            if (!state.flashlightOn) state.sanity -= 0.05; else state.sanity -= 0.005;
+            state.sanity = Math.max(0, state.sanity);
+
+            let distToCrawler = camera.position.distanceTo(crawlerMesh.position);
+
+            // AI MONSTER 1: THE CRAWLER (Mematuhi Pergeseran Fisika / Sliding Collision Fix)
+            crawlerState.phase += 0.05;
+            let cDir = new THREE.Vector3().subVectors(camera.position, crawlerMesh.position).normalize();
+            let finalCSpeed = (distToCrawler < 8) ? crawlerState.speed * 1.6 : crawlerState.speed;
+            
+            let cNextX = crawlerState.x + cDir.x * finalCSpeed;
+            let cNextZ = crawlerState.z + cDir.z * finalCSpeed;
+
+            // Deteksi Geser Tembok Sempurna (Monster Tidak Terjebak & Tidak Tembus)
+            if (!checkCollision(cNextX, crawlerState.z, 0.4)) crawlerState.x = cNextX;
+            if (!checkCollision(crawlerState.x, cNextZ, 0.4)) crawlerState.z = cNextZ;
+
+            crawlerMesh.position.set(crawlerState.x, -0.6, crawlerState.z);
+            crawlerMesh.lookAt(camera.position.x, -0.6, camera.position.z);
+
+            crawlerArms.forEach((arm, i) => {
+                arm.rotation.z = Math.sin(crawlerState.phase * 5 + i) * 0.35 + (Math.random() - 0.5) * 0.1;
+                arm.rotation.x = Math.cos(crawlerState.phase * 3 + i) * 0.25;
+            });
+
+            // AI MONSTER 2: THE SCREAMING WRAITH (Hantu Tembus Tembok, Aktif Saat Sanity Rendah)
+            let distToWraith = 999;
+            if (state.sanity < 65) {
+                if (!wraithState.active) {
+                    wraithState.active = true;
+                    // Spawn acak di sekitar player
+                    wraithState.x = camera.position.x + (Math.random() - 0.5) * 20;
+                    wraithState.z = camera.position.z + (Math.random() - 0.5) * 20;
+                }
+                distToWraith = camera.position.distanceTo(wraithMesh.position);
+                let wDir = new THREE.Vector3().subVectors(camera.position, wraithMesh.position).normalize();
                 
-                // Pergerakan monster langsung menembus dinding memotong jalan kearah player (Ghost mechanics)
-                let mDir = new THREE.Vector3().subVectors(camera.position, monsterMesh.position).normalize();
-                let mSpeed = (distToMonster < 8) ? 0.038 : 0.02; // Makin dekat makin cepat mengejar!
-                monsterState.x += mDir.x * mSpeed; monsterState.z += mDir.z * mSpeed;
-                monsterMesh.position.set(monsterState.x, -0.5, monsterState.z);
-                monsterMesh.lookAt(camera.position.x, -0.5, camera.position.z);
+                // Menembus dinding langsung kearah target player
+                wraithState.x += wDir.x * wraithState.speed; wraithState.z += wDir.z * wraithState.speed;
+                wraithMesh.position.set(wraithState.x, 0.2 + Math.sin(Date.now()*0.003)*0.2, wraithState.z);
+                wraithMesh.lookAt(camera.position.x, 0.2, camera.position.z);
 
-                // 🫨 UPGRADE: Efek Jittery Ekstrim (Kepala & 6 Lengan Bergetar Acak Khusus Horor)
-                monsterArms.forEach((arm, idx) => {
-                    arm.rotation.z = Math.sin(monsterState.phase * 5 + idx) * 0.3 + (Math.random() - 0.5) * 0.15;
-                    arm.rotation.x = Math.cos(monsterState.phase * 3 + idx) * 0.2 + (Math.random() - 0.5) * 0.15;
-                });
-                monsterMesh.children[1].position.x = (Math.random() - 0.5) * 0.05; // Efek kepala bergetar konstan
+                // MECHANIC COUNTER WRAITH: Jika player menyalakan senter & menatap langsung si hantu
+                let dirToW = new THREE.Vector3().subVectors(wraithMesh.position, camera.position).normalize();
+                let lookingAtWraith = camDir.dot(dirToW) > 0.82; // Field of view check
 
-                // 🔊 AUDIO UPDATE: Sinkronisasi Jantung & Geraman Monster Berdasarkan Jarak
-                let heartbeatTempo = (distToMonster < 6) ? 0.22 : (distToMonster < 14) ? 0.45 : 0.8;
-                playHeartbeatSynth(heartbeatTempo);
-
-                if (monsterGrowlGain) {
-                    let vol = Math.max(0, 1.0 - (distToMonster / 20)); // Volume membesar jika mendekat
-                    monsterGrowlGain.gain.setValueAtTime(vol * 0.6, audioCtx.currentTime);
-                    monsterGrowlOsc.frequency.setValueAtTime(25 + (vol * 35) + Math.sin(Date.now() * 0.1) * 5, audioCtx.currentTime);
+                if (state.flashlightOn && lookingAtWraith && distToWraith < 11) {
+                    playWraithVanishSFX();
+                    wraithState.active = false; wraithMesh.position.set(0, -100, 0); // Despawn hantu
+                    state.sanity = Math.min(100, state.sanity + 15); // Bonus mental karena berhasil melawan ketakutan
                 }
-
-                // Efek Kamera Gemetar & Vignette Darah
-                if (distToMonster < 10) {
-                    let shake = (10 - distToMonster) * 0.006;
-                    camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake;
-                    document.getElementById('warning-indicator').style.visibility = 'visible';
-                    document.getElementById('warning-indicator').innerText = "ENTITAS MENDEKAT! LARI!";
-                } else {
-                    document.getElementById('warning-indicator').style.visibility = 'hidden';
-                }
-
-                let redPulse = Math.abs(Math.sin(Date.now() * 0.004)) * (distToMonster < 8 ? 0.9 : 0.3);
-                document.getElementById('vignette').style.boxShadow = `inset 0 0 180px rgba(${Math.floor(redPulse * 200)}, 0, 0, 0.95)`;
-
-                if (distToMonster < 1.3) { executeJumpscare(); return; }
+            } else {
+                wraithState.active = false; wraithMesh.position.set(0, -100, 0);
             }
 
-            // MEKANIK DETEKSI PENGAMBILAN RUNE (CHECKPOINT SYSTEM)
-            runesArray.forEach((rune, idx) => {
+            // Audio Growl dinamis berdasar monster terdekat
+            let closestDist = Math.min(distToCrawler, distToWraith);
+            let heartbeatTempo = (closestDist < 5) ? 0.20 : (closestDist < 12) ? 0.42 : 0.8;
+            playHeartbeatSynth(heartbeatTempo);
+
+            if (monsterGrowlGain) {
+                let vol = Math.max(0, 1.0 - (closestDist / 18));
+                monsterGrowlGain.gain.setValueAtTime(vol * 0.5, audioCtx.currentTime);
+                monsterGrowlOsc.frequency.setValueAtTime(25 + (vol * 40) + Math.sin(Date.now()*0.1)*6, audioCtx.currentTime);
+            }
+
+            // Jumpscare Trigger
+            if (distToCrawler < 1.2 || distToWraith < 1.2) { executeJumpscare(); return; }
+
+            // Dynamic Camera Shake & HUD Warning
+            if (closestDist < 8) {
+                let shake = (8 - closestDist) * 0.006;
+                camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake;
+                document.getElementById('warning-indicator').style.visibility = 'visible';
+                document.getElementById('warning-indicator').innerText = distToWraith < distToCrawler ? "ANOMALI SPIRITUAL MENDEKAT! SOROT DIA!" : "HAWA DETAK JANTUNG MENDEKAT! RUN!";
+            } else { document.getElementById('warning-indicator').style.visibility = 'hidden'; }
+
+            // Vignette pulse
+            let dangerPct = Math.max((8 - closestDist)/8, (100 - state.sanity)/100 * 0.7);
+            let redPulse = Math.abs(Math.sin(Date.now() * 0.005)) * dangerPct;
+            document.getElementById('vignette').style.boxShadow = `inset 0 0 180px rgba(${Math.floor(redPulse * 220)}, 0, 0, ${0.92 + (redPulse*0.05)})`;
+
+            // INTERAKSI ITEM RUNE (AUTO SAVE CHECKPOINT)
+            runesArray.forEach((rune, i) => {
                 if (!rune.picked) {
-                    rune.mesh.rotation.y += 0.04;
-                    rune.mesh.position.y = -0.2 + Math.sin(Date.now() * 0.003 + idx) * 0.1;
-
-                    if (camera.position.distanceTo(rune.mesh.position) < 1.4) {
-                        rune.picked = true; scene.remove(rune.mesh);
-                        state.runesCollected++;
-                        updateHUD();
-
-                        // TRIGGER AUTO-SAVE CHECKPOINT SETIAP AMBIL RUNE VIA LOCALSTORAGE
-                        let pickedIndexes = [];
-                        runesArray.forEach((r, i) => { if(r.picked) pickedIndexes.push(i); });
-                        
-                        localStorage.setItem('cold_cave_checkpoint', JSON.stringify({
-                            runes: state.runesCollected,
-                            pX: camera.position.x,
-                            pZ: camera.position.z,
-                            pickedIndexes: pickedIndexes
-                        }));
-                        
-                        document.getElementById('warning-indicator').innerText = "PROGRESS TERSIMPAN (CHECKPOINT)";
-                        document.getElementById('warning-indicator').style.visibility = 'visible';
+                    rune.mesh.rotation.y += 0.03; rune.mesh.position.y = -0.2 + Math.sin(Date.now()*0.003 + i)*0.08;
+                    if (camera.position.distanceTo(rune.mesh.position) < 1.3) {
+                        rune.picked = true; scene.remove(rune.mesh); state.runesCollected++;
+                        playRuneSFX(); updateHUD(); saveCheckpoint();
                     }
                 }
             });
 
-            // LOGIKA ESCAPE GATE LULUS GAME
-            if (exitGateMesh) {
-                let distToExit = camera.position.distanceTo(exitGateMesh.position);
-                if (state.runesCollected >= 3 && exitGateMesh.position.y < 4.0) {
-                    exitGateMesh.position.y += 0.02; // Gerbang terangkat membuka otomatis
-                    document.getElementById('objective-txt').innerText = "GERBANG TERBUKA! KELUAR!";
+            // INTERAKSI ITEM BATERAI FISIK 3D
+            batteriesArray.forEach((bat, i) => {
+                if (!bat.picked) {
+                    bat.mesh.rotation.y += 0.02;
+                    if (camera.position.distanceTo(bat.mesh.position) < 1.3) {
+                        bat.picked = true; scene.remove(bat.mesh);
+                        state.battery = Math.min(100, state.battery + 40);
+                        playBatterySFX(); updateHUD();
+                    }
                 }
-                if (state.runesCollected >= 3 && distToExit < 1.5) {
-                    gameActive = false;
-                    localStorage.removeItem('cold_cave_checkpoint'); // Hapus save data karena tamat
-                    endGame("BERHASIL ESCAPE", "Luar biasa Jae! Kamu berhasil memecahkan labirin maut dan lolos dari cengkeraman entitas!");
+            });
+
+            // INTERAKSI SECRET ARTIFACT
+            if (secretArtifact && !state.hasSecret) {
+                secretArtifact.rotation.x += 0.02; secretArtifact.rotation.y += 0.02;
+                if (camera.position.distanceTo(secretArtifact.position) < 1.3) {
+                    state.hasSecret = true; scene.remove(secretArtifact);
+                    playRuneSFX();
+                    document.getElementById('warning-indicator').innerText = "RELIK KOSMIK EMAS DIDAPATKAN!";
+                    document.getElementById('warning-indicator').style.visibility = 'visible';
+                }
+            }
+
+            // LOGIKA ESCAPE / KELUAR GERBANG (NORMAL vs SECRET ENDING)
+            if (exitGateMesh) {
+                if (state.runesCollected >= 3 && exitGateMesh.position.y < 4.0) exitGateMesh.position.y += 0.02;
+                if (state.runesCollected >= 3 && camera.position.distanceTo(exitGateMesh.position) < 1.5) {
+                    gameActive = false; localStorage.removeItem('cold_cave_v3_checkpoint');
+                    
+                    if (state.hasSecret) {
+                        endGame("SECRET ENDING: COSMIC ASCENSION", "Luar biasa Jae! Berbekal Relik Emas Kuno, kamu tidak sekadar kabur dari gua, melainkan menyerap seluruh energi kosmik abyss. Jiwamu berevolusi menjadi penguasa dimensi kegelapan!");
+                    } else {
+                        endGame("BERHASIL LOLOS (NORMAL)", "Selamat Jae! Kamu berhasil mengumpulkan seluruh energi rune dan mendorong gerbang batu kuno untuk kembali ke permukaan dunia luar.");
+                    }
                     return;
                 }
             }
 
+            if (state.sanity <= 0) { endGame("JIWA TERKAPAR", "Kesadaran mentalmu runtuh sepenuhnya. Pikiranmu tersesat selamanya di dalam kehampaan gua es."); return; }
+
+            renderRadarMinimap();
             renderer.render(scene, camera);
+        }
+
+        // 🗺️ RADAR MINIMAP HUD GRAPHICS RENDERER
+        function renderRadarMinimap() {
+            mapCtx.clearRect(0, 0, 120, 120);
+            let pGridX = camera.position.x / GRID_SIZE; let pGridZ = camera.position.z / GRID_SIZE;
+            let center = 60; let scale = 8; // Zoom factor map
+
+            // Draw dinding labirin relatif dari posisi player
+            mapCtx.fillStyle = "rgba(150, 0, 0, 0.25)";
+            for (let r = 0; r < MAP_GRID.length; r++) {
+                for (let c = 0; c < MAP_GRID[r].length; c++) {
+                    if (MAP_GRID[r][c] === 1) {
+                        let dX = center + (c - pGridX) * scale; let dZ = center + (r - pGridZ) * scale;
+                        if(dX >= 0 && dX <= 120 && dZ >= 0 && dZ <= 120) mapCtx.fillRect(dX, dZ, scale-1, scale-1);
+                    }
+                }
+            }
+
+            // Draw Sisa Rune Terdeteksi (Merah)
+            mapCtx.fillStyle = "#ff0000";
+            runesArray.forEach(r => { if(!r.picked) { let dX = center + (r.gridC - pGridX)*scale; let dZ = center + (r.gridR - pGridZ)*scale; mapCtx.beginPath(); mapCtx.arc(dX, dZ, 3, 0, Math.PI*2); mapCtx.fill(); } });
+
+            // Draw Sisa Baterai Terdeteksi (Kuning)
+            mapCtx.fillStyle = "#ffff00";
+            batteriesArray.forEach(b => { if(!b.picked) { let dX = center + (b.gridC - pGridX)*scale; let dZ = center + (b.gridR - pGridZ)*scale; mapCtx.beginPath(); mapCtx.arc(dX, dZ, 2.5, 0, Math.PI*2); mapCtx.fill(); } });
+
+            // Draw Player Marker (Putih) di tengah + Garis Kompas Hadap Pandangan
+            mapCtx.fillStyle = "#ffffff"; mapCtx.beginPath(); mapCtx.arc(center, center, 4, 0, Math.PI*2); mapCtx.fill();
+            mapCtx.strokeStyle = "rgba(0, 255, 255, 0.8)"; mapCtx.lineWidth = 2; mapCtx.beginPath(); mapCtx.moveTo(center, center);
+            mapCtx.lineTo(center + Math.sin(camera.rotation.y + Math.PI)*12, center + Math.cos(camera.rotation.y + Math.PI)*12); mapCtx.stroke();
+        }
+
+        function saveCheckpoint() {
+            let pickedRunes = []; runesArray.forEach((r, i) => { if(r.picked) pickedRunes.push(i); });
+            let pickedBats = []; batteriesArray.forEach((b, i) => { if(b.picked) pickedBats.push(i); });
+            localStorage.setItem('cold_cave_v3_checkpoint', JSON.stringify({
+                runes: state.runesCollected, hasSecret: state.hasSecret, pX: camera.position.x, pZ: camera.position.z, pickedRunes, pickedBats
+            }));
         }
 
         function updateHUD() {
             document.getElementById('sanity-fill').style.width = state.sanity + '%';
             document.getElementById('battery-fill').style.width = state.battery + '%';
-            document.getElementById('objective-txt').innerText = `RUNE TERKUMPUL: ${state.runesCollected} / 3`;
+            document.getElementById('objective-txt').innerText = `RUNE TERKUMPUL: ${state.runesCollected} / 3` + (state.hasSecret ? " 🌟" : "");
         }
 
         function executeJumpscare() {
             gameActive = false; if(monsterGrowlGain) monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
             if(!isMobile) try{document.exitPointerLock();}catch(e){}
-            
             document.getElementById('jumpscare').style.visibility = 'visible';
             setTimeout(() => {
                 document.getElementById('jumpscare').style.visibility = 'hidden';
-                endGame("DIELIMINASI", "Kamu tersudut di jalan buntu. Sisa energi memorimu diserap oleh anomali gua.");
+                endGame("DIELIMINASI", "Langkahmu terhenti di kesunyian jurang. Struktur tubuh anomali mematikan koordinat molekuler memorimu.");
             }, 1200);
         }
 
         function endGame(title, reason) {
-            gameActive = false; monsterState.active = false;
-            document.getElementById('ui-layer').classList.add('hidden');
-            document.getElementById('mobile-hud').style.display = 'none';
-            document.getElementById('end-title').innerText = title;
-            document.getElementById('end-reason').innerText = reason;
+            gameActive = false; document.getElementById('ui-layer').classList.add('hidden');
+            document.getElementById('mobile-hud').style.display = 'none'; document.getElementById('minimap-container').classList.add('hidden');
+            document.getElementById('end-title').innerText = title; document.getElementById('end-reason').innerText = reason;
             document.getElementById('gameover-screen').classList.remove('hidden');
         }
 
         function goToMenu() {
             document.getElementById('gameover-screen').classList.add('hidden');
-            document.getElementById('menu-screen').classList.remove('hidden');
-            checkSaveData();
+            document.getElementById('menu-screen').classList.remove('hidden'); checkSaveData();
         }
 
         window.addEventListener('resize', () => {
@@ -601,12 +654,8 @@
             }
         });
 
-        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-            isMobile = true; document.getElementById('mobile-hud').style.display = 'flex';
-        }
-
-        checkSaveData();
-        init3D();
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) { isMobile = true; document.getElementById('mobile-hud').style.display = 'flex'; }
+        checkSaveData(); init3D();
     </script>
 </body>
 </html>
