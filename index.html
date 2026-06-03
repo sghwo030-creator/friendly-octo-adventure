@@ -71,7 +71,7 @@
 
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>[PROSEDURAL ENGINE V4.2 - PATCHED] Engine performa tinggi dengan fitur InstancedMesh, Manajemen Memori Anti-Leak, dan navigasi AI pintar berbasis rute linier sel A*. Kumpulkan rune kuno dan amankan relik kosmik tanpa kendala lag.</p>
+        <p>[PROSEDURAL ENGINE V4.5 - JUICED] Engine performa tinggi dengan fitur InstancedMesh, Manajemen Memori Anti-Leak, riak air lantai dinamis, inersia senter organik, dan sistem cuaca partikel gua es mikro.</p>
         <div class="btn-group">
             <button class="menu-btn" onclick="startGame(false)">EKSPEDISI BARU</button>
             <button class="menu-btn" id="resume-btn" onclick="startGame(true)" disabled>LANJUTKAN</button>
@@ -141,6 +141,11 @@
 
         let audioCtx, masterGain, lastHeartbeat = 0, lastFootstep = 0, monsterGrowlOsc = null, monsterGrowlGain = null;
 
+        // Variabel untuk Efek Kosmetik Visual & Partikel (Game Juice)
+        let dustParticles, dropInstMesh, drops = [], ripples = [];
+        const MAX_DROPS = 25, MAX_RIPPLES = 25;
+        let nextRippleIdx = 0;
+
         const MAZE_W = 17, MAZE_H = 17, GRID_SIZE = 4;
         let MAP_GRID = [];
         let runesArray = [];
@@ -148,7 +153,6 @@
         let secretArtifact = null;
         let exitGateMesh = null;
 
-        // Struktur State Monster dengan tracker Grid Sel Jangkar untuk mencegah tembus dinding
         let crawlerMesh, crawlerArms = [], crawlerState = { x: 0, z: 0, gridR: 0, gridC: 0, speed: 0.026, phase: 0, currentPath: [] };
         let wraithMesh, wraithState = { x: 0, z: 0, speed: 0.016, active: false };
 
@@ -280,7 +284,6 @@
             triggerDrip();
         }
 
-        // CONTROL AUDIO MONSTER: Siklus hidup dinamis, dimatikan total saat menu utama / kalah
         function startMonsterAudio() {
             if(!audioCtx) return;
             if(monsterGrowlOsc) { try { monsterGrowlOsc.stop(); } catch(e){} }
@@ -379,7 +382,6 @@
             wallMat = new THREE.MeshStandardMaterial({ map: diffTexGlobal, bumpMap: bumpTexGlobal, bumpScale: 0.06, roughness: 0.85 });
             floorMat = new THREE.MeshStandardMaterial({ map: diffTexGlobal, bumpMap: bumpTexGlobal, bumpScale: 0.04, roughness: 0.2, metalness: 0.2 });
 
-            // CRITICAL BUG FIX: build3DWorld() dicopot dari sini agar tidak dipanggil paksa sebelum labirin di-generate.
             setupControls();
         }
 
@@ -387,6 +389,12 @@
             if(wallInstMesh) { scene.remove(wallInstMesh); wallInstMesh.geometry.dispose(); }
             if(floorInstMesh) { scene.remove(floorInstMesh); floorInstMesh.geometry.dispose(); }
             if(ceilingInstMesh) { scene.remove(ceilingInstMesh); ceilingInstMesh.geometry.dispose(); }
+
+            // Pembersihan Memori Komponen Visual Jus Gimmick saat restart labirin
+            if(dustParticles) { scene.remove(dustParticles); dustParticles.geometry.dispose(); dustParticles.material.dispose(); }
+            if(dropInstMesh) { scene.remove(dropInstMesh); dropInstMesh.geometry.dispose(); dropInstMesh.material.dispose(); }
+            ripples.forEach(r => { scene.remove(r.mesh); r.mesh.geometry.dispose(); r.mesh.material.dispose(); });
+            ripples = []; drops = [];
 
             runesArray.forEach(r => { scene.remove(r.mesh); r.mesh.geometry.dispose(); r.mesh.material.dispose(); }); runesArray = [];
             batteriesArray.forEach(b => { 
@@ -461,6 +469,46 @@
             flashBeam = new THREE.Mesh(new THREE.ConeGeometry(1.9, 18, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff5e2, transparent: true, opacity: 0.02, side: THREE.DoubleSide, depthWrite: false }));
             flashBeam.geometry.translate(0, -9, 0); flashBeam.geometry.rotateX(Math.PI / 2); scene.add(flashBeam);
             scene.add(new THREE.AmbientLight(0x010000));
+
+            // ==========================================
+            // INISIALISASI EFEK DETAIL (GAME JUICE)
+            // ==========================================
+            // 1. Inisialisasi Partikel Debu Udara
+            let dustGeo = new THREE.BufferGeometry();
+            let dustCount = 200;
+            let dustPositions = new Float32Array(dustCount * 3);
+            for(let i=0; i<dustCount*3; i+=3) {
+                dustPositions[i] = Math.random() * MAZE_W * GRID_SIZE;
+                dustPositions[i+1] = Math.random() * 4 - 1.5;
+                dustPositions[i+2] = Math.random() * MAZE_H * GRID_SIZE;
+            }
+            dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+            dustParticles = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0x99ccff, size: 0.035, transparent: true, opacity: 0.3, depthWrite: false }));
+            scene.add(dustParticles);
+
+            // 2. Inisialisasi Tetesan Air Atas Gua (Pooling)
+            let dropGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.12, 4);
+            let dropMat = new THREE.MeshBasicMaterial({ color: 0x66aacc, transparent: true, opacity: 0.4 });
+            dropInstMesh = new THREE.InstancedMesh(dropGeo, dropMat, MAX_DROPS);
+            scene.add(dropInstMesh);
+            
+            let dummyDrop = new THREE.Object3D();
+            for(let i=0; i<MAX_DROPS; i++) {
+                drops.push({ x: 0, y: -100, z: 0, speed: 0.1 + Math.random()*0.04, active: false });
+                dummyDrop.position.set(0, -100, 0); dummyDrop.updateMatrix();
+                dropInstMesh.setMatrixAt(i, dummyDrop.matrix);
+            }
+            dropInstMesh.instanceMatrix.needsUpdate = true;
+
+            // 3. Inisialisasi Kumpulan Mesh Cincin Percikan Air Lantai (Pooling)
+            let rippleGeo = new THREE.RingGeometry(0.01, 0.12, 8);
+            for(let i=0; i<MAX_RIPPLES; i++) {
+                let rMesh = new THREE.Mesh(rippleGeo, new THREE.MeshBasicMaterial({ color: 0x5599bb, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
+                rMesh.rotation.x = -Math.PI / 2;
+                rMesh.position.set(0, -1.49, 0);
+                scene.add(rMesh);
+                ripples.push({ mesh: rMesh, active: false, scale: 1, opacity: 0 });
+            }
         }
 
         function buildMonster3D() {
@@ -583,18 +631,15 @@
                 build3DWorld();
             }
 
-            // CRITICAL BUG FIX: Registrasi jangkar koordinat sel awal monster secara mutlak
             let safeSpawn = findEmptyCell();
-            crawlerState.gridR = safeSpawn.r;
-            crawlerState.gridC = safeSpawn.c;
-            crawlerState.x = safeSpawn.c * GRID_SIZE; 
-            crawlerState.z = safeSpawn.r * GRID_SIZE;
+            crawlerState.gridR = safeSpawn.r; crawlerState.gridC = safeSpawn.c;
+            crawlerState.x = safeSpawn.c * GRID_SIZE; crawlerState.z = safeSpawn.r * GRID_SIZE;
             crawlerMesh.position.set(crawlerState.x, -0.5, crawlerState.z);
             crawlerState.currentPath = [];
 
             wraithState.active = false; wraithMesh.position.set(0,-100,0);
 
-            startMonsterAudio(); // Nyalakan audio monster hanya ketika game aktif
+            startMonsterAudio();
             gameActive = true; updateHUD(); animate();
         }
 
@@ -610,6 +655,12 @@
 
             camera.rotation.y += (targetCamRotationY - camera.rotation.y) * 0.2;
             camera.rotation.x += (targetCamRotationX - camera.rotation.x) * 0.2;
+
+            // Efek Kecil: Kemiringan Kamera (Roll) Organik saat Melangkah Samping
+            let targetRoll = 0;
+            if (keys.a) targetRoll = 0.012;
+            if (keys.d) targetRoll = -0.012;
+            camera.rotation.z += (targetRoll - camera.rotation.z) * 0.1;
 
             let moveX = 0, moveZ = 0;
             if (keys.w) moveZ -= 1; if (keys.s) moveZ += 1;
@@ -641,58 +692,113 @@
 
             flashlight.position.copy(camera.position); flashBeam.position.copy(camera.position);
             let camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            flashlight.target.position.copy(camera.position).add(camDir.clone().multiplyScalar(5));
+            let targetLookAt = camera.position.clone().add(camDir.clone().multiplyScalar(5));
+            
+            // Efek Kecil: Inersia Elastis Senter (Smooth Delay Sway Target)
+            flashlight.target.position.lerp(targetLookAt, 0.12);
             flashBeam.lookAt(flashlight.target.position);
 
+            // Efek Kecil: Kedipan Halus Senter (Micro Flicker saat Sanity Drop)
             if (state.flashlightOn && state.battery > 0) {
-                state.battery -= 0.025; flashlight.intensity = 6.0; flashBeam.visible = true;
-                if(state.battery < 20 && Math.random() < 0.12) { flashlight.intensity = 0.2; flashBeam.visible = false; }
+                let currentInt = 6.0;
+                if (state.sanity < 45 && Math.random() < 0.05) {
+                    currentInt = Math.random() * 1.5; 
+                }
+                if(state.battery < 20 && Math.random() < 0.12) { 
+                    flashlight.intensity = 0.2; flashBeam.visible = false; 
+                } else { 
+                    flashlight.intensity = currentInt; flashBeam.visible = true; 
+                }
             } else { flashlight.intensity = 0; flashBeam.visible = false; }
             if (state.battery <= 0) state.flashlightOn = false;
 
             if (!state.flashlightOn) state.sanity -= 0.04; else state.sanity -= 0.004;
             state.sanity = Math.max(0, state.sanity);
 
+            // ==================================================
+            // SIMULASI PARTIKEL & DETAIL VISUAL (JUICE PROCESSING)
+            // ==================================================
+            // 1. Animasi Partikel Debu Melayang
+            if (dustParticles) {
+                let dustPos = dustParticles.geometry.attributes.position.array;
+                for (let i = 0; i < dustPos.length; i += 3) {
+                    dustPos[i+1] -= 0.002; 
+                    dustPos[i] += Math.sin(Date.now() * 0.0006 + i) * 0.0015; 
+                    if (dustPos[i+1] < -1.5) { 
+                        dustPos[i+1] = 2.5; 
+                        dustPos[i] = Math.random() * MAZE_W * GRID_SIZE;
+                    }
+                }
+                dustParticles.geometry.attributes.position.needsUpdate = true;
+            }
+
+            // 2. Animasi Langit-Langit Gua Meneteskan Air
+            if (dropInstMesh) {
+                let dummyD = new THREE.Object3D();
+                if (Math.random() < 0.25) { 
+                    let slot = drops.find(d => !d.active);
+                    if (slot) {
+                        let randR = Math.floor(Math.random() * MAZE_H);
+                        let randC = Math.floor(Math.random() * MAZE_W);
+                        if (MAP_GRID[randR] && MAP_GRID[randR][randC] === 0) {
+                            slot.x = randC * GRID_SIZE + (Math.random() - 0.5) * 2;
+                            slot.z = randR * GRID_SIZE + (Math.random() - 0.5) * 2;
+                            slot.y = 2.5; slot.active = true;
+                        }
+                    }
+                }
+                drops.forEach((d, idx) => {
+                    if (d.active) {
+                        d.y -= d.speed;
+                        if (d.y <= -1.49) {
+                            d.active = false; dummyD.position.set(0, -100, 0);
+                            
+                            // 3. Picu Efek Percikan Air Membesar di Atas Permukaan Lantai
+                            let rip = ripples[nextRippleIdx];
+                            rip.mesh.position.set(d.x, -1.49, d.z);
+                            rip.scale = 0.1; rip.opacity = 0.8; rip.active = true;
+                            nextRippleIdx = (nextRippleIdx + 1) % MAX_RIPPLES;
+                        } else {
+                            dummyD.position.set(d.x, d.y, d.z);
+                        }
+                    } else { dummyD.position.set(0, -100, 0); }
+                    dummyD.updateMatrix(); dropInstMesh.setMatrixAt(idx, dummyD.matrix);
+                });
+                dropInstMesh.instanceMatrix.needsUpdate = true;
+            }
+
+            // Perubahan Ukuran Cincin Percikan Air Lantai
+            ripples.forEach(r => {
+                if (r.active) {
+                    r.scale += 0.09; r.opacity -= 0.04;
+                    r.mesh.scale.set(r.scale, r.scale, 1);
+                    r.mesh.material.opacity = r.opacity;
+                    if (r.opacity <= 0) r.active = false;
+                }
+            });
+            // ==================================================
+
             let pGridC = Math.round(camera.position.x / GRID_SIZE);
             let pGridR = Math.round(camera.position.z / GRID_SIZE);
 
-            // CRITICAL BUG FIX: Sistem Navigasi AI Linier Waypoint (Anti-Tembus Dinding)
             if (crawlerState.currentPath.length === 0) {
-                crawlerState.currentPath = findShortestPathAStar(
-                    {r: crawlerState.gridR, c: crawlerState.gridC}, 
-                    {r: pGridR, c: pGridC}
-                );
+                crawlerState.currentPath = findShortestPathAStar({r: crawlerState.gridR, c: crawlerState.gridC}, {r: pGridR, c: pGridC});
                 if(crawlerState.currentPath.length > 0) crawlerState.currentPath.shift(); 
             }
 
             if (crawlerState.currentPath.length > 0) {
-                let nextNode = crawlerState.currentPath[0];
-                let targetX = nextNode.c * GRID_SIZE; 
-                let targetZ = nextNode.r * GRID_SIZE;
-                
-                let mDir = new THREE.Vector3(targetX - crawlerState.x, 0, targetZ - crawlerState.z);
-                let distToTarget = mDir.length();
-                
+                let nextNode = crawlerState.currentPath[0]; let targetX = nextNode.c * GRID_SIZE; let targetZ = nextNode.r * GRID_SIZE;
+                let mDir = new THREE.Vector3(targetX - crawlerState.x, 0, targetZ - crawlerState.z); let distToTarget = mDir.length();
                 let currentDistToPlayer = camera.position.distanceTo(crawlerMesh.position);
                 let mSpeed = currentDistToPlayer < 6 ? crawlerState.speed * 1.5 : crawlerState.speed;
                 
                 if (distToTarget > mSpeed) {
-                    mDir.normalize();
-                    crawlerState.x += mDir.x * mSpeed; 
-                    crawlerState.z += mDir.z * mSpeed;
+                    mDir.normalize(); crawlerState.x += mDir.x * mSpeed; crawlerState.z += mDir.z * mSpeed;
                 } else {
-                    // Kunci posisi pas di tengah sel jangkauan sebelum beralih node
-                    crawlerState.x = targetX;
-                    crawlerState.z = targetZ;
-                    crawlerState.gridR = nextNode.r;
-                    crawlerState.gridC = nextNode.c;
+                    crawlerState.x = targetX; crawlerState.z = targetZ;
+                    crawlerState.gridR = nextNode.r; crawlerState.gridC = nextNode.c;
                     crawlerState.currentPath.shift();
-                    
-                    // Kalkulasi ulang instan rute terbaru berdasarkan target sel baru
-                    crawlerState.currentPath = findShortestPathAStar(
-                        {r: crawlerState.gridR, c: crawlerState.gridC}, 
-                        {r: pGridR, c: pGridC}
-                    );
+                    crawlerState.currentPath = findShortestPathAStar({r: crawlerState.gridR, c: crawlerState.gridC}, {r: pGridR, c: pGridC});
                     if(crawlerState.currentPath.length > 0) crawlerState.currentPath.shift();
                 }
             }
@@ -813,9 +919,7 @@
                 localStorage.setItem('cold_cave_v4_save', JSON.stringify({
                     grid: MAP_GRID, runes: state.runesCollected, hasSecret: state.hasSecret, pX: camera.position.x, pZ: camera.position.z, pickedRunes, pickedBats
                 }));
-            } catch (e) {
-                console.error("Save system quota exceeded / blocked:", e);
-            }
+            } catch (e) { console.error("Save system quota exceeded / blocked:", e); }
         }
 
         function updateHUD() {
@@ -827,7 +931,6 @@
 
         function executeJumpscare() {
             gameActive = false; 
-            // CRITICAL AUDIO CLEANUP: Matikan total node oscillator agar tidak membeku & berdengung
             if(monsterGrowlGain) monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
             if(monsterGrowlOsc) { try { monsterGrowlOsc.stop(); monsterGrowlOsc = null; } catch(e){} }
             
