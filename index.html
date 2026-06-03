@@ -3,55 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wendigo: Hyper Realism Tech Demo</title>
+    <title>Wendigo: The Unity-Grade Experience</title>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; user-select: none; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; user-select: none; }
         #canvas-container { width: 100vw; height: 100vh; }
         
         #crosshair {
             position: absolute; top: 50%; left: 50%;
-            width: 3px; height: 3px; background: rgba(255,255,255,0.3);
+            width: 2px; height: 2px; background: rgba(255,255,255,0.25);
             border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none;
         }
 
         #vignette {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            box-shadow: inset 0 0 140px rgba(0, 0, 0, 1);
+            box-shadow: inset 0 0 150px rgba(0, 0, 0, 1);
             pointer-events: none; z-index: 5;
-            transition: box-shadow 0.15s ease;
         }
 
         #instructions {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, #150202 0%, #000000 100%); color: #fff;
+            background: #050101; color: #fff;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             text-align: center; z-index: 10; cursor: pointer;
         }
 
         #ui-game {
-            position: absolute; top: 30px; left: 30px; color: #fff;
-            font-size: 0.85rem; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none;
-            letter-spacing: 3px; z-index: 6; opacity: 0.8;
+            position: absolute; top: 40px; left: 40px; color: #fff;
+            font-size: 0.75rem; font-weight: 700; pointer-events: none;
+            letter-spacing: 4px; z-index: 6; opacity: 0.7;
         }
         .stamina-container {
-            width: 150px; height: 4px; background: rgba(255,255,255,0.1);
-            margin-top: 7px; border-radius: 2px; overflow: hidden;
+            width: 140px; height: 3px; background: rgba(255,255,255,0.08);
+            margin-top: 8px; border-radius: 1px; overflow: hidden;
         }
-        #stamina-bar { width: 100%; height: 100%; background: #ffffff; transition: background-color 0.3s; }
+        #stamina-bar { width: 100%; height: 100%; background: #ffffff; }
 
         .end-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 20; display: none; text-align: center; opacity: 0;
-            transition: opacity 1.2s ease-in-out;
+            transition: opacity 1.5s ease-in-out;
         }
-        #lose-screen { background: #000; color: #bb0000; text-shadow: 0 0 30px #ff0000; }
-        #win-screen { background: #ffffff; color: #000000; }
+        #lose-screen { background: #000; color: #880000; letter-spacing: 5px; }
+        #win-screen { background: #ffffff; color: #000000; letter-spacing: 5px; }
         
-        .glitch { animation: shake 0.15s infinite; }
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            100% { transform: translate(-1px, -1px) rotate(0deg); }
+        .glitch { animation: subtle-shake 0.2s infinite alternate; }
+        @keyframes subtle-shake {
+            0% { transform: translateY(0.5px); }
+            100% { transform: translateY(-0.5px); }
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -62,82 +61,98 @@
     <div id="crosshair"></div>
 
     <div id="instructions">
-        <h1 class="glitch" style="color: #d11a1a; font-size: 2.5rem; margin-bottom: 0; letter-spacing: 8px;">WENDIGO</h1>
-        <p style="color: #555; margin-top: 5px; letter-spacing: 2px; font-size: 0.75rem;">[ HYPER-REALISTIC CINEMATIC EXPERIMENT ]</p>
-        <p style="font-size: 1rem; margin: 50px 0; color: #aaa; letter-spacing: 1px;">KLIK LAYAR UNTUK MENGAKTIFKAN SIMULATOR</p>
-        <p style="font-size: 0.75rem; color: #777; line-height: 2;">
-            W, A, S, D untuk melangkah | SHIFT untuk memacu adrenalin
+        <h1 class="glitch" style="color: #fff; font-size: 1.8rem; font-weight: 300; margin-bottom: 0; letter-spacing: 12px;">W E N D I G O</h1>
+        <p style="color: #444; margin-top: 8px; letter-spacing: 3px; font-size: 0.65rem;">[ CORE ENGINE: UNITY-GRADE REALISM V3 ]</p>
+        <p style="font-size: 0.8rem; margin: 60px 0; color: #888; letter-spacing: 2px;">GUNAKAN HEADPHONE • KLIK UNTUK MEMULAI</p>
+        <p style="font-size: 0.65rem; color: #555; letter-spacing: 1px;">
+            W A S D — Gerakan Finisial Inersia | SHIFT — Pacu Adrenalin
         </p>
     </div>
 
     <div id="ui-game">
-        LOCATION EXIT: <span id="dist-text">175</span>M<br>
-        VITALS (STAMINA)
+        DISTANCE TO SURFACE: <span id="dist-text">180</span>M<br>
+        SYSTEM.STAMINA_CORE
         <div class="stamina-container"><div id="stamina-bar"></div></div>
-        <div id="warning-text" style="margin-top: 20px; font-weight: normal; font-size: 0.75rem; color: #aaa;"></div>
+        <div id="warning-text" style="margin-top: 25px; font-weight: 400; letter-spacing: 2px; font-size: 0.65rem; color: #666;"></div>
     </div>
 
     <div id="win-screen" class="end-screen">
-        <div style="letter-spacing: 12px; font-size: 2.5rem; font-weight: 300;">TERBEBAS</div>
-        <div style="margin-top: 25px; color: #555; font-size: 0.9rem; letter-spacing: 1px;">Paru-parumu menghirup udara luar yang murni.</div>
+        <div style="font-size: 2rem; font-weight: 300; letter-spacing: 15px;">EVAKUASI BERHASIL</div>
     </div>
 
     <div id="lose-screen" class="end-screen">
-        <div class="glitch" style="letter-spacing: 4px; font-size: 3rem; font-weight: 900;">TERKUNCI DI KEGELAPAN</div>
-        <div style="margin-top: 20px; color: #333; font-size: 0.85rem;">Detak jantungmu berhenti berdegub.</div>
+        <div class="glitch" style="font-size: 2rem; font-weight: 400; letter-spacing: 6px;">KONTAK TERPUTUS</div>
     </div>
     
     <div id="canvas-container"></div>
 
     <script>
-        let scene, camera, renderer, flashlight, dustParticles;
-        let wendigo, leftArm, rightArm;
+        let scene, camera, renderer, flashlight, volumetricBeam, dustParticles;
+        let wendigo, wendigoHead, leftArm, rightArm;
         let doorPivot;
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isSprinting = false;
-        let yaw = 0, pitch = 0;
-        let gameActive = false, distanceToExit = 175;
-        let caveLength = 175;
+        let yaw = 0, pitch = 0, targetRoll = 0, currentRoll = 0;
+        let gameActive = false, distanceToExit = 180;
+        let caveLength = 180;
 
-        // Audio & Fisika Inersia Canggih
-        let audioCtx, ambientOsc, heartbeatTimer = 0, heartbeatInterval = 60;
-        let breatheTimer = 0;
+        // Audio Spasial 3D Native Web Audio Nodes
+        let audioCtx, ambientOsc, pannerNode;
+        let heartbeatTimer = 0, heartbeatInterval = 60, footstepTimer = 0;
+        
+        // Fisika Momentum & Kamera Sway Unity Style
         let playerVelocity = new THREE.Vector3();
-        let flashlightTargetPos = new THREE.Vector3();
-        let bobTimer = 0, lastBob = 0;
+        let flashlightPos = new THREE.Vector3();
+        let flashlightRot = new THREE.Quaternion();
+        let bobTimer = 0;
 
-        const player = { normalSpeed: 0.085, sprintSpeed: 0.15, stamina: 100 };
+        const player = { normalSpeed: 0.08, sprintSpeed: 0.145, stamina: 100 };
 
         function init() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x000000);
-            scene.fog = new THREE.FogExp2(0x000000, 0.24); // Atmosfer berkabut tebal
+            scene.fog = new THREE.FogExp2(0x000000, 0.25); // Ketebalan kabut atmosferik
 
-            camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.05, 1000);
             camera.position.set(0, 1.5, 0);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-            // Senter Kompleks dengan "Light Cookie" (Tekstur Lensa Buatan)
-            flashlight = new THREE.SpotLight(0xfff5e0, 6, 28, Math.PI / 5, 0.5, 1.1);
+            // 1. Senter Inti (SpotLight dengan Bayangan Halus)
+            flashlight = new THREE.SpotLight(0xfff6e6, 7, 30, Math.PI / 4.8, 0.6, 1.2);
             flashlight.castShadow = true;
-            flashlight.shadow.mapSize.width = 1024;
-            flashlight.shadow.mapSize.height = 1024;
-            flashlight.shadow.camera.near = 0.2;
-            flashlight.shadow.camera.far = 28;
-            flashlight.map = createFlashlightLensTexture(); // Pasang pola lensa realistis
+            flashlight.shadow.mapSize.set(1024, 1024);
+            flashlight.shadow.camera.near = 0.1;
+            flashlight.shadow.camera.far = 30;
+            flashlight.map = createLensCookie();
             scene.add(flashlight);
             scene.add(flashlight.target);
 
-            const ambient = new THREE.AmbientLight(0x010103, 0.05);
-            scene.add(ambient);
+            // 2. EFEK VOLUMETRIC BEAM (Batang Cahaya Senter di Tengah Kabut)
+            let beamGeo = new THREE.ConeGeometry(3.5, 24, 32, 1, true);
+            beamGeo.translate(0, -12, 0); // Pindahkan pivot ke ujung kerucut
+            beamGeo.rotateX(Math.PI / 2); // Arahkan lurus ke depan
+            
+            // Material custom gradasi transparan mensimulasikan partikel udara padat tersorot cahaya
+            let beamMat = new THREE.MeshBasicMaterial({
+                color: 0xfff6e6,
+                transparent: true,
+                opacity: 0.12,
+                blending: THREE.AdditiveBlending,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+            volumetricBeam = new THREE.Mesh(beamGeo, beamMat);
+            scene.add(volumetricBeam);
 
-            generateHyperDetailedCave();
+            scene.add(new THREE.AmbientLight(0x010102, 0.03));
+
+            generateUnityGradeCave();
             createDustParticles();
-            createRealisticWendigo();
+            createAdvancedWendigo();
 
             document.addEventListener('keydown', onKeyDown);
             document.addEventListener('keyup', onKeyUp);
@@ -147,201 +162,209 @@
             inst.addEventListener('click', () => {
                 inst.style.display = 'none';
                 document.body.requestPointerLock();
-                initProceduralAudio();
+                initSpatialAudio(); // Nyalakan Mesin Audio 3D Spasial
                 gameActive = true;
             });
 
             animate();
         }
 
-        // --- GENERATOR LENS COOKIE SENTER ---
-        function createFlashlightLensTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 512;
+        // --- GENERATOR KUALITAS LENSA GAMING (COOKIE) ---
+        function createLensCookie() {
+            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
             const ctx = canvas.getContext('2d');
-            let grad = ctx.createRadialGradient(256, 256, 0, 256, 256, 256);
+            let grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
             grad.addColorStop(0, '#ffffff');
-            grad.addColorStop(0.15, '#fffbf0');
-            grad.addColorStop(0.4, 'rgba(200, 180, 140, 0.4)');
-            grad.addColorStop(0.75, 'rgba(90, 70, 40, 0.15)'); // Cincin lensa luar
-            grad.addColorStop(0.95, 'rgba(10, 5, 0, 0.02)');
+            grad.addColorStop(0.12, '#fff6df');
+            grad.addColorStop(0.35, 'rgba(180, 160, 130, 0.35)');
+            grad.addColorStop(0.7, 'rgba(50, 40, 30, 0.08)');
             grad.addColorStop(1, '#000000');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 512, 512);
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, 256, 256);
             return new THREE.CanvasTexture(canvas);
         }
 
-        // --- GENERATOR TEKSTUR BATU ORGANIK (BUMP MAP) ---
-        function createRockBumpTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 512;
+        // --- TEXTURE RE-GENERATOR JANGKAUAN LUAR (WET PARALLAX BUMP) ---
+        function createAdvancedRockMaps() {
+            const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#808080';
-            ctx.fillRect(0, 0, 512, 512);
-            // Gambar ribuan bercak noise mikro untuk sensasi pori batu kasar
-            ctx.globalAlpha = 0.18;
-            for(let i = 0; i < 1500; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#ffffff' : '#000000';
-                ctx.beginPath();
-                ctx.arc(Math.random()*512, Math.random()*512, Math.random()*16+2, 0, Math.PI*2);
-                ctx.fill();
+            ctx.fillStyle = '#7f7f7f'; ctx.fillRect(0, 0, 512, 512);
+            // Fraktal noise kasar berpori tajam
+            for(let i=0; i<3000; i++) {
+                ctx.fillStyle = Math.random() > 0.52 ? '#ffffff' : '#000000';
+                ctx.globalAlpha = Math.random() * 0.15;
+                ctx.fillRect(Math.random()*512, Math.random()*512, Math.random()*12+1, Math.random()*12+1);
             }
             ctx.globalAlpha = 1.0;
             const tex = new THREE.CanvasTexture(canvas);
-            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(4, 4);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(3,3);
             return tex;
         }
 
-        // --- SISTEM AUDIO SINTETIS (TANPA FILE MP3) ---
-        function initProceduralAudio() {
+        // --- SISTEM AUDIO SPASIAL 3D NYATA (NATIVE 3D PANNING) ---
+        function initSpatialAudio() {
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Panner Node untuk melacak posisi koordinat Monster di ruang 3D relatif terhadap kamera
+                pannerNode = audioCtx.createPanner();
+                pannerNode.panningModel = 'HRTF'; // Perhitungan algoritma kepala manusia nyata (sangat akurat)
+                pannerNode.distanceModel = 'inverse';
+                pannerNode.refDistance = 1;
+                pannerNode.maxDistance = 40;
+                pannerNode.rolloffFactor = 1.2;
+                pannerNode.connect(audioCtx.destination);
+
+                // Suara Latar Belakang (Dengungan Tekanan Goa)
                 ambientOsc = audioCtx.createOscillator();
                 let filter = audioCtx.createBiquadFilter();
                 let gain = audioCtx.createGain();
-                ambientOsc.type = 'sawtooth';
-                ambientOsc.frequency.setValueAtTime(32, audioCtx.currentTime);
-                filter.type = 'lowpass'; filter.frequency.setValueAtTime(70, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                ambientOsc.type = 'sawtooth'; ambientOsc.frequency.setValueAtTime(30, audioCtx.currentTime);
+                filter.type = 'lowpass'; filter.frequency.setValueAtTime(65, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
                 ambientOsc.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
                 ambientOsc.start();
-            } catch(e) { console.log(e); }
+            } catch(e) { console.warn("Spatial Audio Muted / Not Supported"); }
         }
 
-        function playSyntheticSound(freq, vol, duration, type='sine', ramp=true) {
+        // Memainkan efek suara spasial 3D (Bisa diset posisinya secara dinamis)
+        function playSpatialSound(freq, vol, duration, type='sine', isMonsterSound = false) {
             if(!audioCtx) return;
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
             osc.type = type;
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
             gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            if(ramp) gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-            osc.connect(gain); gain.connect(audioCtx.destination);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            
+            // Jika ini suara monster, hubungkan ke node Panner 3D agar suaranya memiliki arah spasial!
+            if(isMonsterSound && pannerNode) {
+                osc.connect(gain); gain.connect(pannerNode);
+            } else {
+                osc.connect(gain); gain.connect(audioCtx.destination);
+            }
             osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
 
-        function generateHyperDetailedCave() {
-            const rockBump = createRockBumpTexture();
-            // Material berspekularitas tinggi agar memantulkan kilau lembab (wet effect)
+        function generateUnityGradeCave() {
+            const rockBump = createAdvancedRockMaps();
             const rockMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x141414, 
-                bumpMap: rockBump, 
-                bumpScale: 0.18,
-                roughness: 0.5, // Refleksi agak mengkilap seperti batuan goa basah
-                metalness: 0.15
+                color: 0x111112, 
+                bumpMap: rockBump, bumpScale: 0.22,
+                roughness: 0.42, // Membuat refleksi basah berkilau saat tersorot sudut senter
+                metalness: 0.2 
             });
 
-            const ground = new THREE.Mesh(new THREE.BoxGeometry(12, 0.2, caveLength + 20), rockMaterial);
-            ground.position.set(0, 0, -caveLength/2); ground.receiveShadow = true;
-            scene.add(ground);
+            const ground = new THREE.Mesh(new THREE.BoxGeometry(14, 0.2, caveLength + 20), rockMaterial);
+            ground.position.set(0, 0, -caveLength/2); ground.receiveShadow = true; scene.add(ground);
 
-            for (let z = 10; z > -caveLength - 10; z -= 1.8) {
-                for (let i = 0; i < 7; i++) {
-                    let size = 1.2 + Math.random() * 1.5;
+            for (let z = 10; z > -caveLength - 10; z -= 1.6) {
+                // Kepadatan batuan masif (8 objek acak per lapis segmen lorong)
+                for (let i = 0; i < 8; i++) {
+                    let size = 1.3 + Math.random() * 1.6;
                     let geo = new THREE.DodecahedronGeometry(size);
 
                     let left = new THREE.Mesh(geo, rockMaterial);
-                    left.position.set(-4.4 - Math.random(), Math.random() * 5.5, z + (Math.random()-0.5));
+                    left.position.set(-4.5 - Math.random(), Math.random() * 6, z + (Math.random()-0.5));
                     left.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
                     left.castShadow = true; left.receiveShadow = true; scene.add(left);
 
                     let right = new THREE.Mesh(geo, rockMaterial);
-                    right.position.set(4.4 + Math.random(), Math.random() * 5.5, z + (Math.random()-0.5));
+                    right.position.set(4.5 + Math.random(), Math.random() * 6, z + (Math.random()-0.5));
                     right.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
                     right.castShadow = true; right.receiveShadow = true; scene.add(right);
 
                     let roof = new THREE.Mesh(geo, rockMaterial);
-                    roof.position.set((Math.random() - 0.5) * 9, 5.0 + Math.random()*0.4, z);
+                    roof.position.set((Math.random() - 0.5) * 10, 5.3 + Math.random()*0.3, z);
                     roof.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
                     roof.castShadow = true; roof.receiveShadow = true; scene.add(roof);
                 }
 
-                // Formasi Stalaktit & Stalagmit Tajam
-                if (Math.random() < 0.45) {
-                    let spike = new THREE.CylinderGeometry(0.02, 0.35, 1.4 + Math.random()*1.2, 5);
+                // Stalaktit & Stalagmit Tajam Sempurna
+                if (Math.random() < 0.5) {
+                    let spike = new THREE.CylinderGeometry(0.01, 0.32, 1.6 + Math.random()*1.4, 5);
                     let st = new THREE.Mesh(spike, rockMaterial);
-                    st.position.set((Math.random() - 0.5) * 6, 4.6, z); st.rotation.x = Math.PI;
-                    st.castShadow = true; scene.add(st);
+                    st.position.set((Math.random() - 0.5) * 7, 4.8, z); st.rotation.x = Math.PI; st.castShadow = true;
+                    scene.add(st);
 
                     let sg = new THREE.Mesh(spike, rockMaterial);
-                    sg.position.set((Math.random() - 0.5) * 6, 0.6, z - 0.8);
-                    sg.castShadow = true; sg.receiveShadow = true; scene.add(sg);
+                    sg.position.set((Math.random() - 0.5) * 7, 0.6, z - 0.5); sg.castShadow = true; sg.receiveShadow = true;
+                    scene.add(sg);
                 }
             }
 
-            // Pintu Ekstra Solid Kuno
-            doorPivot = new THREE.Group(); doorPivot.position.set(-2.2, 0, -caveLength); scene.add(doorPivot);
-            const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(4.4, 4.2, 0.25), new THREE.MeshStandardMaterial({ color: 0x24150a, roughness: 0.9 }));
-            doorMesh.position.set(2.2, 2.1, 0); doorMesh.castShadow = true; doorPivot.add(doorMesh);
+            // Gerbang Keluar Solid Kuno
+            doorPivot = new THREE.Group(); doorPivot.position.set(-2.4, 0, -caveLength); scene.add(doorPivot);
+            const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(4.8, 4.4, 0.3), new THREE.MeshStandardMaterial({ color: 0x1d1107, roughness: 0.95 }));
+            doorMesh.position.set(2.4, 2.2, 0); doorMesh.castShadow = true; doorPivot.add(doorMesh);
 
-            const exitLight = new THREE.PointLight(0xffffff, 8, 40); exitLight.position.set(0, 2, -caveLength - 3); scene.add(exitLight);
-            const whiteGlow = new THREE.Mesh(new THREE.PlaneGeometry(16, 10), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
-            whiteGlow.position.set(0, 3, -caveLength - 4); scene.add(whiteGlow);
+            const exitLight = new THREE.PointLight(0xffffff, 10, 40); exitLight.position.set(0, 2, -caveLength - 3); scene.add(exitLight);
+            const whiteGlow = new THREE.Mesh(new THREE.PlaneGeometry(18, 12), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+            whiteGlow.position.set(0, 3, -caveLength - 4.2); scene.add(whiteGlow);
         }
 
-        function createRealisticWendigo() {
+        function createAdvancedWendigo() {
             wendigo = new THREE.Group();
             const blackMat = new THREE.MeshBasicMaterial({ color: 0x010101 });
 
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.02, 3.4), blackMat);
-            body.position.y = 1.7; body.castShadow = true; wendigo.add(body);
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.02, 3.5), blackMat);
+            body.position.y = 1.75; body.castShadow = true; wendigo.add(body);
 
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.55), new THREE.MeshBasicMaterial({ color: 0xbab5b5 }));
-            head.position.set(0, 3.4, -0.1); head.castShadow = true; wendigo.add(head);
+            // Sub-grup kepala agar bisa dibuat animasi bergetar (twitching) terpisah dari badan
+            wendigoHead = new THREE.Group();
+            wendigoHead.position.set(0, 3.5, -0.1);
+            
+            const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.55), new THREE.MeshBasicMaterial({ color: 0xaaaaaa }));
+            headMesh.castShadow = true; wendigoHead.add(headMesh);
 
-            const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff0000 })); leftEye.position.set(-0.09, 3.45, -0.38);
-            const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff0000 })); rightEye.position.set(0.09, 3.45, -0.38);
-            wendigo.add(leftEye, rightEye);
+            const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff0000 })); leftEye.position.set(-0.08, 0.05, -0.28);
+            const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff0000 })); rightEye.position.set(0.08, 0.05, -0.28);
+            wendigoHead.add(leftEye, rightEye);
 
-            // Tangan Kurus Panjang Menjuntai Belalang
-            leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.04, 2.0, 0.04), blackMat); leftArm.position.set(-0.22, 2.2, 0);
-            rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.04, 2.0, 0.04), blackMat); rightArm.position.set(0.22, 2.2, 0);
+            wendigo.add(wendigoHead);
+
+            leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.035, 2.2, 0.035), blackMat); leftArm.position.set(-0.2, 2.2, 0);
+            rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.035, 2.2, 0.035), blackMat); rightArm.position.set(0.2, 2.2, 0);
             wendigo.add(leftArm, rightArm);
 
             wendigo.position.set(0, 0, 15); scene.add(wendigo);
         }
 
         function createDustParticles() {
-            const geo = new THREE.BufferGeometry();
-            const arr = new Float32Array(600 * 3);
-            for (let i = 0; i < 600 * 3; i += 3) {
-                arr[i] = (Math.random() - 0.5) * 10;
-                arr[i + 1] = Math.random() * 5;
-                arr[i + 2] = -Math.random() * caveLength;
+            const geo = new THREE.BufferGeometry(); const arr = new Float32Array(700 * 3);
+            for (let i = 0; i < 700 * 3; i += 3) {
+                arr[i] = (Math.random() - 0.5) * 11; arr[i + 1] = Math.random() * 5.5; arr[i + 2] = -Math.random() * caveLength;
             }
             geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
-            dustParticles = new THREE.Points(geo, new THREE.PointsMaterial({color: 0xffffff, size: 0.025, transparent: true, opacity: 0.25}));
+            dustParticles = new THREE.Points(geo, new THREE.PointsMaterial({color: 0xffffff, size: 0.02, transparent: true, opacity: 0.2}));
             scene.add(dustParticles);
         }
 
         function onKeyDown(e) {
             if(!gameActive) return;
-            if (e.code === 'KeyW') moveForward = true;
-            if (e.code === 'KeyS') moveBackward = true;
-            if (e.code === 'KeyA') moveLeft = true;
-            if (e.code === 'KeyD') moveRight = true;
+            if (e.code === 'KeyW') moveForward = true; if (e.code === 'KeyS') moveBackward = true;
+            if (e.code === 'KeyA') { moveLeft = true; targetRoll = 0.025; } // Efek kemiringan pandangan (Camera Lean)
+            if (e.code === 'KeyD') { moveRight = true; targetRoll = -0.025; }
             if (e.code === 'ShiftLeft') isSprinting = true;
         }
         function onKeyUp(e) {
-            if (e.code === 'KeyW') moveForward = false;
-            if (e.code === 'KeyS') moveBackward = false;
-            if (e.code === 'KeyA') moveLeft = false;
-            if (e.code === 'KeyD') moveRight = false;
+            if (e.code === 'KeyW') moveForward = false; if (e.code === 'KeyS') moveBackward = false;
+            if (e.code === 'KeyA') moveLeft = false; if (e.code === 'KeyD') moveRight = false;
+            if (!moveLeft && !moveRight) targetRoll = 0;
             if (e.code === 'ShiftLeft') isSprinting = false;
         }
         function onMouseMove(e) {
             if (document.pointerLockElement !== document.body) return;
-            yaw -= e.movementX * 0.0016;
-            pitch -= e.movementY * 0.0016;
-            pitch = Math.max(-Math.PI / 2.4, Math.min(Math.PI / 2.4, pitch));
+            yaw -= e.movementX * 0.0014; pitch -= e.movementY * 0.0014;
+            pitch = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitch));
+            
+            // Menambahkan efek rotasi menggelinding halus (Mouse Sway Roll) saat melirik cepat
+            targetRoll += e.movementX * 0.0003;
         }
 
         function triggerEndScreen(screenId) {
             gameActive = false; document.exitPointerLock();
             if(ambientOsc) ambientOsc.stop();
-            const screen = document.getElementById(screenId);
-            screen.style.display = 'flex';
+            const screen = document.getElementById(screenId); screen.style.display = 'flex';
             setTimeout(() => { screen.style.opacity = '1'; }, 50);
             setTimeout(() => { location.reload(); }, 5000);
         }
@@ -349,25 +372,25 @@
         function update() {
             if (!gameActive) return;
 
-            // --- FISIKA INERSIA PERGERAKAN PLAYER ---
             let isMoving = moveForward || moveBackward || moveLeft || moveRight;
             let currentMaxSpeed = (isSprinting && player.stamina > 0 && isMoving) ? player.sprintSpeed : player.normalSpeed;
 
-            // Konsumsi Stamina
+            // Logika Regenerasi/Konsumsi Daya Stamina Vitalitas
             if (isSprinting && isMoving && player.stamina > 0) {
                 player.stamina = Math.max(0, player.stamina - 0.5);
             } else {
-                player.stamina = Math.min(100, player.stamina + 0.2);
+                player.stamina = Math.min(100, player.stamina + 0.22);
             }
-            
-            let bar = document.getElementById('stamina-bar');
-            bar.style.width = player.stamina + "%";
-            bar.style.backgroundColor = player.stamina < 30 ? '#c0392b' : '#ffffff';
+            document.getElementById('stamina-bar').style.width = player.stamina + "%";
+
+            // --- SMOOTH CAMERA LEAN & INERSIA ROLL ---
+            currentRoll = THREE.MathUtils.lerp(currentRoll, targetRoll, 0.08);
+            targetRoll = THREE.MathUtils.lerp(targetRoll, 0, 0.1); // Kembalikan ke posisi tegak perlahan
 
             camera.rotation.order = "YXZ";
-            camera.rotation.set(pitch, yaw, 0);
+            camera.rotation.set(pitch, yaw, currentRoll);
 
-            // Hitung Arah Target Vektor Gerakan
+            // Hitung Gaya Gerak Berbobot (Momentum Linier)
             let targetVelocity = new THREE.Vector3();
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion); forward.y = 0; forward.normalize();
             const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion); right.y = 0; right.normalize();
@@ -377,113 +400,135 @@
             if (moveLeft) targetVelocity.addScaledVector(right, -currentMaxSpeed);
             if (moveRight) targetVelocity.addScaledVector(right, currentMaxSpeed);
 
-            // Penerapan Efek Inersia Berat (Lerp Velocity)
-            playerVelocity.lerp(targetVelocity, 0.1); 
+            playerVelocity.lerp(targetVelocity, 0.09); // Hasil gerak inersia halus
             camera.position.add(playerVelocity);
-            camera.position.x = Math.max(-3.0, Math.min(3.0, camera.position.x));
+            camera.position.x = Math.max(-2.9, Math.min(2.9, camera.position.x));
 
-            // --- GERAKAN HEAD BOBBING & AUDIO LANGKAH KAKI SINTETIS ---
+            // --- RIGGING AUDIO LANGKAH KAKI & HEAD BOBBING KINEMATIK ---
             let targetY = 1.5;
             if (isMoving && playerVelocity.length() > 0.01) {
-                let freq = (isSprinting && player.stamina > 0) ? 0.25 : 0.14;
-                let amp = (isSprinting && player.stamina > 0) ? 0.06 : 0.03;
+                let freq = (isSprinting && player.stamina > 0) ? 0.26 : 0.14;
+                let amp = (isSprinting && player.stamina > 0) ? 0.055 : 0.025;
                 bobTimer += freq;
                 targetY += Math.sin(bobTimer) * amp;
 
-                // Picu audio langkah kaki tiap kali kurva bobbing menghentak ke bawah
+                // Sinkronisasi Audio Jejak Boot Kaki
                 let currentBob = Math.sin(bobTimer);
-                if (currentBob < -0.9 && lastBob >= -0.9) {
-                    let stepVol = (isSprinting && player.stamina > 0) ? 0.25 : 0.12;
-                    let stepPitch = (isSprinting && player.stamina > 0) ? 45 : 35;
-                    playSyntheticSound(stepPitch, stepVol, 0.12, 'triangle'); // Suara langkah berat d गोवा
+                if (currentBob < -0.92 && footstepTimer <= 0) {
+                    let stepVol = (isSprinting && player.stamina > 0) ? 0.3 : 0.14;
+                    let stepPitch = (isSprinting && player.stamina > 0) ? 42 : 32;
+                    playSpatialSound(stepPitch, stepVol, 0.14, 'triangle'); // Klik Hentakan Kaki
+                    footstepTimer = 8; // Mencegah spam audio berlebih
                 }
-                lastBob = currentBob;
+                footstepTimer--;
             }
             camera.position.y = targetY;
 
-            // NAFAS PANIK (Saat stamina sekarat)
-            if (player.stamina < 35) {
-                breatheTimer++;
-                if (breatheTimer > 45) {
-                    breatheTimer = 0;
-                    playSyntheticSound(90, 0.08, 0.3, 'sine', true); // Efek nafas terengah-engah
-                }
-            }
+            // --- MEKANIK INERSIA SENTER LERP 3-DIMENSI ---
+            // Senter berayun lambat menciptakan efek berat/massa benda nyata (Unity-Style Weapon Lag)
+            flashlightPos.lerp(camera.position, 0.075);
+            flashlight.position.copy(flashlightPos);
+            volumetricBeam.position.copy(flashlightPos);
 
-            // --- INERSIA SENTER KINEMATIK (LAG EFFECT) ---
-            flashlight.position.copy(camera.position);
             let idealTargetPos = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position);
-            // Nilai LERP kecil (0.075) memberikan efek "bobot/lambat" yang sangat kinematik saat menoleh
-            flashlightTargetPos.lerp(idealTargetPos, 0.075); 
-            flashlight.target.position.copy(flashlightTargetPos);
+            let currentTargetPos = new THREE.Vector3().copy(flashlight.target.position);
+            currentTargetPos.lerp(idealTargetPos, 0.07);
+            flashlight.target.position.copy(currentTargetPos);
+            volumetricBeam.lookAt(currentTargetPos);
 
-            // Efek Rusak Listrik Senter
-            if (Math.random() < 0.01) { 
-                flashlight.intensity = 0; 
-                playSyntheticSound(180, 0.03, 0.02, 'sawtooth');
-            } else if (Math.random() < 0.05) { 
-                flashlight.intensity = 0.5 + Math.random() * 2; 
+            // Flicker Senter Rusak Alami
+            if (Math.random() < 0.008) { 
+                flashlight.intensity = 0; volumetricBeam.visible = false;
+                playSpatialSound(140, 0.02, 0.01, 'sawtooth');
+            } else if (Math.random() < 0.04) { 
+                flashlight.intensity = 0.4 + Math.random()*2; volumetricBeam.visible = Math.random() > 0.3;
             } else { 
-                flashlight.intensity = 5.5; 
+                flashlight.intensity = 6.0; volumetricBeam.visible = true;
             }
 
-            if (dustParticles) dustParticles.rotation.z += 0.0003;
+            if (dustParticles) dustParticles.rotation.z += 0.0002;
 
-            // --- AI & ANIMASI WENDIGO RUN ---
-            let wendigoSpeed = 0.088 + (Math.abs(camera.position.z) * 0.00015);
+            // --- AI & ANIMASI SPASMODIK WENDIGO ---
+            let wendigoSpeed = 0.088 + (Math.abs(camera.position.z) * 0.00016);
             wendigo.position.z -= wendigoSpeed;
             wendigo.position.x += (camera.position.x - wendigo.position.x) * 0.032;
             
-            let armSwing = Date.now() * 0.016;
-            wendigo.position.y = Math.abs(Math.sin(armSwing)) * 0.18;
+            let swing = Date.now() * 0.016;
+            wendigo.position.y = Math.abs(Math.sin(swing)) * 0.15;
+            
             if(leftArm && rightArm) {
-                leftArm.rotation.x = Math.sin(armSwing) * 0.6;
-                rightArm.rotation.x = -Math.sin(armSwing) * 0.6;
+                leftArm.rotation.x = Math.sin(swing) * 0.55;
+                rightArm.rotation.x = -Math.sin(swing) * 0.55;
+            }
+
+            // Efek Kedutan Seram Kepala Monster (Twitchy Horror Motion)
+            if (wendigoHead && Math.random() < 0.15) {
+                wendigoHead.position.x = (Math.random() - 0.5) * 0.08;
+                wendigoHead.position.y = 3.5 + (Math.random() - 0.5) * 0.08;
+            }
+
+            // --- HITUNG DAN KIRIM MATRIKS KORDINAT KE PANNER AUDIO 3D SPASIAL ---
+            if(pannerNode) {
+                // Beritahu mesin audio browser di mana koordinat letak Monster berada saat ini
+                pannerNode.positionX.setValueAtTime(wendigo.position.x, audioCtx.currentTime);
+                pannerNode.positionY.setValueAtTime(wendigo.position.y, audioCtx.currentTime);
+                pannerNode.positionZ.setValueAtTime(wendigo.position.z, audioCtx.currentTime);
+                
+                // Beritahu mesin audio browser ke mana arah orientasi kepala pemain menghadap
+                let listener = audioCtx.listener;
+                let lookDir = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+                if (listener.forwardX) {
+                    listener.positionX.setValueAtTime(camera.position.x, audioCtx.currentTime);
+                    listener.positionY.setValueAtTime(camera.position.y, audioCtx.currentTime);
+                    listener.positionZ.setValueAtTime(camera.position.z, audioCtx.currentTime);
+                    listener.forwardX.setValueAtTime(lookDir.x, audioCtx.currentTime);
+                    listener.forwardY.setValueAtTime(lookDir.y, audioCtx.currentTime);
+                    listener.forwardZ.setValueAtTime(lookDir.z, audioCtx.currentTime);
+                }
             }
 
             distanceToExit = Math.ceil(caveLength + camera.position.z);
             document.getElementById('dist-text').innerText = distanceToExit > 0 ? distanceToExit : 0;
 
             if (distanceToExit <= 18 && doorPivot.rotation.y > -Math.PI / 1.7) {
-                doorPivot.rotation.y -= 0.022; // Animasi pintu berayun berat
+                doorPivot.rotation.y -= 0.02; 
             }
 
-            // --- MANAGEMEN TEROR DINAMIS ---
+            // --- INTENSIFIKASI KEPANIKAN INTRA-KORIDOR ---
             let distanceToMonster = wendigo.position.z - camera.position.z;
             let warnEl = document.getElementById('warning-text');
             let vigEl = document.getElementById('vignette');
 
-            // Detak Jantung Dinamis
             heartbeatTimer++;
-            if (distanceToMonster < 6) heartbeatInterval = 18;
-            else if (distanceToMonster < 12) heartbeatInterval = 38;
-            else heartbeatInterval = 65;
+            if (distanceToMonster < 6) heartbeatInterval = 16;
+            else if (distanceToMonster < 12) heartbeatInterval = 35;
+            else heartbeatInterval = 62;
 
             if (heartbeatTimer >= heartbeatInterval) {
                 heartbeatTimer = 0;
-                let hVol = distanceToMonster < 6 ? 0.9 : (distanceToMonster < 12 ? 0.45 : 0.15);
-                let hPitch = distanceToMonster < 6 ? 68 : 52;
-                playSyntheticSound(hPitch, hVol, 0.14, 'sine');
+                let hVol = distanceToMonster < 6 ? 1.0 : (distanceToMonster < 12 ? 0.5 : 0.12);
+                let hPitch = distanceToMonster < 6 ? 66 : 50;
+                playSpatialSound(hPitch, hVol, 0.15, 'sine', true); // Detak Jantung Spasial Melalui Monster Tracking
             }
 
             if (distanceToMonster < 6) {
-                warnEl.innerText = "SISTEM KOORDINAT TERGANGGU — ELEMENT TERDEKAT";
-                warnEl.style.color = "#ff3333";
+                warnEl.innerText = "CRITICAL METERS: HIGH ADRENALINE INTERFERENCE";
+                warnEl.style.color = "#ff2222";
                 
-                let pulse = Math.abs(Math.sin(Date.now() * 0.02)) * 70 + 50;
-                vigEl.style.boxShadow = `inset 0 0 ${pulse}px rgba(130, 0, 0, 0.95)`;
+                let pulse = Math.abs(Math.sin(Date.now() * 0.025)) * 80 + 50;
+                vigEl.style.boxShadow = `inset 0 0 ${pulse}px rgba(100, 0, 0, 0.98)`;
 
-                let shake = (6 - distanceToMonster) * 0.04;
+                let shake = (6 - distanceToMonster) * 0.045;
                 camera.position.x += (Math.random() - 0.5) * shake;
                 camera.position.y += (Math.random() - 0.5) * shake;
             } else if (distanceToMonster < 12) {
-                warnEl.innerText = "TERDETEKSI AKTIVITAS AKUSTIK DI BELAKANG ANDA";
-                warnEl.style.color = "#ffaa00";
-                vigEl.style.boxShadow = "inset 0 0 70px rgba(100, 0, 0, 0.5)";
+                warnEl.innerText = "WARNING: UNIDENTIFIED AUDIO SIGNAL DETECTED REARWARD";
+                warnEl.style.color = "#ff9900";
+                vigEl.style.boxShadow = "inset 0 0 75px rgba(80, 0, 0, 0.6)";
             } else {
-                warnEl.innerText = "PROSEDUR PELARIAN: IKUTI KORIDOR UTAMA MENUJU PINTU";
-                warnEl.style.color = "#555";
-                vigEl.style.boxShadow = "inset 0 0 120px rgba(0, 0, 0, 0.98)";
+                warnEl.innerText = "LOCATION LOG: SUB-LEVEL CAVE EXTRACTION RUNNING";
+                warnEl.style.color = "#444";
+                vigEl.style.boxShadow = "inset 0 0 130px rgba(0, 0, 0, 0.99)";
             }
 
             if (distanceToMonster <= 0.72) triggerEndScreen('lose-screen');
@@ -498,8 +543,7 @@
 
         window.onload = init;
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
