@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Cold Cave: Cosmic Abyss</title>
+    <title>The Cold Cave: Absolute Terror</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: #010101; font-family: monospace; }
@@ -11,43 +11,51 @@
         #vignette { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; box-shadow: inset 0 0 180px rgba(0, 0, 0, 1); pointer-events: none; z-index: 5; transition: box-shadow 0.1s ease; }
         
         .ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
-        .hud { display: flex; justify-content: space-between; align-items: center; color: #fff; font-size: 0.85rem; letter-spacing: 2px; background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%); padding: 15px; width: 100%; max-width: 1000px; margin: 0 auto; border-bottom: 1px solid rgba(255, 0, 0, 0.1); pointer-events: auto; }
+        .hud { display: flex; justify-content: space-between; align-items: center; color: #fff; font-size: 0.8rem; letter-spacing: 2px; background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%); padding: 15px; width: 100%; max-width: 1100px; margin: 0 auto; border-bottom: 1px solid rgba(255, 0, 0, 0.15); pointer-events: auto; }
         
-        .bar-container { display: flex; flex-direction: column; gap: 4px; width: 120px; }
-        .bar-label { font-size: 0.6rem; color: #888; text-transform: uppercase; font-weight: bold; }
-        .bar-bg { background: rgba(40, 10, 10, 0.6); width: 100%; height: 6px; border-radius: 3px; overflow: hidden; }
-        .bar-fill { height: 100%; width: 100%; transition: width 0.2s ease; }
-        #sanity-fill { background: #0077ff; box-shadow: 0 0 8px #0055ff; }
-        #battery-fill { background: #ffaa00; box-shadow: 0 0 8px #cc8800; }
-        #objective-txt { font-weight: bold; color: #ff3333; font-size: 0.9rem; text-shadow: 0 0 5px rgba(255,0,0,0.5); }
+        .bar-group { display: flex; gap: 15px; }
+        .bar-container { display: flex; flex-direction: column; gap: 4px; width: 100px; }
+        .bar-label { font-size: 0.55rem; color: #aaa; text-transform: uppercase; font-weight: bold; }
+        .bar-bg { background: rgba(30, 10, 10, 0.6); width: 100%; height: 6px; border-radius: 3px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 100%; transition: width 0.1s linear; }
+        #sanity-fill { background: #0077ff; box-shadow: 0 0 6px #0055ff; }
+        #stamina-fill { background: #00ff66; box-shadow: 0 0 6px #00cc44; }
+        #battery-fill { background: #ffaa00; box-shadow: 0 0 6px #cc8800; }
+        #objective-txt { font-weight: bold; color: #ff3333; font-size: 0.85rem; text-shadow: 0 0 5px rgba(255,0,0,0.5); text-align: center; }
 
-        /* RADAR MINIMAP STYLE */
-        #minimap-container { position: absolute; bottom: 25px; right: 25px; width: 130px; height: 130px; border: 2px solid rgba(255, 0, 0, 0.2); background: rgba(5, 0, 0, 0.75); backdrop-filter: blur(4px); border-radius: 8px; z-index: 15; pointer-events: auto; padding: 5px; }
-        #minimap { width: 100%; height: 100%; border-radius: 4px; }
+        #settings-trigger { background: rgba(20,20,20,0.8); border: 1px solid #555; color: #ccc; padding: 5px 10px; cursor: pointer; font-size: 0.7rem; font-weight: bold; }
+        
+        #minimap-container { position: absolute; bottom: 25px; right: 25px; width: 120px; height: 120px; border: 2px solid rgba(255, 0, 0, 0.25); background: rgba(4, 1, 1, 0.85); backdrop-filter: blur(4px); border-radius: 6px; z-index: 15; pointer-events: auto; }
+        #minimap { width: 100%; height: 100%; }
 
-        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #0f0505 0%, #020101 100%); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #e0e0e0; text-align: center; padding: 20px; }
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #120505 0%, #020101 100%); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #e0e0e0; text-align: center; padding: 20px; }
         .hidden { display: none !important; }
 
-        h1 { font-size: 2.8rem; color: #ba0000; text-shadow: 0 0 20px rgba(186, 0, 0, 0.6); margin-bottom: 20px; letter-spacing: 8px; font-weight: 900; }
-        p { max-width: 600px; line-height: 1.6; margin-bottom: 30px; color: #8c8c8c; font-size: 0.85rem; }
+        h1 { font-size: 2.5rem; color: #ba0000; text-shadow: 0 0 20px rgba(186, 0, 0, 0.7); margin-bottom: 25px; letter-spacing: 6px; font-weight: 900; }
+        p { max-width: 600px; line-height: 1.6; margin-bottom: 30px; color: #999; font-size: 0.8rem; }
         
-        .btn-group { display: flex; gap: 15px; }
-        button.menu-btn { background: transparent; color: #ff3333; border: 1px solid #ba0000; padding: 14px 40px; font-size: 0.9rem; font-weight: bold; letter-spacing: 3px; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; }
-        button.menu-btn:hover { background: #ba0000; color: #fff; box-shadow: 0 0 20px rgba(255,0,0,0.5); }
+        .btn-group { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
+        button.menu-btn { background: transparent; color: #ff3333; border: 1px solid #ba0000; padding: 12px 30px; font-size: 0.85rem; font-weight: bold; letter-spacing: 2px; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; }
+        button.menu-btn:hover { background: #ba0000; color: #fff; box-shadow: 0 0 15px rgba(255,0,0,0.5); }
         button.menu-btn:disabled { border-color: #333; color: #555; cursor: not-allowed; }
 
-        #warning-indicator { color: #ff3333; font-weight: bold; font-size: 0.85rem; visibility: hidden; text-align: center; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 80px; }
+        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; background: rgba(15, 5, 5, 0.95); border: 2px solid #ba0000; padding: 25px; z-index: 200; color: #fff; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        .modal-title { font-size: 1.1rem; color: #ff3333; font-weight: bold; text-align: center; letter-spacing: 2px; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; }
+        .setting-row input, .setting-row select { background: #222; border: 1px solid #555; color: #fff; padding: 4px; font-family: monospace; }
+
+        #warning-indicator { color: #ff3333; font-weight: bold; font-size: 0.8rem; visibility: hidden; text-align: center; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 80px; }
 
         #mobile-hud { position: absolute; bottom: 20px; left: 0; width: 100%; display: none; justify-content: space-between; padding: 0 30px; pointer-events: none; z-index: 20; }
-        .touch-pad-container { display: grid; grid-template-columns: repeat(3, 55px); grid-template-rows: repeat(3, 55px); gap: 6px; pointer-events: auto; }
-        .m-btn { background: rgba(20, 5, 5, 0.6); border: 1px solid rgba(150, 20, 20, 0.3); color: #ff7777; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1rem; }
+        .touch-pad-container { display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 50px); gap: 6px; pointer-events: auto; }
+        .m-btn { background: rgba(20, 5, 5, 0.6); border: 1px solid rgba(150, 20, 20, 0.3); color: #ff7777; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; }
         .m-btn:active { background: rgba(186, 0, 0, 0.8); color: #fff; }
         .action-container { display: flex; flex-direction: column; gap: 10px; pointer-events: auto; justify-content: center; }
-        .act-btn { width: 90px; height: 45px; background: rgba(15, 15, 15, 0.8); border: 1px solid rgba(255, 255, 255, 0.15); color: #ccc; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
+        .act-btn { width: 90px; height: 40px; background: rgba(15, 15, 15, 0.8); border: 1px solid rgba(255, 255, 255, 0.15); color: #ccc; border-radius: 20px; font-size: 0.65rem; font-weight: bold; }
         .act-btn.active-sprint { background: rgba(186,0,0,0.8); border-color: #ff5555; color: #fff; }
 
         #jumpscare { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; z-index: 999; display: flex; justify-content: center; align-items: center; visibility: hidden; }
-        #jumpscare-text { color: #ff0000; font-size: 5rem; font-weight: 900; letter-spacing: 15px; animation: shake 0.1s infinite; }
+        #jumpscare-text { color: #ff0000; font-size: 4rem; font-weight: 900; letter-spacing: 12px; animation: shake 0.1s infinite; }
         @keyframes shake { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(1px, -1px); } }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -63,26 +71,42 @@
 
     <div id="menu-screen" class="screen">
         <h1>THE COLD CAVE</h1>
-        <p>[COSMIC ABYSS ENGINE v3] Jelajahi labirin kompleks berpenghuni dua entitas berbahaya. Cari 3 Rune Merah untuk membuka gerbang batu. Amankan Baterai fisik di tanah agar senter tetap menyala. Rumor mengatakan ada Relik Kosmik Emas tersembunyi bagi penjelajah bermental baja...</p>
+        <p>[PROSEDURAL ENGINE V4] Setiap gua yang kamu masuki sekarang unik. Monster Crawler dibekali algoritma cerdas untuk mengejarmu lewat jalur terpendek tanpa menembus dinding. Atur stamina berlarimu, awasi radar minimap, dan temukan Relik Emas Rahasia untuk membuka takdir tertinggi.</p>
         <div class="btn-group">
             <button class="menu-btn" onclick="startGame(false)">EKSPEDISI BARU</button>
-            <button class="menu-btn" id="resume-btn" onclick="startGame(true)" disabled>LANJUTKAN (CHECKPOINT)</button>
+            <button class="menu-btn" id="resume-btn" onclick="startGame(true)" disabled>LANJUTKAN</button>
         </div>
     </div>
 
     <div id="ui-layer" class="ui-overlay hidden">
         <div class="hud">
-            <div class="bar-container">
-                <div class="bar-label">Sanity</div>
-                <div class="bar-bg"><div id="sanity-fill" class="bar-fill"></div></div>
+            <div class="bar-group">
+                <div class="bar-container"><div class="bar-label">Sanity</div><div class="bar-bg"><div id="sanity-fill" class="bar-fill"></div></div></div>
+                <div class="bar-container"><div class="bar-label">Stamina</div><div class="bar-bg"><div id="stamina-fill" class="bar-fill"></div></div></div>
             </div>
-            <div id="objective-txt">RUNE TERKUMPUL: 0 / 3</div>
-            <div class="bar-container">
-                <div class="bar-label">Senter</div>
-                <div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div>
+            <div id="objective-txt">RUNE: 0 / 3</div>
+            <div class="bar-group">
+                <div class="bar-container"><div class="bar-label">Senter</div><div class="bar-bg"><div id="battery-fill" class="bar-fill"></div></div></div>
+                <button id="settings-trigger" onclick="toggleSettingsModal(true)">OPSI</button>
             </div>
         </div>
-        <div id="warning-indicator">MENERIMA SINYAL ANOMALI DI SEKITAR...</div>
+        <div id="warning-indicator">MENDETEKSI PERUBAHAN GELOMBANG...</div>
+    </div>
+
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-title">PENGATURAN</div>
+        <div class="setting-row">
+            <label>Master Volume</label>
+            <input type="range" id="vol-slider" min="0" max="1" step="0.1" value="0.7" onchange="adjustVolume(this.value)">
+        </div>
+        <div class="setting-row">
+            <label>Kualitas Grafis</label>
+            <select id="gfx-select" onchange="adjustGraphics(this.value)">
+                <option value="high" selected>TINGGI (BumpMaps & Fog)</option>
+                <option value="low">RENDAH (Sederhana)</option>
+            </select>
+        </div>
+        <button class="menu-btn" style="padding:8px 0; font-size:0.75rem;" onclick="toggleSettingsModal(false)">TUTUP</button>
     </div>
 
     <div id="mobile-hud">
@@ -103,127 +127,205 @@
         <button class="menu-btn" onclick="goToMenu()">KEMBALI KE MENU</button>
     </div>
 
-    <div id="jumpscare"><div id="jumpscare-text">TERKAPAR</div></div>
+    <div id="jumpscare"><div id="jumpscare-text">TERPERANGKAP</div></div>
 
     <script>
         let scene, camera, renderer, flashlight, flashBeam;
-        let gameActive = false, isMobile = false;
+        let gameActive = false, isMobile = false, settingsOpen = false;
         let mapCanvas, mapCtx;
         
         // 🎛️ SYSTEM SYNTH AUDIO PROSEDURAL ADVANCED
-        let audioCtx, lastHeartbeat = 0, lastFootstep = 0, monsterGrowlOsc = null, monsterGrowlGain = null;
+        let audioCtx, masterGain, lastHeartbeat = 0, lastFootstep = 0, monsterGrowlOsc = null, monsterGrowlGain = null;
+        let ambientWindNode = null;
 
-        // 🗺️ MATRIKS STRUKTUR MAZE LABIRIN REVISI
-        // (0=Lantai, 1=Dinding, 2=Spawn Player, 3=Rune Merah, 4=Exit Gate, 5=Item Baterai, 6=Secret Artifact Emas)
-        const GRID_SIZE = 4; 
-        const MAP_GRID = [
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,2,0,5,1,0,0,0,1,0,5,0,0,3,1],
-            [1,1,1,0,1,0,1,0,1,0,1,1,1,1,1],
-            [1,0,0,0,0,0,1,0,0,5,1,0,0,0,1],
-            [1,0,1,1,1,1,1,1,1,0,1,0,1,0,1],
-            [1,0,1,3,0,0,5,0,1,0,0,0,1,6,1],
-            [1,0,1,1,1,1,1,0,1,1,1,1,1,0,1],
-            [1,5,0,0,0,0,1,0,1,3,0,0,1,0,1],
-            [1,1,1,1,1,0,1,0,1,1,1,0,1,0,1],
-            [1,4,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-        ];
-
+        // 🗺️ ALGORITMA INFINITE RANDOM MAZE GENERATOR (17x17)
+        const MAZE_W = 17, MAZE_H = 17, GRID_SIZE = 4;
+        let MAP_GRID = [];
         let wallsArray = [];
         let runesArray = [];
         let batteriesArray = [];
         let secretArtifact = null;
         let exitGateMesh = null;
 
-        // 👾 INDEPENDENT MONSTER BEHAVIORS
-        let crawlerMesh, crawlerArms = [], crawlerState = { x: 0, z: 0, speed: 0.024, phase: 0 };
-        let wraithMesh, wraithState = { x: 0, z: 0, speed: 0.018, active: false, phase: 0 };
+        // 👾 MONSTER INTELLIGENCE DATA
+        let crawlerMesh, crawlerArms = [], crawlerState = { x: 0, z: 0, gridR: 0, gridC: 0, speed: 0.026, phase: 0, currentPath: [] };
+        let wraithMesh, wraithState = { x: 0, z: 0, speed: 0.016, active: false };
+        let pathUpdateTimer = 0;
 
         // 👤 PLAYER DATA
-        let state = { sanity: 100, battery: 100, runesCollected: 0, hasSecret: false, flashlightOn: true };
+        let state = { sanity: 100, battery: 100, stamina: 100, runesCollected: 0, hasSecret: false, flashlightOn: true, gfx: 'high' };
         const keys = { w: false, a: false, s: false, d: false, shift: false };
-        let targetCamRotationX = 0, targetCamRotationY = 0;
-        let lastTouchX = 0, lastTouchY = 0, bobTimer = 0;
+        let targetCamRotationX = 0, targetCamRotationY = 0, lastTouchX = 0, lastTouchY = 0, bobTimer = 0;
 
         function checkSaveData() {
-            if (localStorage.getItem('cold_cave_v3_checkpoint')) {
-                document.getElementById('resume-btn').disabled = false;
-            }
+            if (localStorage.getItem('cold_cave_v4_save')) document.getElementById('resume-btn').disabled = false;
         }
 
+        // 🧬 GENERATOR LABIRIN ACAK (Recursive Backtracking)
+        function generateProceduralMaze() {
+            MAP_GRID = Array(MAZE_H).fill().map(() => Array(MAZE_W).fill(1));
+            let stack = [];
+            function carve(r, c) {
+                MAP_GRID[r][c] = 0;
+                let dirs = [[-2,0],[2,0],[0,-2],[0,2]].sort(() => Math.random() - 0.5);
+                for(let [dr, dc] of dirs) {
+                    let nr = r + dr, nc = c + dc;
+                    if(nr > 0 && nr < MAZE_H-1 && nc > 0 && nc < MAZE_W-1 && MAP_GRID[nr][nc] === 1) {
+                        MAP_GRID[r + dr/2][c + dc/2] = 0;
+                        carve(nr, nc);
+                    }
+                }
+            }
+            carve(1, 1);
+            MAP_GRID[1][1] = 2; // Spawn Player
+
+            // Cari semua titik jalan buntu (Dead Ends) untuk menaruh item secara adaptif
+            let deadEnds = [];
+            for(let r=1; r<MAZE_H-1; r++){
+                for(let c=1; c<MAZE_W-1; c++){
+                    if(MAP_GRID[r][c] === 0) {
+                        let walls = 0;
+                        if(MAP_GRID[r-1][c] === 1) walls++; if(MAP_GRID[r+1][c] === 1) walls++;
+                        if(MAP_GRID[r][c-1] === 1) walls++; if(MAP_GRID[r][c+1] === 1) walls++;
+                        if(walls === 3 && !(r===1 && c===1)) deadEnds.push({r, c});
+                    }
+                }
+            }
+            deadEnds.sort(() => Math.random() - 0.5);
+
+            // Alokasikan item fisik secara cerdas ke titik buntu labirin
+            if(deadEnds.length >= 1) MAP_GRID[deadEnds[0].r][deadEnds[0].c] = 4; // Exit Gate
+            if(deadEnds.length >= 4) { MAP_GRID[deadEnds[1].r][deadEnds[1].c] = 3; MAP_GRID[deadEnds[2].r][deadEnds[2].c] = 3; MAP_GRID[deadEnds[3].r][deadEnds[3].c] = 3; } // 3 Runes
+            if(deadEnds.length >= 7) { MAP_GRID[deadEnds[4].r][deadEnds[4].c] = 5; MAP_GRID[deadEnds[5].r][deadEnds[5].c] = 5; MAP_GRID[deadEnds[6].r][deadEnds[6].c] = 5; } // 3 Baterai
+            if(deadEnds.length >= 8) MAP_GRID[deadEnds[7].r][deadEnds[7].c] = 6; // Secret Relic Emas
+        }
+
+        // 🧠 ALGORITMA PATHFINDING SMART AI (Breadth-First Search Jalur Terpendek)
+        function findShortestPath(startGrid, endGrid) {
+            let queue = [[startGrid]];
+            let visited = new Set([`${startGrid.r},${startGrid.c}`]);
+            while(queue.length > 0) {
+                let path = queue.shift();
+                let curr = path[path.length - 1];
+                if(curr.r === endGrid.r && curr.c === endGrid.c) return path;
+                let neighbors = [{r:curr.r-1, c:curr.c}, {r:curr.r+1, c:curr.c}, {r:curr.r, c:curr.c-1}, {r:curr.r, c:curr.c+1}];
+                for(let n of neighbors) {
+                    if(n.r >= 0 && n.r < MAZE_H && n.c >= 0 && n.c < MAZE_W && MAP_GRID[n.r][n.c] !== 1 && !visited.has(`${n.r},${n.c}`)) {
+                        visited.add(`${n.r},${n.c}`);
+                        queue.push([...path, n]);
+                    }
+                }
+            }
+            return [];
+        }
+
+        // 🔊 WEB AUDIO API AMBIENCE GENERATOR
         function initAudio() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (!monsterGrowlOsc) {
-                monsterGrowlOsc = audioCtx.createOscillator();
-                monsterGrowlGain = audioCtx.createGain();
-                monsterGrowlOsc.type = 'sawtooth';
-                monsterGrowlOsc.frequency.setValueAtTime(28, audioCtx.currentTime);
-                
-                let filter = audioCtx.createBiquadFilter();
-                filter.type = 'lowpass'; filter.frequency.setValueAtTime(140, audioCtx.currentTime);
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.setValueAtTime(0.7, audioCtx.currentTime);
+            masterGain.connect(audioCtx.destination);
 
-                monsterGrowlOsc.connect(filter); filter.connect(monsterGrowlGain);
-                monsterGrowlGain.connect(audioCtx.destination);
-                monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime);
-                monsterGrowlOsc.start();
+            // 1. Synth Suara Angin Gua (White Noise + Lowpass Dynamic Filter)
+            let bufferSize = 2 * audioCtx.sampleRate, noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate), output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; }
+            let whiteNoise = audioCtx.createBufferSource(); whiteNoise.buffer = noiseBuffer; whiteNoise.loop = true;
+            let windFilter = audioCtx.createBiquadFilter(); windFilter.type = 'lowpass'; windFilter.frequency.setValueAtTime(200, audioCtx.currentTime);
+            let windGain = audioCtx.createGain(); windGain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+            whiteNoise.connect(windFilter); windFilter.connect(windGain); windGain.connect(masterGain);
+            whiteNoise.start();
+
+            // Efek perubahan frekuensi angin gua dinamis
+            setInterval(() => {
+                if(!gameActive) return;
+                let dynamicFreq = 180 + Math.sin(Date.now() * 0.0006) * 110;
+                windFilter.frequency.setValueAtTime(dynamicFreq, audioCtx.currentTime);
+            }, 100);
+
+            // 2. Generator Air Menetes Otomatis (Random Interval Water Drips)
+            function triggerDrip() {
+                if (gameActive && Math.random() < 0.65) {
+                    let now = audioCtx.currentTime;
+                    let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(750 + Math.random()*200, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.04);
+                    gain.gain.setValueAtTime(0.06, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+                    osc.connect(gain); gain.connect(masterGain); osc.start(now); osc.stop(now + 0.07);
+                }
+                setTimeout(triggerDrip, 1500 + Math.random() * 3500);
             }
+            triggerDrip();
+
+            // Setup Monster Synth Background
+            monsterGrowlOsc = audioCtx.createOscillator(); monsterGrowlGain = audioCtx.createGain();
+            monsterGrowlOsc.type = 'sawtooth'; monsterGrowlOsc.frequency.setValueAtTime(26, audioCtx.currentTime);
+            let mFilter = audioCtx.createBiquadFilter(); mFilter.type = 'lowpass'; mFilter.frequency.setValueAtTime(120, audioCtx.currentTime);
+            monsterGrowlOsc.connect(mFilter); mFilter.connect(monsterGrowlGain); monsterGrowlGain.connect(masterGain);
+            monsterGrowlGain.gain.setValueAtTime(0, audioCtx.currentTime); monsterGrowlOsc.start();
         }
 
-        // 🔊 PROSEDURAL AUDIO SYNTHESIZERS (Rune, Baterai, & Wraith Burn)
         function playRuneSFX() {
             let now = audioCtx.currentTime;
-            let freqs = [261.63, 329.63, 392.00, 523.25]; // C major chord arpeggio
-            freqs.forEach((f, i) => {
-                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(f, now + i*0.08);
-                gain.gain.setValueAtTime(0.3, now + i*0.08); gain.gain.exponentialRampToValueAtTime(0.001, now + i*0.08 + 0.3);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(now + i*0.08); osc.stop(now + i*0.08 + 0.35);
+            [330, 440, 550, 660].forEach((f, i) => {
+                let osc = audioCtx.createOscillator(); let g = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(f, now + i*0.07);
+                g.gain.setValueAtTime(0.2, now + i*0.07); g.gain.exponentialRampToValueAtTime(0.001, now + i*0.07 + 0.25);
+                osc.connect(g); g.connect(masterGain); osc.start(now + i*0.07); osc.stop(now + i*0.07 + 0.3);
             });
         }
 
         function playBatterySFX() {
             let now = audioCtx.currentTime;
-            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(587.33, now); osc.frequency.setValueAtTime(880, now + 0.05);
-            gain.gain.setValueAtTime(0.25, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(now + 0.22);
-        }
-
-        function playWraithVanishSFX() {
-            let now = audioCtx.currentTime;
-            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(60, now + 0.4);
-            gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(now + 0.42);
+            let osc = audioCtx.createOscillator(); let g = audioCtx.createGain();
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(800, now + 0.06);
+            g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            osc.connect(g); g.connect(masterGain); osc.start(); osc.stop(now + 0.18);
         }
 
         function playFootstepSynth(isSprinting) {
             let now = audioCtx.currentTime;
-            let rate = isSprinting ? 0.30 : 0.52;
-            if (now - lastFootstep < rate) return;
-            lastFootstep = now;
-            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(55, now); osc.frequency.exponentialRampToValueAtTime(5, now + 0.08);
-            gain.gain.setValueAtTime(0.35, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(now + 0.1);
+            let rate = isSprinting ? 0.28 : 0.48;
+            if (now - lastFootstep < rate) return; lastFootstep = now;
+            let osc = audioCtx.createOscillator(); let g = audioCtx.createGain();
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(50, now); osc.frequency.exponentialRampToValueAtTime(2, now + 0.08);
+            g.gain.setValueAtTime(0.3, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            osc.connect(g); g.connect(masterGain); osc.start(); osc.stop(now + 0.09);
         }
 
         function playHeartbeatSynth(tempo) {
             let now = audioCtx.currentTime;
-            if (now - lastHeartbeat < tempo) return;
-            lastHeartbeat = now;
+            if (now - lastHeartbeat < tempo) return; lastHeartbeat = now;
             const thud = (t) => {
-                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(45, t); osc.frequency.exponentialRampToValueAtTime(1, t + 0.09);
-                gain.gain.setValueAtTime(0.85, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.09);
-                osc.connect(gain); gain.connect(audioCtx.destination); osc.start(t); osc.stop(t + 0.1);
+                let osc = audioCtx.createOscillator(); let g = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(42, t); osc.frequency.exponentialRampToValueAtTime(1, t + 0.08);
+                g.gain.setValueAtTime(0.8, t); g.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+                osc.connect(g); g.connect(masterGain); osc.start(t); osc.stop(t + 0.09);
             };
-            thud(now); thud(now + 0.14);
+            thud(now); thud(now + 0.12);
+        }
+
+        // 🎨 GENERATOR TEKSTUR 3D BUMP MAP DETAIL PROSEDURAL
+        function generateProceduralRockTexture(isBump = false) {
+            let canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
+            let ctx = canvas.getContext('2d');
+            ctx.fillStyle = isBump ? '#808080' : '#14110f'; ctx.fillRect(0,0,256,256);
+            
+            // Layer Noise Batuan Kasar
+            for (let i = 0; i < 9000; i++) {
+                let x = Math.random() * 256; let y = Math.random() * 256;
+                let c = Math.floor(Math.random() * 35);
+                ctx.fillStyle = isBump ? `rgb(${128+c},${128+c},${128+c})` : `rgb(${15+c},${12+c},${10+c})`;
+                ctx.fillRect(x, y, 2, 2);
+            }
+            // Guratan / Retakan Dinding Gua
+            ctx.strokeStyle = isBump ? '#404040' : '#0a0807'; ctx.lineWidth = 1;
+            for(let i=0; i<12; i++) {
+                ctx.beginPath(); ctx.moveTo(Math.random()*256, Math.random()*256);
+                ctx.lineTo(Math.random()*256, Math.random()*256); ctx.stroke();
+            }
+            let tex = new THREE.CanvasTexture(canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(1,1);
+            return tex;
         }
 
         function init3D() {
@@ -238,25 +340,28 @@
 
             mapCanvas = document.getElementById('minimap'); mapCtx = mapCanvas.getContext('2d');
 
-            buildProceduralEnvironment();
+            build3DWorld();
             setupControls();
         }
 
-        function buildProceduralEnvironment() {
-            // Prosedural Kanvas Tekstur Gua
-            let canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
-            let ctx = canvas.getContext('2d'); ctx.fillStyle = '#120f0e'; ctx.fillRect(0,0,128,128);
-            for(let i=0; i<3000; i++) { ctx.fillStyle = Math.random()>0.5 ? '#060505':'#1d1917'; ctx.fillRect(Math.random()*128, Math.random()*128, 2, 2); }
-            
-            let wallTex = new THREE.CanvasTexture(canvas);
-            let wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.8 });
-            let floorMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.15, metalness: 0.1 }); // Lantai basah mengkilap
+        function build3DWorld() {
+            wallsArray.forEach(w => scene.remove(w)); wallsArray = [];
+            runesArray.forEach(r => scene.remove(r.mesh)); runesArray = [];
+            batteriesArray.forEach(b => scene.remove(b.mesh)); batteriesArray = [];
+            if(secretArtifact) scene.remove(secretArtifact);
+            if(exitGateMesh) scene.remove(exitGateMesh);
+
+            let diffTex = generateProceduralRockTexture(false);
+            let bumpTex = generateProceduralRockTexture(true);
+
+            let wallMat = new THREE.MeshStandardMaterial({ map: diffTex, bumpMap: bumpTex, bumpScale: 0.06, roughness: 0.85 });
+            let floorMat = new THREE.MeshStandardMaterial({ map: diffTex, bumpMap: bumpTex, bumpScale: 0.04, roughness: 0.2, metalness: 0.2 });
 
             let wallGeo = new THREE.BoxGeometry(GRID_SIZE, 4.0, GRID_SIZE);
             let floorGeo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
 
-            for (let r = 0; r < MAP_GRID.length; r++) {
-                for (let c = 0; c < MAP_GRID[r].length; c++) {
+            for (let r = 0; r < MAZE_H; r++) {
+                for (let c = 0; c < MAZE_W; c++) {
                     let x = c * GRID_SIZE; let z = r * GRID_SIZE;
                     let type = MAP_GRID[r][c];
 
@@ -270,27 +375,25 @@
                     } else if (type === 2) {
                         camera.position.set(x, 0.1, z);
                     } else if (type === 3) {
-                        let rune = new THREE.Mesh(new THREE.OctahedronGeometry(0.2,0), new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xaa0000 }));
+                        let rune = new THREE.Mesh(new THREE.OctahedronGeometry(0.2,0), new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x880000 }));
                         rune.position.set(x, -0.2, z); scene.add(rune); runesArray.push({ mesh: rune, gridR: r, gridC: c, picked: false });
                     } else if (type === 4) {
-                        exitGateMesh = new THREE.Mesh(new THREE.BoxGeometry(GRID_SIZE, 4.0, 0.3), new THREE.MeshStandardMaterial({ color: 0x2f1515, roughness: 0.9 }));
+                        exitGateMesh = new THREE.Mesh(new THREE.BoxGeometry(GRID_SIZE, 4.0, 0.3), new THREE.MeshStandardMaterial({ color: 0x2a1414, roughness: 0.9 }));
                         exitGateMesh.position.set(x, 0.5, z); scene.add(exitGateMesh);
                     } else if (type === 5) {
-                        // 🔋 BATRE FISIK 3D
                         let batGroup = new THREE.Group();
-                        let body = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.25,8), new THREE.MeshStandardMaterial({ color: 0xffff00, roughness: 0.3 }));
-                        let cap = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.05,8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-                        cap.position.y = 0.14; batGroup.add(body, cap); batGroup.position.set(x, -1.2, z);
+                        let bBody = new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.22,8), new THREE.MeshStandardMaterial({ color: 0x00ff66, roughness: 0.4 }));
+                        let bCap = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.04,8), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+                        bCap.position.y = 0.12; batGroup.add(bBody, bCap); batGroup.position.set(x, -1.3, z);
                         scene.add(batGroup); batteriesArray.push({ mesh: batGroup, gridR: r, gridC: c, picked: false });
                     } else if (type === 6) {
-                        // 🌟 SECRET COSMIC ARTIFACT
-                        secretArtifact = new THREE.Mesh(new THREE.TorusKnotGeometry(0.18, 0.05, 32, 4), new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.1 }));
+                        secretArtifact = new THREE.Mesh(new THREE.TorusKnotGeometry(0.16, 0.04, 48, 6), new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.1 }));
                         secretArtifact.position.set(x, -0.1, z); scene.add(secretArtifact);
                     }
                 }
             }
 
-            buildMonsters3D();
+            buildMonster3D();
 
             flashlight = new THREE.SpotLight(0xfff5e2, 6.0, 24, Math.PI / 4.5, 0.6, 1.2); scene.add(flashlight);
             let target = new THREE.Object3D(); scene.add(target); flashlight.target = target;
@@ -299,54 +402,51 @@
             scene.add(new THREE.AmbientLight(0x010000));
         }
 
-        function buildMonsters3D() {
-            // 1. Crawler (Model Bertangan Banyak Mematuhi Collision Fisika)
-            crawlerMesh = new THREE.Group(); let bMat = new THREE.MeshStandardMaterial({ color: 0x030303, roughness: 0.9 });
-            crawlerMesh.add(new THREE.Mesh(new THREE.SphereGeometry(0.35,6,6), bMat)); // Torso
-            let head = new THREE.Mesh(new THREE.SphereGeometry(0.2,6,6), bMat); head.position.y = 0.6; crawlerMesh.add(head);
-            let eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            let eL = new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4), eyeMat); eL.position.set(-0.08,0.65,-0.16);
-            let eR = new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4), eyeMat); eR.position.set(0.08,0.65,-0.16); crawlerMesh.add(eL, eR);
+        function buildMonster3D() {
+            if(crawlerMesh) scene.remove(crawlerMesh);
+            crawlerMesh = new THREE.Group(); let bMat = new THREE.MeshStandardMaterial({ color: 0x040404, roughness: 0.95 });
+            crawlerMesh.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), bMat)); // Torso Segment
+            let head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 6, 6), bMat); head.position.y = 0.4; crawlerMesh.add(head);
+            let eMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            let eL = new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4), eMat); eL.position.set(-0.07, 0.45, -0.15);
+            let eR = new THREE.Mesh(new THREE.SphereGeometry(0.04,4,4), eMat); eR.position.set(0.07, 0.45, -0.15); crawlerMesh.add(eL, eR);
+            
+            crawlerArms = [];
             for (let i = 0; i < 6; i++) {
-                let arm = new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.01,1.4,4), bMat); arm.geometry.translate(0,-0.7,0);
-                arm.position.set(i%2===0?0.3:-0.3, 0.2, (i*0.12 - 0.3)); crawlerMesh.add(arm); crawlerArms.push(arm);
+                let arm = new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.01,1.3,4), bMat); arm.geometry.translate(0,-0.65,0);
+                arm.position.set(i%2===0?0.25:-0.25, 0.1, (i*0.12 - 0.3)); crawlerMesh.add(arm); crawlerArms.push(arm);
             }
-            scene.add(crawlerMesh);
+            scene.add(crawlerMesh); crawlerMesh.position.set(0, -100, 0);
 
-            // 2. Screaming Wraith (Model Hantu Tembus Tembok - Counter via Cahaya)
-            wraithMesh = new THREE.Group();
-            let wMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, wireframe: true });
-            let wCore = new THREE.Mesh(new THREE.SphereGeometry(0.4,8,8), wMat); wCore.position.y = 0.5;
-            let wEyes = new THREE.Mesh(new THREE.SphereGeometry(0.05,4,4), new THREE.MeshBasicMaterial({ color: 0x00ffff }));
-            wEyes.position.set(0, 0.65, -0.3); wraithMesh.add(wCore, wEyes);
-            scene.add(wraithMesh); wraithMesh.position.set(0, -50, 0); // Disembunyikan awalnya
+            // Model Wraith Sederhana
+            if(wraithMesh) scene.remove(wraithMesh);
+            wraithMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3,8,8), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent:true, opacity:0.4, wireframe:true }));
+            scene.add(wraithMesh); wraithMesh.position.set(0,-100,0);
         }
 
-        // 🛑 ENGINE FISIKA DETEKSI TABRAKAN WALL COLLISION (Player & Crawler)
-        function checkCollision(x, z, buffer = 0.45) {
+        function checkCollision(x, z) {
+            let buffer = 0.45;
             for (let wall of wallsArray) {
-                if (Math.abs(x - wall.position.x) < (GRID_SIZE / 2 + buffer) &&
-                    Math.abs(z - wall.position.z) < (GRID_SIZE / 2 + buffer)) return true;
+                if (Math.abs(x - wall.position.x) < (GRID_SIZE / 2 + buffer) && Math.abs(z - wall.position.z) < (GRID_SIZE / 2 + buffer)) return true;
             }
             if (exitGateMesh && state.runesCollected < 3) {
-                if (Math.abs(x - exitGateMesh.position.x) < (GRID_SIZE / 2 + buffer) &&
-                    Math.abs(z - exitGateMesh.position.z) < (0.2 + buffer)) return true;
+                if (Math.abs(x - exitGateMesh.position.x) < (GRID_SIZE / 2 + buffer) && Math.abs(z - exitGateMesh.position.z) < (0.2 + buffer)) return true;
             }
             return false;
         }
 
         function setupControls() {
             canvas = document.getElementById('game-canvas');
-            canvas.addEventListener('click', () => { if (gameActive && !isMobile && document.pointerLockElement !== canvas) canvas.requestPointerLock(); });
+            canvas.addEventListener('click', () => { if (gameActive && !isMobile && !settingsOpen && document.pointerLockElement !== canvas) canvas.requestPointerLock(); });
             document.addEventListener('mousemove', (e) => {
-                if (gameActive && document.pointerLockElement === canvas) {
+                if (gameActive && document.pointerLockElement === canvas && !settingsOpen) {
                     targetCamRotationY -= e.movementX * 0.0025; targetCamRotationX -= e.movementY * 0.0025;
                     targetCamRotationX = Math.max(-1.2, Math.min(1.2, targetCamRotationX));
                 }
             });
-            canvas.addEventListener('touchstart', (e) => { if (!gameActive) return; initAudio(); lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY; }, {passive:true});
+            canvas.addEventListener('touchstart', (e) => { if (!gameActive || settingsOpen) return; initAudio(); lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY; }, {passive:true});
             canvas.addEventListener('touchmove', (e) => {
-                if (!gameActive) return;
+                if (!gameActive || settingsOpen) return;
                 let dX = e.touches[0].clientX - lastTouchX; let dY = e.touches[0].clientY - lastTouchY;
                 targetCamRotationY -= dX * 0.004; targetCamRotationX -= dY * 0.004;
                 targetCamRotationX = Math.max(-1.1, Math.min(1.1, targetCamRotationX));
@@ -369,6 +469,29 @@
             document.getElementById('btn-flash').addEventListener('touchstart', (e) => { e.preventDefault(); state.flashlightOn = !state.flashlightOn; });
         }
 
+        // 🎚️ SISTEM SETTINGS REGULATOR
+        function toggleSettingsModal(open) {
+            settingsOpen = open;
+            if(open) {
+                document.getElementById('settings-modal').classList.remove('hidden');
+                try { document.exitPointerLock(); } catch(e){}
+            } else {
+                document.getElementById('settings-modal').classList.add('hidden');
+                if(!isMobile && gameActive) canvas.requestPointerLock();
+            }
+        }
+        function adjustVolume(val) { if(masterGain) masterGain.gain.setValueAtTime(val, audioCtx.currentTime); }
+        function adjustGraphics(type) {
+            state.gfx = type;
+            if(type === 'low') {
+                scene.fog = null;
+                wallsArray.forEach(w => { w.material.bumpMap = null; w.material.needsUpdate = true; });
+            } else {
+                scene.fog = new THREE.FogExp2(0x010000, 0.25);
+                build3DWorld(); // Rebuild untuk pasang kembali bump map
+            }
+        }
+
         function startGame(loadFromCheckpoint) {
             initAudio();
             document.getElementById('menu-screen').classList.add('hidden');
@@ -376,253 +499,244 @@
             document.getElementById('minimap-container').classList.remove('hidden');
             if (!isMobile) canvas.requestPointerLock();
 
-            state.sanity = 100; state.battery = 100; state.flashlightOn = true; state.hasSecret = false;
+            state.sanity = 100; state.battery = 100; state.stamina = 100; state.flashlightOn = true; state.hasSecret = false;
             
-            if (loadFromCheckpoint) {
-                const data = JSON.parse(localStorage.getItem('cold_cave_v3_checkpoint'));
-                state.runesCollected = data.runes; state.hasSecret = data.hasSecret || false;
+            if (loadFromCheckpoint && localStorage.getItem('cold_cave_v4_save')) {
+                const data = JSON.parse(localStorage.getItem('cold_cave_v4_save'));
+                MAP_GRID = data.grid; state.runesCollected = data.runes; state.hasSecret = data.hasSecret;
+                build3DWorld();
                 camera.position.set(data.pX, 0.1, data.pZ);
                 runesArray.forEach((r, i) => { if (data.pickedRunes.includes(i)) { scene.remove(r.mesh); r.picked = true; } });
                 batteriesArray.forEach((b, i) => { if (data.pickedBats.includes(i)) { scene.remove(b.mesh); b.picked = true; } });
-                if (state.hasSecret && secretArtifact) scene.remove(secretArtifact);
+                if(state.hasSecret && secretArtifact) scene.remove(secretArtifact);
             } else {
-                state.runesCollected = 0;
-                runesArray.forEach(r => { r.picked = false; scene.add(r.mesh); });
-                batteriesArray.forEach(b => { b.picked = false; scene.add(b.mesh); });
-                if(secretArtifact) { secretArtifact.picked = false; scene.add(secretArtifact); }
-                for (let r=0; r<MAP_GRID.length; r++) {
-                    for (let c=0; c<MAP_GRID[r].length; c++) { if(MAP_GRID[r][c] === 2) camera.position.set(c*GRID_SIZE, 0.1, r*GRID_SIZE); }
-                }
+                generateProceduralMaze();
+                build3DWorld();
             }
 
-            crawlerState.x = 13 * GRID_SIZE; crawlerState.z = 1 * GRID_SIZE;
-            crawlerMesh.position.set(crawlerState.x, -0.6, crawlerState.z);
+            // Cari koordinat terkemuka untuk menaruh monster di titik aman terjauh
+            crawlerState.x = (MAZE_W - 2) * GRID_SIZE; crawlerState.z = (MAZE_H - 2) * GRID_SIZE;
+            crawlerMesh.position.set(crawlerState.x, -0.5, crawlerState.z);
+            crawlerState.currentPath = [];
 
-            wraithState.active = false; wraithMesh.position.set(0, -100, 0);
+            wraithState.active = false; wraithMesh.position.set(0,-100,0);
 
             gameActive = true; updateHUD(); animate();
         }
 
         function animate() {
-            if (!gameActive) return;
+            if (!gameActive || settingsOpen) { if(!gameActive) return; requestAnimationFrame(animate); return; }
             requestAnimationFrame(animate);
 
             camera.rotation.y += (targetCamRotationY - camera.rotation.y) * 0.2;
             camera.rotation.x += (targetCamRotationX - camera.rotation.x) * 0.2;
 
+            // Logika Gerakan & Konsumsi Stamina Player
             let moveX = 0, moveZ = 0;
             if (keys.w) moveZ -= 1; if (keys.s) moveZ += 1;
             if (keys.a) moveX -= 1; if (keys.d) moveX += 1;
 
-            if (moveX !== 0 || moveZ !== 0) {
-                let speed = keys.shift ? 0.08 : 0.045;
+            let isMoving = moveX !== 0 || moveZ !== 0;
+            let actualSprint = keys.shift && isMoving && state.stamina > 5;
+
+            if (actualSprint) {
+                state.stamina = Math.max(0, state.stamina - 0.4);
+            } else {
+                state.stamina = Math.min(100, state.stamina + 0.25);
+            }
+
+            if (isMoving) {
+                let speed = actualSprint ? 0.08 : 0.042;
                 let dir = new THREE.Vector3(moveX, 0, moveZ).normalize().applyQuaternion(camera.quaternion);
                 let nextX = camera.position.x + dir.x * speed; let nextZ = camera.position.z + dir.z * speed;
 
                 if (!checkCollision(nextX, camera.position.z)) camera.position.x = nextX;
                 if (!checkCollision(camera.position.x, nextZ)) camera.position.z = nextZ;
 
-                playFootstepSynth(keys.shift);
-                bobTimer += keys.shift ? 0.28 : 0.16;
-                camera.position.y = 0.1 + Math.sin(bobTimer) * (keys.shift ? 0.07 : 0.035);
+                playFootstepSynth(actualSprint);
+                bobTimer += actualSprint ? 0.28 : 0.15;
+                camera.position.y = 0.1 + Math.sin(bobTimer) * (actualSprint ? 0.06 : 0.03);
             } else {
                 camera.position.y += (0.1 - camera.position.y) * 0.1;
             }
 
-            // Senter System Lock
+            // Senter follow kamera
             flashlight.position.copy(camera.position); flashBeam.position.copy(camera.position);
             let camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             flashlight.target.position.copy(camera.position).add(camDir.clone().multiplyScalar(5));
             flashBeam.lookAt(flashlight.target.position);
 
-            // Konsumsi Energi Baterai Senter
             if (state.flashlightOn && state.battery > 0) {
-                state.battery -= 0.03; flashlight.intensity = 6.0; flashBeam.visible = true;
-                if(state.battery < 20 && Math.random() < 0.15) { flashlight.intensity = 0.3; flashBeam.visible = false; }
+                state.battery -= 0.025; flashlight.intensity = 6.0; flashBeam.visible = true;
+                if(state.battery < 20 && Math.random() < 0.12) { flashlight.intensity = 0.2; flashBeam.visible = false; }
             } else { flashlight.intensity = 0; flashBeam.visible = false; }
             if (state.battery <= 0) state.flashlightOn = false;
 
-            // Penurunan Kesadaran Mental (Sanity)
-            if (!state.flashlightOn) state.sanity -= 0.05; else state.sanity -= 0.005;
+            if (!state.flashlightOn) state.sanity -= 0.04; else state.sanity -= 0.004;
             state.sanity = Math.max(0, state.sanity);
 
-            let distToCrawler = camera.position.distanceTo(crawlerMesh.position);
+            let pGridC = Math.round(camera.position.x / GRID_SIZE);
+            let pGridR = Math.round(camera.position.z / GRID_SIZE);
+            let cGridC = Math.round(crawlerState.x / GRID_SIZE);
+            let cGridR = Math.round(crawlerState.z / GRID_SIZE);
 
-            // AI MONSTER 1: THE CRAWLER (Mematuhi Pergeseran Fisika / Sliding Collision Fix)
-            crawlerState.phase += 0.05;
-            let cDir = new THREE.Vector3().subVectors(camera.position, crawlerMesh.position).normalize();
-            let finalCSpeed = (distToCrawler < 8) ? crawlerState.speed * 1.6 : crawlerState.speed;
-            
-            let cNextX = crawlerState.x + cDir.x * finalCSpeed;
-            let cNextZ = crawlerState.z + cDir.z * finalCSpeed;
-
-            // Deteksi Geser Tembok Sempurna (Monster Tidak Terjebak & Tidak Tembus)
-            if (!checkCollision(cNextX, crawlerState.z, 0.4)) crawlerState.x = cNextX;
-            if (!checkCollision(crawlerState.x, cNextZ, 0.4)) crawlerState.z = cNextZ;
-
-            crawlerMesh.position.set(crawlerState.x, -0.6, crawlerState.z);
-            crawlerMesh.lookAt(camera.position.x, -0.6, camera.position.z);
-
-            crawlerArms.forEach((arm, i) => {
-                arm.rotation.z = Math.sin(crawlerState.phase * 5 + i) * 0.35 + (Math.random() - 0.5) * 0.1;
-                arm.rotation.x = Math.cos(crawlerState.phase * 3 + i) * 0.25;
-            });
-
-            // AI MONSTER 2: THE SCREAMING WRAITH (Hantu Tembus Tembok, Aktif Saat Sanity Rendah)
-            let distToWraith = 999;
-            if (state.sanity < 65) {
-                if (!wraithState.active) {
-                    wraithState.active = true;
-                    // Spawn acak di sekitar player
-                    wraithState.x = camera.position.x + (Math.random() - 0.5) * 20;
-                    wraithState.z = camera.position.z + (Math.random() - 0.5) * 20;
-                }
-                distToWraith = camera.position.distanceTo(wraithMesh.position);
-                let wDir = new THREE.Vector3().subVectors(camera.position, wraithMesh.position).normalize();
-                
-                // Menembus dinding langsung kearah target player
-                wraithState.x += wDir.x * wraithState.speed; wraithState.z += wDir.z * wraithState.speed;
-                wraithMesh.position.set(wraithState.x, 0.2 + Math.sin(Date.now()*0.003)*0.2, wraithState.z);
-                wraithMesh.lookAt(camera.position.x, 0.2, camera.position.z);
-
-                // MECHANIC COUNTER WRAITH: Jika player menyalakan senter & menatap langsung si hantu
-                let dirToW = new THREE.Vector3().subVectors(wraithMesh.position, camera.position).normalize();
-                let lookingAtWraith = camDir.dot(dirToW) > 0.82; // Field of view check
-
-                if (state.flashlightOn && lookingAtWraith && distToWraith < 11) {
-                    playWraithVanishSFX();
-                    wraithState.active = false; wraithMesh.position.set(0, -100, 0); // Despawn hantu
-                    state.sanity = Math.min(100, state.sanity + 15); // Bonus mental karena berhasil melawan ketakutan
-                }
-            } else {
-                wraithState.active = false; wraithMesh.position.set(0, -100, 0);
+            // 👾 SMART AI PATHFINDING TRACKER MECHANIC
+            pathUpdateTimer++;
+            if (pathUpdateTimer % 30 === 0 || crawlerState.currentPath.length === 0) {
+                crawlerState.currentPath = findShortestPath({r: cGridR, c: cGridC}, {r: pGridR, c: pGridC});
             }
 
-            // Audio Growl dinamis berdasar monster terdekat
+            // Gerakkan monster menyusuri node jalur terpendek hasil BFS
+            if (crawlerState.currentPath.length > 1) {
+                let nextTargetNode = crawlerState.currentPath[1];
+                let targetX = nextTargetNode.c * GRID_SIZE;
+                let targetZ = nextTargetNode.r * GRID_SIZE;
+                
+                let mDir = new THREE.Vector3(targetX - crawlerState.x, 0, targetZ - crawlerState.z);
+                if (mDir.length() > 0.05) {
+                    mDir.normalize();
+                    let currentDistToPlayer = camera.position.distanceTo(crawlerMesh.position);
+                    let mSpeed = currentDistToPlayer < 6 ? crawlerState.speed * 1.5 : crawlerState.speed;
+                    
+                    crawlerState.x += mDir.x * mSpeed; crawlerState.z += mDir.z * mSpeed;
+                } else {
+                    // Masuk ke node selanjutnya
+                    crawlerState.currentPath.shift();
+                }
+            }
+            crawlerMesh.position.set(crawlerState.x, -0.5, crawlerState.z);
+            if(camera.position.distanceTo(crawlerMesh.position) > 0.5) crawlerMesh.lookAt(camera.position.x, -0.5, camera.position.z);
+
+            crawlerState.phase += 0.05;
+            crawlerArms.forEach((arm, i) => { arm.rotation.z = Math.sin(crawlerState.phase * 5 + i) * 0.3; });
+
+            // Wraith AI Mechanic (Mata-mata Hantu Muncul Saat Sanity Rendah)
+            let distToWraith = 999;
+            if (state.sanity < 50) {
+                if(!wraithState.active) { wraithState.active = true; wraithState.x = camera.position.x + 10; wraithState.z = camera.position.z + 10; }
+                wraithMesh.position.set(wraithState.x, Math.sin(Date.now()*0.003)*0.2, wraithState.z);
+                let wDir = new THREE.Vector3().subVectors(camera.position, wraithMesh.position).normalize();
+                wraithState.x += wDir.x * wraithState.speed; wraithState.z += wDir.z * wraithState.speed;
+                distToWraith = camera.position.distanceTo(wraithMesh.position);
+            } else { wraithState.active = false; wraithMesh.position.set(0,-100,0); }
+
+            // Audio Growl & Heartbeat Sync
+            let distToCrawler = camera.position.distanceTo(crawlerMesh.position);
             let closestDist = Math.min(distToCrawler, distToWraith);
-            let heartbeatTempo = (closestDist < 5) ? 0.20 : (closestDist < 12) ? 0.42 : 0.8;
-            playHeartbeatSynth(heartbeatTempo);
+            let hbTempo = (closestDist < 5) ? 0.20 : (closestDist < 12) ? 0.45 : 0.8;
+            playHeartbeatSynth(hbTempo);
 
             if (monsterGrowlGain) {
-                let vol = Math.max(0, 1.0 - (closestDist / 18));
-                monsterGrowlGain.gain.setValueAtTime(vol * 0.5, audioCtx.currentTime);
-                monsterGrowlOsc.frequency.setValueAtTime(25 + (vol * 40) + Math.sin(Date.now()*0.1)*6, audioCtx.currentTime);
+                let vol = Math.max(0, 1.0 - (closestDist / 16));
+                monsterGrowlGain.gain.setValueAtTime(vol * 0.45, audioCtx.currentTime);
+                monsterGrowlOsc.frequency.setValueAtTime(25 + (vol*35), audioCtx.currentTime);
             }
 
-            // Jumpscare Trigger
             if (distToCrawler < 1.2 || distToWraith < 1.2) { executeJumpscare(); return; }
 
-            // Dynamic Camera Shake & HUD Warning
-            if (closestDist < 8) {
-                let shake = (8 - closestDist) * 0.006;
+            // Camera Shake & Danger Vignette
+            if (closestDist < 7) {
+                let shake = (7 - closestDist) * 0.005;
                 camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake;
                 document.getElementById('warning-indicator').style.visibility = 'visible';
-                document.getElementById('warning-indicator').innerText = distToWraith < distToCrawler ? "ANOMALI SPIRITUAL MENDEKAT! SOROT DIA!" : "HAWA DETAK JANTUNG MENDEKAT! RUN!";
+                document.getElementById('warning-indicator').innerText = "ENTITAS MENDETEKSI PRESENSIMU!";
             } else { document.getElementById('warning-indicator').style.visibility = 'hidden'; }
 
-            // Vignette pulse
-            let dangerPct = Math.max((8 - closestDist)/8, (100 - state.sanity)/100 * 0.7);
-            let redPulse = Math.abs(Math.sin(Date.now() * 0.005)) * dangerPct;
-            document.getElementById('vignette').style.boxShadow = `inset 0 0 180px rgba(${Math.floor(redPulse * 220)}, 0, 0, ${0.92 + (redPulse*0.05)})`;
+            let redPulse = Math.abs(Math.sin(Date.now() * 0.004)) * (closestDist < 6 ? 0.8 : 0.2);
+            document.getElementById('vignette').style.boxShadow = `inset 0 0 180px rgba(${Math.floor(redPulse * 200)}, 0, 0, 0.95)`;
 
-            // INTERAKSI ITEM RUNE (AUTO SAVE CHECKPOINT)
+            // INTERAKSI ITEM RUNE (AUTO CHECKPOINT SYSTEM)
             runesArray.forEach((rune, i) => {
                 if (!rune.picked) {
-                    rune.mesh.rotation.y += 0.03; rune.mesh.position.y = -0.2 + Math.sin(Date.now()*0.003 + i)*0.08;
+                    rune.mesh.rotation.y += 0.04;
                     if (camera.position.distanceTo(rune.mesh.position) < 1.3) {
                         rune.picked = true; scene.remove(rune.mesh); state.runesCollected++;
-                        playRuneSFX(); updateHUD(); saveCheckpoint();
+                        playRuneSFX(); updateHUD(); saveGameProgress();
                     }
                 }
             });
 
-            // INTERAKSI ITEM BATERAI FISIK 3D
+            // INTERAKSI BATERAI
             batteriesArray.forEach((bat, i) => {
                 if (!bat.picked) {
                     bat.mesh.rotation.y += 0.02;
                     if (camera.position.distanceTo(bat.mesh.position) < 1.3) {
-                        bat.picked = true; scene.remove(bat.mesh);
-                        state.battery = Math.min(100, state.battery + 40);
+                        bat.picked = true; scene.remove(bat.mesh); state.battery = Math.min(100, state.battery + 35);
                         playBatterySFX(); updateHUD();
                     }
                 }
             });
 
-            // INTERAKSI SECRET ARTIFACT
+            // INTERAKSI RELIK RAHASIA
             if (secretArtifact && !state.hasSecret) {
-                secretArtifact.rotation.x += 0.02; secretArtifact.rotation.y += 0.02;
+                secretArtifact.rotation.y += 0.03;
                 if (camera.position.distanceTo(secretArtifact.position) < 1.3) {
-                    state.hasSecret = true; scene.remove(secretArtifact);
-                    playRuneSFX();
-                    document.getElementById('warning-indicator').innerText = "RELIK KOSMIK EMAS DIDAPATKAN!";
+                    state.hasSecret = true; scene.remove(secretArtifact); playRuneSFX();
+                    document.getElementById('warning-indicator').innerText = "RELIK EMAS KOSMIK DIAMANKAN!";
                     document.getElementById('warning-indicator').style.visibility = 'visible';
                 }
             }
 
-            // LOGIKA ESCAPE / KELUAR GERBANG (NORMAL vs SECRET ENDING)
+            // TRIGGER KELUAR GERBANG ESCAPE
             if (exitGateMesh) {
                 if (state.runesCollected >= 3 && exitGateMesh.position.y < 4.0) exitGateMesh.position.y += 0.02;
-                if (state.runesCollected >= 3 && camera.position.distanceTo(exitGateMesh.position) < 1.5) {
-                    gameActive = false; localStorage.removeItem('cold_cave_v3_checkpoint');
-                    
+                if (state.runesCollected >= 3 && camera.position.distanceTo(exitGateMesh.position) < 1.4) {
+                    gameActive = false; localStorage.removeItem('cold_cave_v4_save');
                     if (state.hasSecret) {
-                        endGame("SECRET ENDING: COSMIC ASCENSION", "Luar biasa Jae! Berbekal Relik Emas Kuno, kamu tidak sekadar kabur dari gua, melainkan menyerap seluruh energi kosmik abyss. Jiwamu berevolusi menjadi penguasa dimensi kegelapan!");
+                        endGame("SECRET ENDING: COSMIC OVERLORD", "Luar biasa Jae! Relik Emas Kuno menyatu dengan detak jantungmu. Labirin runtuh dan jiwamu berevolusi melampaui batas manusia, menjadi penguasa absolut dimensi gua es.");
                     } else {
-                        endGame("BERHASIL LOLOS (NORMAL)", "Selamat Jae! Kamu berhasil mengumpulkan seluruh energi rune dan mendorong gerbang batu kuno untuk kembali ke permukaan dunia luar.");
+                        endGame("NORMAL ENDING: ESCAPE", "Selamat Jae! Kamu berhasil mendorong gerbang batu kuno menggunakan 3 energi rune dan kembali menghirup udara bebas di permukaan bumi.");
                     }
                     return;
                 }
             }
 
-            if (state.sanity <= 0) { endGame("JIWA TERKAPAR", "Kesadaran mentalmu runtuh sepenuhnya. Pikiranmu tersesat selamanya di dalam kehampaan gua es."); return; }
+            if (state.sanity <= 0) { endGame("JIWA HANCUR", "Sanity mentalmu menyentuh titik nol. Kesadaranmu diserap oleh kegelapan gua selamanya."); return; }
 
-            renderRadarMinimap();
+            updateHUD(); renderMinimapRadar();
             renderer.render(scene, camera);
         }
 
-        // 🗺️ RADAR MINIMAP HUD GRAPHICS RENDERER
-        function renderRadarMinimap() {
-            mapCtx.clearRect(0, 0, 120, 120);
+        // 🗺️ RADAR MINIMAP CANVAS RENDERER
+        function renderMinimapRadar() {
+            mapCtx.clearRect(0,0,120,120);
             let pGridX = camera.position.x / GRID_SIZE; let pGridZ = camera.position.z / GRID_SIZE;
-            let center = 60; let scale = 8; // Zoom factor map
+            let center = 60; let scale = 6.5;
 
-            // Draw dinding labirin relatif dari posisi player
-            mapCtx.fillStyle = "rgba(150, 0, 0, 0.25)";
-            for (let r = 0; r < MAP_GRID.length; r++) {
-                for (let c = 0; c < MAP_GRID[r].length; c++) {
-                    if (MAP_GRID[r][c] === 1) {
-                        let dX = center + (c - pGridX) * scale; let dZ = center + (r - pGridZ) * scale;
-                        if(dX >= 0 && dX <= 120 && dZ >= 0 && dZ <= 120) mapCtx.fillRect(dX, dZ, scale-1, scale-1);
+            mapCtx.fillStyle = "rgba(180, 0, 0, 0.2)";
+            for(let r=0; r<MAZE_H; r++){
+                for(let c=0; c<MAZE_W; c++){
+                    if(MAP_GRID[r][c] === 1) {
+                        let dX = center + (c - pGridX)*scale; let dZ = center + (r - pGridZ)*scale;
+                        if(dX>=0 && dX<=120 && dZ>=0 && dZ<=120) mapCtx.fillRect(dX, dZ, scale-1, scale-1);
                     }
                 }
             }
-
-            // Draw Sisa Rune Terdeteksi (Merah)
+            // Item Rune (Merah) & Baterai (Hijau Neon) di minimap
             mapCtx.fillStyle = "#ff0000";
-            runesArray.forEach(r => { if(!r.picked) { let dX = center + (r.gridC - pGridX)*scale; let dZ = center + (r.gridR - pGridZ)*scale; mapCtx.beginPath(); mapCtx.arc(dX, dZ, 3, 0, Math.PI*2); mapCtx.fill(); } });
+            runesArray.forEach(r => { if(!r.picked) mapCtx.fillRect(center+(r.gridC-pGridX)*scale, center+(r.gridR-pGridZ)*scale, 3, 3); });
+            mapCtx.fillStyle = "#00ff66";
+            batteriesArray.forEach(b => { if(!b.picked) mapCtx.fillRect(center+(b.gridC-pGridX)*scale, center+(b.gridR-pGridZ)*scale, 3, 3); });
 
-            // Draw Sisa Baterai Terdeteksi (Kuning)
-            mapCtx.fillStyle = "#ffff00";
-            batteriesArray.forEach(b => { if(!b.picked) { let dX = center + (b.gridC - pGridX)*scale; let dZ = center + (b.gridR - pGridZ)*scale; mapCtx.beginPath(); mapCtx.arc(dX, dZ, 2.5, 0, Math.PI*2); mapCtx.fill(); } });
-
-            // Draw Player Marker (Putih) di tengah + Garis Kompas Hadap Pandangan
-            mapCtx.fillStyle = "#ffffff"; mapCtx.beginPath(); mapCtx.arc(center, center, 4, 0, Math.PI*2); mapCtx.fill();
-            mapCtx.strokeStyle = "rgba(0, 255, 255, 0.8)"; mapCtx.lineWidth = 2; mapCtx.beginPath(); mapCtx.moveTo(center, center);
-            mapCtx.lineTo(center + Math.sin(camera.rotation.y + Math.PI)*12, center + Math.cos(camera.rotation.y + Math.PI)*12); mapCtx.stroke();
+            // Player Dot Indicator + Kompas Sight Line
+            mapCtx.fillStyle = "#ffffff"; mapCtx.beginPath(); mapCtx.arc(center, center, 3.5, 0, Math.PI*2); mapCtx.fill();
+            mapCtx.strokeStyle = "rgba(0, 255, 255, 0.7)"; mapCtx.lineWidth = 1.5; mapCtx.beginPath(); mapCtx.moveTo(center, center);
+            mapCtx.lineTo(center + Math.sin(camera.rotation.y + Math.PI)*10, center + Math.cos(camera.rotation.y + Math.PI)*10); mapCtx.stroke();
         }
 
-        function saveCheckpoint() {
+        function saveGameProgress() {
             let pickedRunes = []; runesArray.forEach((r, i) => { if(r.picked) pickedRunes.push(i); });
             let pickedBats = []; batteriesArray.forEach((b, i) => { if(b.picked) pickedBats.push(i); });
-            localStorage.setItem('cold_cave_v3_checkpoint', JSON.stringify({
-                runes: state.runesCollected, hasSecret: state.hasSecret, pX: camera.position.x, pZ: camera.position.z, pickedRunes, pickedBats
+            localStorage.setItem('cold_cave_v4_save', JSON.stringify({
+                grid: MAP_GRID, runes: state.runesCollected, hasSecret: state.hasSecret, pX: camera.position.x, pZ: camera.position.z, pickedRunes, pickedBats
             }));
         }
 
         function updateHUD() {
             document.getElementById('sanity-fill').style.width = state.sanity + '%';
+            document.getElementById('stamina-fill').style.width = state.stamina + '%';
             document.getElementById('battery-fill').style.width = state.battery + '%';
-            document.getElementById('objective-txt').innerText = `RUNE TERKUMPUL: ${state.runesCollected} / 3` + (state.hasSecret ? " 🌟" : "");
+            document.getElementById('objective-txt').innerText = `RUNE: ${state.runesCollected} / 3` + (state.hasSecret ? " 🌟" : "");
         }
 
         function executeJumpscare() {
@@ -631,8 +745,8 @@
             document.getElementById('jumpscare').style.visibility = 'visible';
             setTimeout(() => {
                 document.getElementById('jumpscare').style.visibility = 'hidden';
-                endGame("DIELIMINASI", "Langkahmu terhenti di kesunyian jurang. Struktur tubuh anomali mematikan koordinat molekuler memorimu.");
-            }, 1200);
+                endGame("DIELIMINASI", "Monster Crawler berhasil menyudutkanmu. Tubuhmu hancur menjadi serpihan memori di lantai gua.");
+            }, 1100);
         }
 
         function endGame(title, reason) {
